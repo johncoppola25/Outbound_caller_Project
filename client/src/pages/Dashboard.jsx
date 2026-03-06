@@ -1,18 +1,8 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { 
-  Phone, 
-  Users, 
-  Megaphone, 
-  TrendingUp, 
-  Calendar,
-  PhoneCall,
-  PhoneOff,
-  CheckCircle2,
-  Clock,
-  ArrowUpRight,
-  BarChart3,
-  Upload
+import {
+  Phone, Users, Megaphone, Calendar, CheckCircle2,
+  ArrowUpRight, BarChart3, Upload, Activity, TrendingUp, Flame, Thermometer, Snowflake, DollarSign
 } from 'lucide-react';
 import { useWebSocket } from '../context/WebSocketContext';
 
@@ -25,41 +15,30 @@ export default function Dashboard() {
 
   useEffect(() => {
     fetchDashboardData();
-    
-    // Subscribe to real-time updates
     const unsubscribe = subscribe((message) => {
       if (message.type === 'call_update') {
         setRecentCalls(prev => {
           const updated = [message.call, ...prev.filter(c => c.id !== message.call.id)];
           return updated.slice(0, 10);
         });
-        // Refresh stats when a call updates
         fetchStats();
       }
     });
-    
     return unsubscribe;
   }, [subscribe]);
 
   async function fetchDashboardData() {
-    try {
-      await Promise.all([fetchStats(), fetchRecentCalls()]);
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
+    try { await Promise.all([fetchStats(), fetchRecentCalls()]); }
+    catch (err) { setError(err.message); }
+    finally { setLoading(false); }
   }
 
   async function fetchStats() {
     try {
       const res = await fetch('/api/stats/dashboard');
       if (!res.ok) throw new Error('Failed to fetch stats');
-      const data = await res.json();
-      setStats(data);
-    } catch (err) {
-      console.error('Error fetching stats:', err);
-    }
+      setStats(await res.json());
+    } catch (err) { console.error('Error fetching stats:', err); }
   }
 
   async function fetchRecentCalls() {
@@ -68,234 +47,167 @@ export default function Dashboard() {
       if (!res.ok) throw new Error('Failed to fetch calls');
       const data = await res.json();
       setRecentCalls(data.calls || []);
-    } catch (err) {
-      console.error('Error fetching calls:', err);
-    }
+    } catch (err) { console.error('Error fetching calls:', err); }
   }
 
   if (loading) {
     return (
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '256px' }}>
-        <div style={{ 
-          width: '32px', 
-          height: '32px', 
-          border: '4px solid #deb040',
-          borderTopColor: 'transparent',
-          borderRadius: '50%',
-          animation: 'spin 1s linear infinite'
-        }}></div>
-        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '300px' }}>
+        <div style={{ width: '32px', height: '32px', border: '3px solid #e5e7eb', borderTopColor: '#4f46e5', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} />
       </div>
     );
   }
 
   if (error) {
-    return (
-      <div style={{ padding: '20px', color: 'red' }}>
-        Error: {error}
-      </div>
-    );
+    return <div style={{ padding: '16px', color: '#b91c1c', background: '#fef2f2', borderRadius: '10px', border: '1px solid #fecaca', fontSize: '14px' }}>Error: {error}</div>;
   }
 
   const statCards = [
-    {
-      title: 'Active Campaigns',
-      value: stats?.campaigns?.active_campaigns || 0,
-      total: stats?.campaigns?.total_campaigns || 0,
-      icon: Megaphone,
-      color: '#deb040',
-      bgColor: '#fbf7e8',
-      link: '/campaigns'
-    },
-    {
-      title: 'Total Contacts',
-      value: stats?.contacts?.total_contacts || 0,
-      subtitle: `${stats?.contacts?.pending_contacts || 0} pending`,
-      icon: Users,
-      color: '#1e2a45',
-      bgColor: '#e9ecf5',
-      link: '/contacts'
-    },
-    {
-      title: 'Calls Today',
-      value: stats?.today?.calls_today || 0,
-      subtitle: `${stats?.today?.completed_today || 0} completed`,
-      icon: Phone,
-      color: '#10b981',
-      bgColor: '#d1fae5',
-      link: '/calls'
-    },
-    {
-      title: 'Appointments',
-      value: stats?.today?.appointments_today || 0,
-      subtitle: 'Scheduled today',
-      icon: Calendar,
-      color: '#8b5cf6',
-      bgColor: '#ede9fe',
-      link: '/analytics'
-    }
+    { title: 'Active Campaigns', value: stats?.campaigns?.active_campaigns || 0, sub: `of ${stats?.campaigns?.total_campaigns || 0} total`, icon: Megaphone, color: '#4f46e5', bg: '#eef2ff', link: '/campaigns' },
+    { title: 'Total Contacts', value: stats?.contacts?.total_contacts || 0, sub: `${stats?.contacts?.pending_contacts || 0} pending`, icon: Users, color: '#7c3aed', bg: '#f5f3ff', link: '/contacts' },
+    { title: 'Calls Today', value: stats?.today?.calls_today || 0, sub: `${stats?.today?.completed_today || 0} completed`, icon: Phone, color: '#059669', bg: '#ecfdf5', link: '/calls' },
+    { title: 'Appointments', value: stats?.today?.appointments_today || 0, sub: 'Scheduled today', icon: Calendar, color: '#d97706', bg: '#fffbeb', link: '/appointments' }
   ];
 
-  return (
-    <div>
-      <style>{`
-        .dash-stat-card:hover { transform: translateY(-4px); box-shadow: 0 12px 40px -12px rgba(30,42,69,0.18) !important; }
-        .dash-call-row:hover { background: rgba(245,223,138,0.06); }
-        .dash-quick-action:hover { background: white !important; color: #1e2a45 !important; }
-        .dash-quick-action:hover span { color: #1e2a45 !important; }
-        .dash-quick-action:hover .dash-qa-icon { color: #c8932f !important; }
-      `}</style>
+  const leadScores = stats?.leadScores;
+  const costs = stats?.costs;
 
+  return (
+    <div style={{ animation: 'fadeIn 0.3s ease-out' }}>
       {/* Header */}
-      <div style={{ marginBottom: '40px' }}>
-        <h1 style={{ fontSize: '32px', fontFamily: 'Playfair Display, serif', fontWeight: '600', color: '#0f172a', letterSpacing: '-0.02em' }}>
-          Welcome back
-        </h1>
-        <p style={{ color: '#64748b', marginTop: '6px', fontSize: '16px' }}>
-          Here's what's happening with your outreach campaigns today.
-        </p>
+      <div style={{ marginBottom: '24px' }}>
+        <h1 style={{ fontSize: '26px', fontWeight: '800', color: '#111827' }}>Dashboard</h1>
+        <p style={{ color: '#6b7280', marginTop: '4px', fontSize: '14px' }}>Here's what's happening with your outreach campaigns today.</p>
       </div>
 
       {/* Stat Cards */}
-      <div style={{ 
-        display: 'grid', 
-        gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', 
-        gap: '20px', 
-        marginBottom: '36px' 
-      }}>
-        {statCards.map((card) => (
-          <Link
-            key={card.title}
-            to={card.link}
-            className="dash-stat-card"
-            style={{
-              backgroundColor: 'white',
-              borderRadius: '20px',
-              padding: '28px',
-              boxShadow: '0 4px 24px -4px rgba(15,23,42,0.08), 0 2px 8px -2px rgba(15,23,42,0.04)',
-              textDecoration: 'none',
-              transition: 'all 0.25s ease',
-              display: 'block',
-              border: '1px solid rgba(15,23,42,0.04)'
-            }}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '14px', marginBottom: '24px' }}>
+        {statCards.map((card, i) => (
+          <Link key={card.title} to={card.link} style={{
+            background: '#fff', borderRadius: '12px', padding: '20px',
+            textDecoration: 'none', border: '1px solid #e5e7eb',
+            boxShadow: '0 1px 2px rgba(0,0,0,0.03)',
+            transition: 'all 0.15s ease',
+            animation: `fadeIn 0.3s ease-out ${i * 0.04}s both`
+          }}
+            onMouseEnter={e => { e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.06)'; e.currentTarget.style.transform = 'translateY(-1px)'; }}
+            onMouseLeave={e => { e.currentTarget.style.boxShadow = '0 1px 2px rgba(0,0,0,0.03)'; e.currentTarget.style.transform = 'translateY(0)'; }}
           >
-            <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
               <div>
-                <p style={{ fontSize: '13px', color: '#64748b', fontWeight: '600', letterSpacing: '0.02em' }}>{card.title}</p>
-                <p style={{ fontSize: '34px', fontFamily: 'Playfair Display, serif', fontWeight: '600', color: '#0f172a', marginTop: '10px', letterSpacing: '-0.02em' }}>
-                  {card.value}
-                </p>
-                {(card.subtitle || card.total !== undefined) && (
-                  <p style={{ fontSize: '13px', color: '#94a3b8', marginTop: '6px' }}>
-                    {card.subtitle || (card.total !== undefined && `of ${card.total} total`)}
-                  </p>
-                )}
+                <p style={{ fontSize: '11px', color: '#6b7280', fontWeight: '600', letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: '6px' }}>{card.title}</p>
+                <p style={{ fontSize: '28px', fontWeight: '800', color: '#111827', letterSpacing: '-0.03em', lineHeight: 1 }}>{card.value}</p>
+                <p style={{ fontSize: '12px', color: '#9ca3af', marginTop: '6px' }}>{card.sub}</p>
               </div>
-              <div style={{
-                width: '52px',
-                height: '52px',
-                borderRadius: '14px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                backgroundColor: card.bgColor,
-                boxShadow: '0 2px 8px -2px rgba(0,0,0,0.06)'
-              }}>
-                <card.icon style={{ width: '26px', height: '26px', color: card.color }} />
+              <div style={{ width: '40px', height: '40px', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: card.bg }}>
+                <card.icon style={{ width: '20px', height: '20px', color: card.color }} />
               </div>
             </div>
           </Link>
         ))}
       </div>
 
-      {/* Main Content Grid */}
-      <div 
-        className="dashboard-grid"
-        style={{ 
-          display: 'grid', 
-          gridTemplateColumns: 'minmax(0, 2fr) minmax(220px, 1fr)', 
-          gap: '24px',
-          alignItems: 'start'
-        }}
-      >
-        {/* Recent Activity */}
-        <div style={{ 
-          backgroundColor: 'white', 
-          borderRadius: '20px', 
-          boxShadow: '0 4px 24px -4px rgba(15,23,42,0.08), 0 2px 8px -2px rgba(15,23,42,0.04)',
-          overflow: 'hidden',
-          border: '1px solid rgba(15,23,42,0.04)'
-        }}>
-          <div style={{ padding: '24px 28px', borderBottom: '1px solid #f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <div>
-              <h2 style={{ fontSize: '20px', fontFamily: 'Playfair Display, serif', fontWeight: '600', color: '#0f172a' }}>Recent Calls</h2>
-              <p style={{ fontSize: '14px', color: '#64748b', marginTop: '2px' }}>Live call activity feed</p>
+      {/* Lead Scores + Cost Row */}
+      {(leadScores || costs) && (
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '14px', marginBottom: '24px' }}>
+          {leadScores && <>
+            <div style={{ background: '#fff', borderRadius: '12px', padding: '16px 20px', border: '1px solid #e5e7eb', display: 'flex', alignItems: 'center', gap: '14px' }}>
+              <div style={{ width: '36px', height: '36px', borderRadius: '9px', background: '#fef2f2', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <Flame style={{ width: '18px', height: '18px', color: '#dc2626' }} />
+              </div>
+              <div>
+                <p style={{ fontSize: '20px', fontWeight: '800', color: '#111827' }}>{leadScores.hot}</p>
+                <p style={{ fontSize: '11px', color: '#6b7280', fontWeight: '500' }}>Hot Leads</p>
+              </div>
             </div>
-            <Link to="/calls" style={{ fontSize: '14px', color: '#c8932f', fontWeight: '600', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '6px', transition: 'color 0.2s' }}>
-              View all <ArrowUpRight style={{ width: '16px', height: '16px' }} />
+            <div style={{ background: '#fff', borderRadius: '12px', padding: '16px 20px', border: '1px solid #e5e7eb', display: 'flex', alignItems: 'center', gap: '14px' }}>
+              <div style={{ width: '36px', height: '36px', borderRadius: '9px', background: '#fffbeb', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <Thermometer style={{ width: '18px', height: '18px', color: '#d97706' }} />
+              </div>
+              <div>
+                <p style={{ fontSize: '20px', fontWeight: '800', color: '#111827' }}>{leadScores.warm}</p>
+                <p style={{ fontSize: '11px', color: '#6b7280', fontWeight: '500' }}>Warm Leads</p>
+              </div>
+            </div>
+            <div style={{ background: '#fff', borderRadius: '12px', padding: '16px 20px', border: '1px solid #e5e7eb', display: 'flex', alignItems: 'center', gap: '14px' }}>
+              <div style={{ width: '36px', height: '36px', borderRadius: '9px', background: '#eef2ff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <Snowflake style={{ width: '18px', height: '18px', color: '#4f46e5' }} />
+              </div>
+              <div>
+                <p style={{ fontSize: '20px', fontWeight: '800', color: '#111827' }}>{leadScores.cold}</p>
+                <p style={{ fontSize: '11px', color: '#6b7280', fontWeight: '500' }}>Cold Leads</p>
+              </div>
+            </div>
+          </>}
+          {costs && (
+            <div style={{ background: '#fff', borderRadius: '12px', padding: '16px 20px', border: '1px solid #e5e7eb', display: 'flex', alignItems: 'center', gap: '14px' }}>
+              <div style={{ width: '36px', height: '36px', borderRadius: '9px', background: '#ecfdf5', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <DollarSign style={{ width: '18px', height: '18px', color: '#059669' }} />
+              </div>
+              <div>
+                <p style={{ fontSize: '20px', fontWeight: '800', color: '#111827' }}>${(costs.total || 0).toFixed(2)}</p>
+                <p style={{ fontSize: '11px', color: '#6b7280', fontWeight: '500' }}>Total Spend</p>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Main Grid */}
+      <div className="dashboard-grid" style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 2fr) minmax(200px, 1fr)', gap: '14px', alignItems: 'start' }}>
+        {/* Recent Calls */}
+        <div style={{ background: '#fff', borderRadius: '12px', overflow: 'hidden', border: '1px solid #e5e7eb', boxShadow: '0 1px 2px rgba(0,0,0,0.03)' }}>
+          <div style={{ padding: '16px 20px', borderBottom: '1px solid #f3f4f6', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <Activity style={{ width: '17px', height: '17px', color: '#4f46e5' }} />
+              <div>
+                <h2 style={{ fontSize: '15px', fontWeight: '700', color: '#111827' }}>Recent Calls</h2>
+                <p style={{ fontSize: '12px', color: '#9ca3af' }}>Live activity feed</p>
+              </div>
+            </div>
+            <Link to="/calls" style={{
+              fontSize: '12px', color: '#4f46e5', fontWeight: '600', textDecoration: 'none',
+              display: 'flex', alignItems: 'center', gap: '3px',
+              padding: '5px 10px', borderRadius: '7px', background: '#eef2ff'
+            }}>
+              View all <ArrowUpRight style={{ width: '13px', height: '13px' }} />
             </Link>
           </div>
-          
+
           <div>
             {recentCalls.length === 0 ? (
-              <div style={{ padding: '48px', textAlign: 'center' }}>
-                <div style={{ width: '64px', height: '64px', borderRadius: '50%', backgroundColor: '#f8fafc', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
-                  <Phone style={{ width: '32px', height: '32px', color: '#cbd5e1' }} />
+              <div style={{ padding: '40px', textAlign: 'center' }}>
+                <div style={{ width: '48px', height: '48px', borderRadius: '12px', background: '#f9fafb', border: '1px solid #e5e7eb', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 12px' }}>
+                  <Phone style={{ width: '22px', height: '22px', color: '#9ca3af' }} />
                 </div>
-                <p style={{ color: '#64748b', fontWeight: '500' }}>No calls yet</p>
-                <p style={{ fontSize: '14px', color: '#94a3b8', marginTop: '4px' }}>Start a campaign to see call activity</p>
+                <p style={{ color: '#6b7280', fontWeight: '500', fontSize: '14px' }}>No calls yet</p>
+                <p style={{ fontSize: '12px', color: '#9ca3af', marginTop: '3px' }}>Start a campaign to see call activity</p>
               </div>
             ) : (
-              recentCalls.map((call) => (
-                <Link 
-                  key={call.id} 
-                  to={`/calls/${call.id}`}
-                  className="dash-call-row"
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '18px',
-                    padding: '18px 28px',
-                    borderBottom: '1px solid #f8fafc',
-                    textDecoration: 'none',
-                    transition: 'background 0.2s ease'
-                  }}
+              recentCalls.map((call, idx) => (
+                <Link key={call.id} to={`/calls/${call.id}`} style={{
+                  display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 20px',
+                  borderBottom: idx < recentCalls.length - 1 ? '1px solid #f3f4f6' : 'none',
+                  textDecoration: 'none', transition: 'background 0.1s'
+                }}
+                  onMouseEnter={e => e.currentTarget.style.background = '#f9fafb'}
+                  onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
                 >
                   <div style={{
-                    width: '44px',
-                    height: '44px',
-                    borderRadius: '12px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    backgroundColor: call.status === 'completed' ? '#dcfce7' : '#fef9c3'
+                    width: '36px', height: '36px', borderRadius: '9px',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    background: call.status === 'completed' ? '#ecfdf5' : '#fffbeb'
                   }}>
-                    {call.status === 'completed' ? (
-                      <CheckCircle2 style={{ width: '22px', height: '22px', color: '#16a34a' }} />
-                    ) : (
-                      <Phone style={{ width: '22px', height: '22px', color: '#c8932f' }} />
-                    )}
+                    {call.status === 'completed'
+                      ? <CheckCircle2 style={{ width: '16px', height: '16px', color: '#059669' }} />
+                      : <Phone style={{ width: '16px', height: '16px', color: '#d97706' }} />
+                    }
                   </div>
-                  
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <p style={{ fontWeight: '600', color: '#1e293b', fontSize: '15px' }}>
-                      {call.first_name} {call.last_name}
-                    </p>
-                    <p style={{ fontSize: '14px', color: '#64748b', marginTop: '2px' }}>{call.phone}</p>
+                    <p style={{ fontWeight: '600', color: '#111827', fontSize: '13px' }}>{call.first_name} {call.last_name}</p>
+                    <p style={{ fontSize: '12px', color: '#9ca3af', marginTop: '1px' }}>{call.phone}</p>
                   </div>
-                  
-                  <span style={{
-                    display: 'inline-block',
-                    padding: '6px 12px',
-                    borderRadius: '10px',
-                    fontSize: '12px',
-                    fontWeight: '600',
-                    backgroundColor: call.status === 'completed' ? '#dcfce7' : '#fef9c3',
-                    color: call.status === 'completed' ? '#16a34a' : '#c8932f',
-                    flexShrink: 0
-                  }}>
-                    {call.status}
-                  </span>
+                  <span className={`status-badge status-${call.status}`}>{call.status}</span>
                 </Link>
               ))
             )}
@@ -303,38 +215,30 @@ export default function Dashboard() {
         </div>
 
         {/* Quick Actions */}
-        <div style={{ 
-          background: 'linear-gradient(165deg, #1e293b 0%, #0f172a 100%)',
-          borderRadius: '20px', 
-          padding: '28px',
-          color: 'white',
-          boxShadow: '0 8px 32px -8px rgba(15,23,42,0.2)'
-        }}>
-          <h3 style={{ fontSize: '20px', fontFamily: 'Playfair Display, serif', fontWeight: '600', marginBottom: '20px', color: 'white' }}>Quick Actions</h3>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+        <div style={{ background: '#fff', borderRadius: '12px', padding: '18px', border: '1px solid #e5e7eb', boxShadow: '0 1px 2px rgba(0,0,0,0.03)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '14px' }}>
+            <TrendingUp style={{ width: '17px', height: '17px', color: '#4f46e5' }} />
+            <h3 style={{ fontSize: '15px', fontWeight: '700', color: '#111827' }}>Quick Actions</h3>
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
             {[
-              { to: '/campaigns', icon: Megaphone, label: 'Create Campaign' },
-              { to: '/contacts', icon: Upload, label: 'Upload Contacts' },
-              { to: '/analytics', icon: BarChart3, label: 'View Reports' }
-            ].map(({ to, icon: Icon, label }) => (
-              <Link 
-                key={to}
-                to={to}
-                className="dash-quick-action"
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '14px',
-                  padding: '14px 18px',
-                  backgroundColor: 'rgba(255,255,255,0.08)',
-                  borderRadius: '12px',
-                  textDecoration: 'none',
-                  color: 'white',
-                  transition: 'all 0.25s ease'
-                }}
+              { to: '/campaigns', icon: Megaphone, label: 'Create Campaign', color: '#4f46e5', bg: '#eef2ff' },
+              { to: '/contacts', icon: Upload, label: 'Upload Contacts', color: '#7c3aed', bg: '#f5f3ff' },
+              { to: '/analytics', icon: BarChart3, label: 'View Reports', color: '#059669', bg: '#ecfdf5' }
+            ].map(({ to, icon: Icon, label, color, bg }) => (
+              <Link key={to} to={to} style={{
+                display: 'flex', alignItems: 'center', gap: '10px',
+                padding: '10px 12px', background: '#f9fafb', border: '1px solid #e5e7eb',
+                borderRadius: '9px', textDecoration: 'none', color: '#111827',
+                transition: 'all 0.12s ease', fontSize: '13px', fontWeight: '500'
+              }}
+                onMouseEnter={e => { e.currentTarget.style.background = '#f3f4f6'; e.currentTarget.style.borderColor = '#d1d5db'; }}
+                onMouseLeave={e => { e.currentTarget.style.background = '#f9fafb'; e.currentTarget.style.borderColor = '#e5e7eb'; }}
               >
-                <Icon className="dash-qa-icon" style={{ width: '20px', height: '20px', color: '#f0d78c', flexShrink: 0 }} />
-                <span style={{ fontSize: '15px', fontWeight: '500', color: 'rgba(255,255,255,0.95)' }}>{label}</span>
+                <div style={{ width: '30px', height: '30px', borderRadius: '7px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: bg }}>
+                  <Icon style={{ width: '15px', height: '15px', color }} />
+                </div>
+                {label}
               </Link>
             ))}
           </div>

@@ -105,7 +105,7 @@ router.get('/:id', async (req, res) => {
 router.post('/', async (req, res) => {
   try {
     const db = await getDb();
-    const { name, type, description, ai_prompt, voice, language, caller_id, greeting, time_limit_secs, voicemail_detection, background_audio, bot_name } = req.body;
+    const { name, type, description, ai_prompt, voice, language, caller_id, greeting, time_limit_secs, voicemail_detection, background_audio, bot_name, calling_hours_start, calling_hours_end, calling_timezone, calling_days } = req.body;
     
     console.log('📝 Creating campaign:', name);
     
@@ -134,9 +134,9 @@ router.post('/', async (req, res) => {
     }
     
     db.prepare(`
-      INSERT INTO campaigns (id, name, type, description, ai_prompt, voice, language, telnyx_assistant_id, caller_id, greeting, time_limit_secs, voicemail_detection, background_audio, bot_name)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `).run(id, name, type || 'general', description || '', ai_prompt || '', voice || 'astra', language || 'en-US', telnyx_assistant_id, caller_id || null, greeting || 'Hello,', time_limit_secs || 1800, voicemail_detection !== false ? 1 : 0, background_audio || 'silence', bot_name || 'Julia');
+      INSERT INTO campaigns (id, name, type, description, ai_prompt, voice, language, telnyx_assistant_id, caller_id, greeting, time_limit_secs, voicemail_detection, background_audio, bot_name, calling_hours_start, calling_hours_end, calling_timezone, calling_days)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(id, name, type || 'general', description || '', ai_prompt || '', voice || 'astra', language || 'en-US', telnyx_assistant_id, caller_id || null, greeting || 'Hello,', time_limit_secs || 1800, voicemail_detection !== false ? 1 : 0, background_audio || 'silence', bot_name || 'Julia', calling_hours_start || '09:00', calling_hours_end || '18:00', calling_timezone || 'America/New_York', calling_days || '1,2,3,4,5');
     
     const campaign = db.prepare('SELECT * FROM campaigns WHERE id = ?').get(id);
     
@@ -157,7 +157,7 @@ router.post('/', async (req, res) => {
 router.put('/:id', async (req, res) => {
   try {
     const db = await getDb();
-    const { name, type, description, ai_prompt, voice, language, caller_id, status, greeting, time_limit_secs, voicemail_detection, background_audio, bot_name, voice_speed } = req.body;
+    const { name, type, description, ai_prompt, voice, language, caller_id, status, greeting, time_limit_secs, voicemail_detection, background_audio, bot_name, voice_speed, calling_hours_start, calling_hours_end, calling_timezone, calling_days } = req.body;
     
     // Get current campaign to check if we need to update Telnyx
     const currentCampaign = db.prepare('SELECT * FROM campaigns WHERE id = ?').get(req.params.id);
@@ -186,16 +186,20 @@ router.put('/:id', async (req, res) => {
           background_audio = COALESCE(?, background_audio),
           bot_name = COALESCE(?, bot_name),
           voice_speed = COALESCE(?, voice_speed),
+          calling_hours_start = COALESCE(?, calling_hours_start),
+          calling_hours_end = COALESCE(?, calling_hours_end),
+          calling_timezone = COALESCE(?, calling_timezone),
+          calling_days = COALESCE(?, calling_days),
           updated_at = CURRENT_TIMESTAMP
       WHERE id = ?
     `).run(
-      safeValue(name), 
-      safeValue(type), 
-      safeValue(description), 
-      safeValue(ai_prompt), 
-      safeValue(voice), 
-      safeValue(language), 
-      safeValue(caller_id), 
+      safeValue(name),
+      safeValue(type),
+      safeValue(description),
+      safeValue(ai_prompt),
+      safeValue(voice),
+      safeValue(language),
+      safeValue(caller_id),
       safeValue(status),
       safeValue(greeting),
       safeValue(time_limit_secs),
@@ -203,6 +207,10 @@ router.put('/:id', async (req, res) => {
       safeValue(background_audio),
       safeValue(bot_name),
       safeValue(voice_speed),
+      safeValue(calling_hours_start),
+      safeValue(calling_hours_end),
+      safeValue(calling_timezone),
+      safeValue(calling_days),
       req.params.id
     );
     

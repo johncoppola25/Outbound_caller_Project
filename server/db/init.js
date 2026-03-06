@@ -128,12 +128,39 @@ export async function initDatabase() {
     db.exec(`ALTER TABLE campaigns ADD COLUMN voice_speed REAL DEFAULT 1.0`);
   } catch (e) { /* column may already exist */ }
   try {
+    db.exec(`ALTER TABLE calls ADD COLUMN estimated_cost REAL DEFAULT 0`);
+  } catch (e) { /* column may already exist */ }
+  try {
     db.exec(`ALTER TABLE calls ADD COLUMN callback_preferred_at TEXT`);
   } catch (e) { /* column may already exist */ }
   try {
     db.exec(`ALTER TABLE calls ADD COLUMN appointment_at TEXT`);
   } catch (e) { /* column may already exist */ }
-  
+  try {
+    db.exec(`ALTER TABLE campaigns ADD COLUMN calling_hours_start TEXT DEFAULT '09:00'`);
+  } catch (e) { /* column may already exist */ }
+  try {
+    db.exec(`ALTER TABLE campaigns ADD COLUMN calling_hours_end TEXT DEFAULT '18:00'`);
+  } catch (e) { /* column may already exist */ }
+  try {
+    db.exec(`ALTER TABLE campaigns ADD COLUMN calling_timezone TEXT DEFAULT 'America/New_York'`);
+  } catch (e) { /* column may already exist */ }
+  try {
+    db.exec(`ALTER TABLE campaigns ADD COLUMN calling_days TEXT DEFAULT '1,2,3,4,5'`);
+  } catch (e) { /* column may already exist */ }
+  try {
+    db.exec(`ALTER TABLE campaigns ADD COLUMN sms_follow_up INTEGER DEFAULT 0`);
+  } catch (e) { /* column may already exist */ }
+  try {
+    db.exec(`ALTER TABLE campaigns ADD COLUMN sms_template TEXT`);
+  } catch (e) { /* column may already exist */ }
+  try {
+    db.exec(`ALTER TABLE campaigns ADD COLUMN max_retries INTEGER DEFAULT 1`);
+  } catch (e) { /* column may already exist */ }
+  try {
+    db.exec(`ALTER TABLE campaigns ADD COLUMN retry_delay_hours INTEGER DEFAULT 48`);
+  } catch (e) { /* column may already exist */ }
+
   // Contacts table - stores uploaded contacts per campaign
   db.exec(`
     CREATE TABLE IF NOT EXISTS contacts (
@@ -151,6 +178,19 @@ export async function initDatabase() {
     )
   `);
   
+  try {
+    db.exec(`ALTER TABLE contacts ADD COLUMN lead_score INTEGER DEFAULT 0`);
+  } catch (e) { /* column may already exist */ }
+  try {
+    db.exec(`ALTER TABLE contacts ADD COLUMN call_attempts INTEGER DEFAULT 0`);
+  } catch (e) { /* column may already exist */ }
+  try {
+    db.exec(`ALTER TABLE contacts ADD COLUMN last_called_at TEXT`);
+  } catch (e) { /* column may already exist */ }
+  try {
+    db.exec(`ALTER TABLE contacts ADD COLUMN next_retry_at TEXT`);
+  } catch (e) { /* column may already exist */ }
+
   // Calls table - tracks all call activity
   db.exec(`
     CREATE TABLE IF NOT EXISTS calls (
@@ -194,6 +234,19 @@ export async function initDatabase() {
     )
   `);
   
+  // Users table - authentication
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS users (
+      id TEXT PRIMARY KEY,
+      email TEXT UNIQUE NOT NULL,
+      password_hash TEXT NOT NULL,
+      name TEXT NOT NULL,
+      company TEXT,
+      role TEXT DEFAULT 'agent',
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+
   saveDatabase();
   console.log('✅ Database initialized successfully');
   

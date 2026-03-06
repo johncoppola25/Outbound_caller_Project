@@ -60,21 +60,32 @@ router.get('/dashboard', async (req, res) => {
     
     // This week's stats
     const weekStats = db.prepare(`
-      SELECT 
+      SELECT
         COUNT(*) as calls_this_week,
         SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) as completed_this_week,
         SUM(CASE WHEN outcome = 'appointment_scheduled' THEN 1 ELSE 0 END) as appointments_this_week
       FROM calls
       WHERE DATE(created_at) >= DATE('now', '-7 days')
     `).get();
-    
+
+    // Cost tracking
+    const totalCost = db.prepare('SELECT COALESCE(SUM(estimated_cost), 0) as total FROM calls').get();
+    const todayCost = db.prepare("SELECT COALESCE(SUM(estimated_cost), 0) as total FROM calls WHERE date(created_at) = date('now')").get();
+
+    // Lead score summary
+    const hotLeads = db.prepare('SELECT COUNT(*) as count FROM contacts WHERE lead_score >= 80').get();
+    const warmLeads = db.prepare('SELECT COUNT(*) as count FROM contacts WHERE lead_score >= 50 AND lead_score < 80').get();
+    const coldLeads = db.prepare('SELECT COUNT(*) as count FROM contacts WHERE lead_score < 50').get();
+
     res.json({
       campaigns: campaignStats,
       contacts: contactStats,
       calls: callStats,
       outcomes: outcomeStats,
       today: todayStats,
-      thisWeek: weekStats
+      thisWeek: weekStats,
+      costs: { total: totalCost.total, today: todayCost.total },
+      leadScores: { hot: hotLeads.count, warm: warmLeads.count, cold: coldLeads.count }
     });
   } catch (error) {
     console.error('Error fetching dashboard stats:', error);
@@ -147,6 +158,9 @@ router.get('/campaign/:campaignId', async (req, res) => {
       ORDER BY hour
     `).all(campaignId);
     
+    // Campaign cost
+    const campaignCost = db.prepare('SELECT COALESCE(SUM(estimated_cost), 0) as total FROM calls WHERE campaign_id = ?').get(campaignId);
+
     res.json({
       basic: basicStats,
       contactBreakdown,
@@ -154,9 +168,10 @@ router.get('/campaign/:campaignId', async (req, res) => {
       outcomeBreakdown,
       callsOverTime,
       hourlyDistribution,
-      conversionRate: basicStats?.total_calls > 0 
-        ? (outcomeBreakdown.find(o => o.outcome === 'appointment_scheduled')?.count || 0) / basicStats.total_calls * 100 
-        : 0
+      conversionRate: basicStats?.total_calls > 0
+        ? (outcomeBreakdown.find(o => o.outcome === 'appointment_scheduled')?.count || 0) / basicStats.total_calls * 100
+        : 0,
+      cost: campaignCost.total
     });
   } catch (error) {
     console.error('Error fetching campaign stats:', error);

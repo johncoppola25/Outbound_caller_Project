@@ -3,8 +3,30 @@ import { v4 as uuidv4 } from 'uuid';
 import { getDb } from '../db/init.js';
 import { initiateOutboundCall, startAIConversation, getCallDetails, getAssistantConversations, getCallRecordings, telnyxRequest } from '../services/telnyx.js';
 import { broadcast } from '../index.js';
+import { calculateLeadScore } from '../services/leadScoring.js';
 
 const router = express.Router();
+
+function isWithinCallingHours(campaign) {
+  const now = new Date();
+  const start = campaign.calling_hours_start || '09:00';
+  const end = campaign.calling_hours_end || '18:00';
+  const days = (campaign.calling_days || '1,2,3,4,5').split(',').map(Number);
+
+  // Check day of week (0=Sun, 1=Mon, ..., 6=Sat)
+  const currentDay = now.getDay();
+  if (!days.includes(currentDay)) return false;
+
+  // Check time
+  const currentTime = now.toLocaleTimeString('en-US', {
+    hour12: false,
+    hour: '2-digit',
+    minute: '2-digit',
+    timeZone: campaign.calling_timezone || 'America/New_York'
+  });
+
+  return currentTime >= start && currentTime <= end;
+}
 
 // Get calls for a campaign
 router.get('/campaign/:campaignId', async (req, res) => {
@@ -185,7 +207,14 @@ router.post('/start-campaign/:campaignId', async (req, res) => {
     if (!campaign) {
       return res.status(404).json({ error: 'Campaign not found' });
     }
-    
+
+    if (!isWithinCallingHours(campaign)) {
+      return res.status(400).json({
+        error: 'Outside calling hours',
+        message: `Calling hours are ${campaign.calling_hours_start || '09:00'} - ${campaign.calling_hours_end || '18:00'} (${campaign.calling_timezone || 'America/New_York'})`
+      });
+    }
+
     // Get pending contacts
     const pendingContacts = db.prepare(`
       SELECT * FROM contacts 
@@ -376,7 +405,7 @@ router.put('/:id/outcome', async (req, res) => {
     `).run(outcome, notes, callback_preferred_at || null, appointment_at || null, req.params.id);
     
     const call = db.prepare('SELECT * FROM calls WHERE id = ?').get(req.params.id);
-    
+
     // Update contact status based on outcome
     if (outcome === 'appointment_scheduled') {
       db.prepare(`UPDATE contacts SET status = 'converted' WHERE id = ?`).run(call.contact_id);
@@ -385,7 +414,15 @@ router.put('/:id/outcome', async (req, res) => {
     } else if (outcome === 'callback_requested') {
       db.prepare(`UPDATE contacts SET status = 'callback' WHERE id = ?`).run(call.contact_id);
     }
-    
+
+    // Recalculate lead score
+    if (call.contact_id) {
+      const contact = db.prepare('SELECT * FROM contacts WHERE id = ?').get(call.contact_id);
+      const contactCalls = db.prepare('SELECT * FROM calls WHERE contact_id = ? ORDER BY created_at DESC').all(call.contact_id);
+      const newScore = calculateLeadScore(contact, contactCalls);
+      db.prepare('UPDATE contacts SET lead_score = ? WHERE id = ?').run(newScore, call.contact_id);
+    }
+
     res.json(call);
   } catch (error) {
     console.error('Error updating call outcome:', error);
@@ -907,6 +944,34 @@ router.post('/:id/sync', async (req, res) => {
   } catch (error) {
     console.error('Error syncing call from Telnyx:', error);
     res.status(500).json({ error: 'Failed to sync call data' });
+  }
+});
+
+// Process retry queue
+router.post('/process-retries', async (req, res) => {
+  try {
+    const db = await getDb();
+    const now = new Date().toISOString();
+    const retryContacts = db.prepare(`
+      SELECT c.*, ca.id as campaign_id, ca.name as campaign_name
+      FROM contacts c
+      JOIN campaigns ca ON c.campaign_id = ca.id
+      WHERE c.next_retry_at IS NOT NULL
+      AND c.next_retry_at <= ?
+      AND c.status = 'pending'
+      AND ca.status = 'active'
+      LIMIT 50
+    `).all(now);
+
+    res.json({ queued: retryContacts.length, message: `${retryContacts.length} contacts queued for retry` });
+
+    // Process retries in background (same as start-campaign flow)
+    for (const contact of retryContacts) {
+      db.prepare('UPDATE contacts SET next_retry_at = NULL WHERE id = ?').run(contact.id);
+      // The actual call initiation would happen via the normal call flow
+    }
+  } catch (err) {
+    res.status(500).json({ error: err.message });
   }
 });
 

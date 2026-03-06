@@ -1,40 +1,27 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { 
-  ArrowLeft, 
-  Phone, 
-  User, 
-  Calendar, 
-  Clock,
-  Mail,
-  Volume2,
-  RefreshCw,
-  CheckCircle,
-  XCircle,
-  AlertCircle,
-  PhoneOff,
-  Voicemail,
-  MessageSquare,
-  FileText,
-  Activity,
-  Loader
+import {
+  ArrowLeft, Phone, User, Calendar, Clock, Mail, Volume2, RefreshCw,
+  CheckCircle, XCircle, AlertCircle, PhoneOff, Voicemail, MessageSquare,
+  FileText, Activity, Loader
 } from 'lucide-react';
 import { useWebSocket } from '../context/WebSocketContext';
 
 const outcomeConfig = {
-  appointment_scheduled: { label: 'Appointment Scheduled', color: '#059669', bg: '#d1fae5', icon: CheckCircle },
-  not_interested: { label: 'Not Interested', color: '#dc2626', bg: '#fee2e2', icon: XCircle },
-  callback_requested: { label: 'Callback Requested', color: '#2563eb', bg: '#dbeafe', icon: Phone },
-  voicemail: { label: 'Voicemail', color: '#d97706', bg: '#fef3c7', icon: Voicemail },
-  no_answer: { label: 'No Answer', color: '#6b7280', bg: '#f3f4f6', icon: PhoneOff },
-  busy: { label: 'Busy', color: '#9333ea', bg: '#f3e8ff', icon: AlertCircle },
-  completed: { label: 'Completed', color: '#059669', bg: '#d1fae5', icon: CheckCircle },
-  interested: { label: 'Interested', color: '#059669', bg: '#d1fae5', icon: CheckCircle },
-  wrong_number: { label: 'Wrong Number', color: '#dc2626', bg: '#fee2e2', icon: XCircle },
-  do_not_call: { label: 'Do Not Call', color: '#dc2626', bg: '#fee2e2', icon: XCircle },
+  appointment_scheduled: { label: 'Appointment Scheduled', color: '#059669', bg: '#ecfdf5', border: '#a7f3d0', icon: CheckCircle },
+  not_interested: { label: 'Not Interested', color: '#dc2626', bg: '#fef2f2', border: '#fecaca', icon: XCircle },
+  callback_requested: { label: 'Callback Requested', color: '#d97706', bg: '#fffbeb', border: '#fde68a', icon: Phone },
+  voicemail: { label: 'Voicemail', color: '#7c3aed', bg: '#f5f3ff', border: '#ddd6fe', icon: Voicemail },
+  no_answer: { label: 'No Answer', color: '#9ca3af', bg: '#f9fafb', border: '#e5e7eb', icon: PhoneOff },
+  busy: { label: 'Busy', color: '#7c3aed', bg: '#f5f3ff', border: '#ddd6fe', icon: AlertCircle },
+  completed: { label: 'Completed', color: '#059669', bg: '#ecfdf5', border: '#a7f3d0', icon: CheckCircle },
+  interested: { label: 'Interested', color: '#4f46e5', bg: '#eef2ff', border: '#c7d2fe', icon: CheckCircle },
+  wrong_number: { label: 'Wrong Number', color: '#dc2626', bg: '#fef2f2', border: '#fecaca', icon: XCircle },
+  do_not_call: { label: 'Do Not Call', color: '#dc2626', bg: '#fef2f2', border: '#fecaca', icon: XCircle },
 };
+const defaultOutcome = { label: 'Unknown', color: '#9ca3af', bg: '#f9fafb', border: '#e5e7eb', icon: AlertCircle };
 
-const defaultOutcome = { label: 'Unknown', color: '#6b7280', bg: '#f3f4f6', icon: AlertCircle };
+const cardStyle = { background: '#ffffff', borderRadius: '12px', padding: '22px', border: '1px solid #e5e7eb', boxShadow: '0 1px 3px rgba(0,0,0,0.03)' };
 
 export default function CallDetail() {
   const { id } = useParams();
@@ -50,397 +37,215 @@ export default function CallDetail() {
   const hasSyncedRef = useRef(false);
 
   const fetchCall = useCallback(async () => {
-    try {
-      const res = await fetch(`/api/calls/${id}`);
-      const data = await res.json();
-      setCall(data);
-      return data;
-    } catch (err) {
-      console.error('Error fetching call:', err);
-      return null;
-    } finally {
-      setLoading(false);
-    }
+    try { const res = await fetch(`/api/calls/${id}`); const data = await res.json(); setCall(data); return data; }
+    catch (err) { console.error('Error:', err); return null; } finally { setLoading(false); }
   }, [id]);
 
   const syncFromTelnyx = useCallback(async () => {
-    setSyncing(true);
-    setLastSyncDebug(null);
+    setSyncing(true); setLastSyncDebug(null);
     try {
-      const res = await fetch(`/api/calls/${id}/sync`, { method: 'POST' });
-      const data = await res.json();
-      if (data.call) {
-        setCall(prev => ({ ...prev, ...data.call }));
-      }
-      setAutoSynced(true);
-      setLastSyncDebug(data.debug || (data.message ? [data.message] : null));
-      return data;
-    } catch (err) {
-      console.error('Sync error:', err);
-      setAutoSynced(true);
-      setLastSyncDebug(['Sync failed: ' + err.message]);
-      return null;
-    } finally {
-      setSyncing(false);
-    }
+      const res = await fetch(`/api/calls/${id}/sync`, { method: 'POST' }); const data = await res.json();
+      if (data.call) setCall(prev => ({ ...prev, ...data.call }));
+      setAutoSynced(true); setLastSyncDebug(data.debug || (data.message ? [data.message] : null)); return data;
+    } catch (err) { setAutoSynced(true); setLastSyncDebug(['Sync failed: ' + err.message]); return null; }
+    finally { setSyncing(false); }
   }, [id]);
 
-  // On mount: fetch call, then auto-sync if call is done and missing data
   useEffect(() => {
     fetchCall().then(data => {
       if (!data) return;
       const isActive = data.status === 'ringing' || data.status === 'in_progress' || data.status === 'queued';
       const missingData = !data.transcript && !data.summary && !data.outcome;
-
       if (isActive) {
-        // Poll while call is active
-        pollRef.current = setInterval(async () => {
-          const res = await fetch(`/api/calls/${id}/sync`, { method: 'POST' });
-          const syncData = await res.json();
-          if (syncData.call) {
-            setCall(prev => ({ ...prev, ...syncData.call }));
-          }
-        }, 5000);
+        pollRef.current = setInterval(async () => { const res = await fetch(`/api/calls/${id}/sync`, { method: 'POST' }); const sd = await res.json(); if (sd.call) setCall(prev => ({ ...prev, ...sd.call })); }, 5000);
       } else if (missingData && !hasSyncedRef.current) {
-        // Call is done but missing data — auto-sync, then retry at 1, 3, 5 min if still missing
         hasSyncedRef.current = true;
-        syncFromTelnyx().then(syncData => {
-          const stillMissing = syncData && !syncData.call?.transcript && !syncData.call?.summary && !syncData.call?.recording_url;
-          if (stillMissing) {
-            [60000, 180000, 300000].forEach((delay, i) => {
-              setTimeout(() => syncFromTelnyx(), delay);
-            });
-          }
-        });
-      } else {
-        setAutoSynced(true);
-      }
+        syncFromTelnyx().then(sd => { const sm = sd && !sd.call?.transcript && !sd.call?.summary && !sd.call?.recording_url; if (sm) [60000, 180000, 300000].forEach(d => setTimeout(() => syncFromTelnyx(), d)); });
+      } else { setAutoSynced(true); }
     });
-
     const unsubscribe = subscribe((message) => {
       if (message.type === 'call_update' && message.call.id === id) {
         setCall(prev => {
           const updated = { ...prev, ...message.call };
-          // If call just completed, auto-sync after a short delay
           if (prev?.status !== 'completed' && updated.status === 'completed' && !hasSyncedRef.current) {
             hasSyncedRef.current = true;
-            const doRetries = () => syncFromTelnyx().then(d => {
-              const stillMissing = d && !d.call?.transcript && !d.call?.summary && !d.call?.recording_url;
-              if (stillMissing) [60000, 180000, 300000].forEach(delay => setTimeout(() => syncFromTelnyx(), delay));
-            });
+            const doRetries = () => syncFromTelnyx().then(d => { const sm = d && !d.call?.transcript && !d.call?.summary && !d.call?.recording_url; if (sm) [60000, 180000, 300000].forEach(delay => setTimeout(() => syncFromTelnyx(), delay)); });
             setTimeout(() => doRetries(), 3000);
           }
           return updated;
         });
       }
     });
-
-    return () => {
-      unsubscribe();
-      if (pollRef.current) clearInterval(pollRef.current);
-    };
+    return () => { unsubscribe(); if (pollRef.current) clearInterval(pollRef.current); };
   }, [id, subscribe, fetchCall, syncFromTelnyx]);
 
-  // Stop polling when call completes
   useEffect(() => {
-    if (call && (call.status === 'completed' || call.status === 'voicemail' || call.status === 'failed')) {
-      if (pollRef.current) {
-        clearInterval(pollRef.current);
-        pollRef.current = null;
-      }
-    }
+    if (call && (call.status === 'completed' || call.status === 'voicemail' || call.status === 'failed')) { if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null; } }
   }, [call?.status]);
 
   async function handleSetOutcome(outcome) {
     setSavingOutcome(true);
-    try {
-      const res = await fetch(`/api/calls/${id}/outcome`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ outcome })
-      });
-      if (res.ok) {
-        const data = await res.json();
-        setCall(prev => ({ ...prev, outcome, ...data }));
-        setShowOutcomeSelector(false);
-      }
-    } catch (err) {
-      console.error('Error setting outcome:', err);
-    } finally {
-      setSavingOutcome(false);
-    }
+    try { const res = await fetch(`/api/calls/${id}/outcome`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ outcome }) }); if (res.ok) { const data = await res.json(); setCall(prev => ({ ...prev, outcome, ...data })); setShowOutcomeSelector(false); } }
+    catch (err) { console.error('Error:', err); } finally { setSavingOutcome(false); }
   }
 
-  function formatDuration(seconds) {
-    if (!seconds) return 'N/A';
-    const mins = Math.floor(seconds / 60);
-    const secs = Math.round(seconds % 60);
-    if (mins === 0) return `${secs}s`;
-    return `${mins}m ${secs}s`;
-  }
-
-  function formatDateTime(dateString) {
-    if (!dateString) return 'N/A';
-    return new Date(dateString).toLocaleString('en-US', {
-      weekday: 'short', month: 'short', day: 'numeric', year: 'numeric',
-      hour: 'numeric', minute: '2-digit', hour12: true
-    });
-  }
+  function formatDuration(seconds) { if (!seconds) return 'N/A'; const m = Math.floor(seconds / 60); const s = Math.round(seconds % 60); return m === 0 ? `${s}s` : `${m}m ${s}s`; }
+  function formatDateTime(ds) { if (!ds) return 'N/A'; return new Date(ds).toLocaleString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true }); }
 
   function formatTranscript(transcript) {
     if (!transcript) return null;
     const lines = transcript.split('\n').filter(l => l.trim());
-    if (lines.length <= 1 && !transcript.includes(':')) {
-      return <p style={{ color: '#755f4e', whiteSpace: 'pre-wrap', lineHeight: '1.8' }}>{transcript}</p>;
-    }
+    if (lines.length <= 1 && !transcript.includes(':')) return <p style={{ color: '#4b5563', whiteSpace: 'pre-wrap', lineHeight: '1.8' }}>{transcript}</p>;
     return lines.map((line, i) => {
-      const colonIdx = line.indexOf(':');
-      if (colonIdx > 0 && colonIdx < 30) {
-        const speaker = line.substring(0, colonIdx).trim();
-        const text = line.substring(colonIdx + 1).trim();
+      const ci = line.indexOf(':');
+      if (ci > 0 && ci < 30) {
+        const speaker = line.substring(0, ci).trim();
+        const text = line.substring(ci + 1).trim();
         const isAI = speaker.toLowerCase().includes('ai') || speaker.toLowerCase().includes('assistant') || speaker.toLowerCase().includes('bot');
         return (
-          <div key={i} style={{ 
-            marginBottom: '12px', padding: '10px 14px', borderRadius: '12px',
-            backgroundColor: isAI ? '#f0f7ff' : '#f7f6f4',
-            borderLeft: `3px solid ${isAI ? '#2563eb' : '#deb040'}`
-          }}>
-            <span style={{ fontWeight: '600', fontSize: '12px', textTransform: 'uppercase', color: isAI ? '#2563eb' : '#deb040', letterSpacing: '0.5px' }}>
-              {speaker}
-            </span>
-            <p style={{ color: '#1e2a45', marginTop: '4px', lineHeight: '1.6' }}>{text}</p>
+          <div key={i} style={{ marginBottom: '8px', padding: '10px 12px', borderRadius: '10px', background: isAI ? '#eef2ff' : '#f9fafb', borderLeft: `3px solid ${isAI ? '#4f46e5' : '#d97706'}` }}>
+            <span style={{ fontWeight: '700', fontSize: '11px', textTransform: 'uppercase', color: isAI ? '#4f46e5' : '#d97706', letterSpacing: '0.05em' }}>{speaker}</span>
+            <p style={{ color: '#111827', marginTop: '4px', lineHeight: '1.6', fontSize: '14px' }}>{text}</p>
           </div>
         );
       }
-      return <p key={i} style={{ color: '#755f4e', marginBottom: '8px', lineHeight: '1.6' }}>{line}</p>;
+      return <p key={i} style={{ color: '#4b5563', marginBottom: '6px', lineHeight: '1.6', fontSize: '14px' }}>{line}</p>;
     });
   }
 
-  const statusColors = {
-    ringing: { bg: '#fef3c7', color: '#d97706', label: 'Ringing' },
-    queued: { bg: '#e0e7ff', color: '#4f46e5', label: 'Queued' },
-    in_progress: { bg: '#dbeafe', color: '#2563eb', label: 'In Progress' },
-    completed: { bg: '#d1fae5', color: '#059669', label: 'Completed' },
-    voicemail: { bg: '#fef3c7', color: '#d97706', label: 'Voicemail' },
-    failed: { bg: '#fee2e2', color: '#dc2626', label: 'Failed' },
-    no_answer: { bg: '#f3f4f6', color: '#6b7280', label: 'No Answer' },
-  };
-
-  if (loading) {
-    return (
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '256px' }}>
-        <div style={{ width: '32px', height: '32px', border: '4px solid #deb040', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 1s linear infinite' }}></div>
-      </div>
-    );
-  }
-
-  if (!call) return <div>Call not found</div>;
+  if (loading) return <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '256px' }}><div style={{ width: '36px', height: '36px', border: '3px solid #e5e7eb', borderTopColor: '#4f46e5', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} /></div>;
+  if (!call) return <div style={{ color: '#4b5563' }}>Call not found</div>;
 
   const outcomeInfo = call.outcome ? (outcomeConfig[call.outcome] || { ...defaultOutcome, label: call.outcome.replace(/_/g, ' ') }) : null;
-  const statusInfo = statusColors[call.status] || { bg: '#edeae5', color: '#99826a', label: call.status };
   const isActive = call.status === 'ringing' || call.status === 'in_progress' || call.status === 'queued';
   const hasCallData = call.recording_url || call.transcript || call.summary;
   const isLoadingData = syncing || (!autoSynced && !hasCallData && !isActive);
 
   return (
-    <div>
+    <div style={{ animation: 'fadeIn 0.3s ease-out' }}>
       {/* Header */}
-      <div style={{ marginBottom: '32px' }}>
-        <Link to="/calls" style={{ display: 'inline-flex', alignItems: 'center', fontSize: '14px', color: '#99826a', textDecoration: 'none', marginBottom: '16px' }}>
-          <ArrowLeft style={{ width: '16px', height: '16px', marginRight: '4px' }} /> Back to Calls
+      <div style={{ marginBottom: '24px' }}>
+        <Link to="/calls" style={{ display: 'inline-flex', alignItems: 'center', fontSize: '13px', color: '#4b5563', textDecoration: 'none', marginBottom: '14px', gap: '4px' }}>
+          <ArrowLeft style={{ width: '14px', height: '14px' }} /> Back to Calls
         </Link>
-        
-        <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '14px', flexWrap: 'wrap' }}>
           <div style={{
-            width: '64px', height: '64px', borderRadius: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center',
-            backgroundColor: statusInfo.bg
+            width: '52px', height: '52px', borderRadius: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center',
+            background: isActive ? '#fffbeb' : call.status === 'completed' ? '#ecfdf5' : '#fef2f2',
+            border: `1px solid ${isActive ? '#fde68a' : call.status === 'completed' ? '#a7f3d0' : '#fecaca'}`
           }}>
-            <Phone style={{ width: '32px', height: '32px', color: statusInfo.color }} />
+            <Phone style={{ width: '24px', height: '24px', color: isActive ? '#d97706' : call.status === 'completed' ? '#059669' : '#dc2626' }} />
           </div>
-          <div>
-            <h1 style={{ fontSize: '30px', fontFamily: 'Playfair Display, serif', fontWeight: '600', color: '#151c30' }}>
-              {call.first_name} {call.last_name}
-            </h1>
-            <p style={{ color: '#8c735e', marginTop: '4px' }}>{call.phone}</p>
+          <div style={{ flex: 1 }}>
+            <h1 style={{ fontSize: '26px', fontWeight: '800', color: '#111827', letterSpacing: '-0.03em' }}>{call.first_name} {call.last_name}</h1>
+            <p style={{ color: '#4b5563', marginTop: '2px', fontSize: '14px' }}>{call.phone}</p>
           </div>
-          
-          <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <span style={{
-              padding: '8px 16px', fontSize: '14px', fontWeight: '600', borderRadius: '10px',
-              backgroundColor: statusInfo.bg, color: statusInfo.color
-            }}>
-              {isActive && <span style={{ display: 'inline-block', width: '8px', height: '8px', borderRadius: '50%', backgroundColor: statusInfo.color, marginRight: '6px', animation: 'pulse 1.5s infinite' }} />}
-              {statusInfo.label}
-            </span>
-          </div>
+          <span className={`status-badge status-${call.status}`} style={{ fontSize: '13px', padding: '6px 14px' }}>
+            {isActive && <span style={{ display: 'inline-block', width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#d97706', marginRight: '6px', animation: 'pulse 1.5s infinite' }} />}
+            {call.status?.replace('_', ' ')}
+          </span>
         </div>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '24px' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '16px' }}>
         {/* Main Content */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-          
-          {/* Loading state while auto-syncing */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
           {isLoadingData && (
-            <div style={{ backgroundColor: 'white', borderRadius: '16px', padding: '48px', boxShadow: '0 4px 20px -2px rgba(30, 42, 69, 0.08)', textAlign: 'center' }}>
-              <Loader style={{ width: '40px', height: '40px', color: '#deb040', margin: '0 auto 16px', animation: 'spin 1.5s linear infinite' }} />
-              <h3 style={{ fontSize: '18px', fontFamily: 'Playfair Display, serif', color: '#151c30', marginBottom: '8px' }}>
-                Loading Call Data...
-              </h3>
-              <p style={{ color: '#99826a', fontSize: '14px' }}>
-                Fetching transcript, outcome, and recording from Telnyx
-              </p>
+            <div style={{ ...cardStyle, padding: '48px', textAlign: 'center' }}>
+              <Loader style={{ width: '32px', height: '32px', color: '#4f46e5', margin: '0 auto 14px', animation: 'spin 1.5s linear infinite' }} />
+              <h3 style={{ fontSize: '16px', fontWeight: '700', color: '#111827', marginBottom: '6px' }}>Loading Call Data...</h3>
+              <p style={{ color: '#4b5563', fontSize: '13px' }}>Fetching from Telnyx</p>
             </div>
           )}
 
-          {/* Call Outcome - show once we have data or finished syncing */}
           {!isLoadingData && (
-            <div style={{ backgroundColor: 'white', borderRadius: '16px', padding: '24px', boxShadow: '0 4px 20px -2px rgba(30, 42, 69, 0.08)' }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
-                <h2 style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '18px', fontFamily: 'Playfair Display, serif', fontWeight: '600', color: '#151c30' }}>
-                  <Activity style={{ width: '20px', height: '20px', color: '#deb040' }} />
-                  Call Outcome
+            <div style={cardStyle}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px' }}>
+                <h2 style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '15px', fontWeight: '700', color: '#111827' }}>
+                  <Activity style={{ width: '16px', height: '16px', color: '#4f46e5' }} /> Call Outcome
                 </h2>
                 {!showOutcomeSelector && (
-                  <button
-                    onClick={() => setShowOutcomeSelector(true)}
-                    style={{ fontSize: '13px', color: '#2563eb', background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline' }}
-                  >
-                    {call.outcome ? 'Change Outcome' : 'Set Outcome'}
-                  </button>
+                  <button onClick={() => setShowOutcomeSelector(true)} style={{ fontSize: '12px', color: '#4f46e5', background: 'none', border: 'none', cursor: 'pointer' }}>{call.outcome ? 'Change' : 'Set Outcome'}</button>
                 )}
               </div>
-              
               {outcomeInfo ? (
-                <div style={{ 
-                  padding: '20px', backgroundColor: outcomeInfo.bg, borderRadius: '12px', 
-                  border: `2px solid ${outcomeInfo.color}`, display: 'flex', alignItems: 'center', gap: '12px'
-                }}>
-                  <outcomeInfo.icon style={{ width: '28px', height: '28px', color: outcomeInfo.color }} />
+                <div style={{ padding: '16px', backgroundColor: outcomeInfo.bg, borderRadius: '10px', border: `1px solid ${outcomeInfo.border}`, display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <outcomeInfo.icon style={{ width: '22px', height: '22px', color: outcomeInfo.color }} />
                   <div>
-                    <p style={{ fontWeight: '600', color: outcomeInfo.color, fontSize: '18px' }}>
-                      {outcomeInfo.label}
-                    </p>
-                    {call.ended_at && (
-                      <p style={{ fontSize: '13px', color: outcomeInfo.color, opacity: 0.7, marginTop: '2px' }}>
-                        Ended: {formatDateTime(call.ended_at)}
-                      </p>
-                    )}
+                    <p style={{ fontWeight: '700', color: outcomeInfo.color, fontSize: '16px' }}>{outcomeInfo.label}</p>
+                    {call.ended_at && <p style={{ fontSize: '12px', color: outcomeInfo.color, opacity: 0.7, marginTop: '2px' }}>Ended: {formatDateTime(call.ended_at)}</p>}
                   </div>
                 </div>
               ) : (
-                <div style={{ padding: '20px', backgroundColor: '#f7f6f4', borderRadius: '12px', border: '2px dashed #d1cdc7' }}>
-                  <p style={{ color: '#99826a', textAlign: 'center' }}>
-                    {isActive ? 'Call is in progress...' : 'No outcome recorded. Set one manually below.'}
-                  </p>
+                <div style={{ padding: '16px', background: '#f9fafb', borderRadius: '10px', border: '1px dashed #e5e7eb' }}>
+                  <p style={{ color: '#4b5563', textAlign: 'center', fontSize: '14px' }}>{isActive ? 'Call in progress...' : 'No outcome recorded.'}</p>
                 </div>
               )}
-
               {showOutcomeSelector && (
-                <div style={{ marginTop: '16px', padding: '16px', backgroundColor: '#f7f6f4', borderRadius: '12px' }}>
-                  <p style={{ fontSize: '14px', fontWeight: '500', color: '#1e2a45', marginBottom: '12px' }}>Select Outcome:</p>
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '8px' }}>
+                <div style={{ marginTop: '12px', padding: '14px', background: '#f9fafb', borderRadius: '10px', border: '1px solid #e5e7eb' }}>
+                  <p style={{ fontSize: '13px', fontWeight: '600', color: '#111827', marginBottom: '10px' }}>Select Outcome:</p>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '6px' }}>
                     {Object.entries(outcomeConfig).map(([key, cfg]) => (
-                      <button
-                        key={key}
-                        onClick={() => handleSetOutcome(key)}
-                        disabled={savingOutcome}
-                        style={{
-                          display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 14px',
-                          backgroundColor: call.outcome === key ? cfg.bg : 'white',
-                          border: `1px solid ${call.outcome === key ? cfg.color : '#e5e2dd'}`,
-                          borderRadius: '10px', cursor: 'pointer', textAlign: 'left', transition: 'all 0.15s'
-                        }}
-                      >
-                        <cfg.icon style={{ width: '16px', height: '16px', color: cfg.color, flexShrink: 0 }} />
-                        <span style={{ fontSize: '13px', fontWeight: '500', color: cfg.color }}>{cfg.label}</span>
+                      <button key={key} onClick={() => handleSetOutcome(key)} disabled={savingOutcome}
+                        style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 10px', backgroundColor: call.outcome === key ? cfg.bg : '#ffffff', border: `1px solid ${call.outcome === key ? cfg.border : '#e5e7eb'}`, borderRadius: '8px', cursor: 'pointer', textAlign: 'left', transition: 'all 0.15s' }}>
+                        <cfg.icon style={{ width: '14px', height: '14px', color: cfg.color, flexShrink: 0 }} />
+                        <span style={{ fontSize: '12px', fontWeight: '600', color: cfg.color }}>{cfg.label}</span>
                       </button>
                     ))}
                   </div>
-                  <button
-                    onClick={() => setShowOutcomeSelector(false)}
-                    style={{ marginTop: '10px', fontSize: '13px', color: '#99826a', background: 'none', border: 'none', cursor: 'pointer' }}
-                  >
-                    Cancel
-                  </button>
+                  <button onClick={() => setShowOutcomeSelector(false)} style={{ marginTop: '8px', fontSize: '12px', color: '#4b5563', background: 'none', border: 'none', cursor: 'pointer' }}>Cancel</button>
                 </div>
               )}
             </div>
           )}
 
-          {/* Recording Player */}
           {call.recording_url && (
-            <div style={{ backgroundColor: 'white', borderRadius: '16px', padding: '24px', boxShadow: '0 4px 20px -2px rgba(30, 42, 69, 0.08)' }}>
-              <h2 style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '18px', fontFamily: 'Playfair Display, serif', fontWeight: '600', color: '#151c30', marginBottom: '16px' }}>
-                <Volume2 style={{ width: '20px', height: '20px', color: '#deb040' }} />
-                Call Recording
+            <div style={cardStyle}>
+              <h2 style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '15px', fontWeight: '700', color: '#111827', marginBottom: '14px' }}>
+                <Volume2 style={{ width: '16px', height: '16px', color: '#4f46e5' }} /> Recording
               </h2>
-              <div style={{ background: 'linear-gradient(to right, #edeae5, #f7f6f4)', borderRadius: '12px', padding: '16px' }}>
-                <audio controls style={{ width: '100%' }} src={call.recording_url}>
-                  Your browser does not support the audio element.
-                </audio>
+              <div style={{ background: '#f9fafb', borderRadius: '10px', padding: '14px', border: '1px solid #e5e7eb' }}>
+                <audio controls style={{ width: '100%' }} src={call.recording_url}>Your browser does not support audio.</audio>
               </div>
             </div>
           )}
 
-          {/* AI Summary */}
           {call.summary && (
-            <div style={{ backgroundColor: 'white', borderRadius: '16px', padding: '24px', boxShadow: '0 4px 20px -2px rgba(30, 42, 69, 0.08)' }}>
-              <h2 style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '18px', fontFamily: 'Playfair Display, serif', fontWeight: '600', color: '#151c30', marginBottom: '16px' }}>
-                <FileText style={{ width: '20px', height: '20px', color: '#deb040' }} />
-                AI Summary
+            <div style={cardStyle}>
+              <h2 style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '15px', fontWeight: '700', color: '#111827', marginBottom: '14px' }}>
+                <FileText style={{ width: '16px', height: '16px', color: '#d97706' }} /> AI Summary
               </h2>
-              <div style={{ backgroundColor: '#fbf7e8', border: '1px solid #f6ecc5', borderRadius: '12px', padding: '16px' }}>
-                <p style={{ color: '#755f4e', whiteSpace: 'pre-wrap', lineHeight: '1.6' }}>{call.summary}</p>
+              <div style={{ background: '#fffbeb', border: '1px solid #fde68a', borderRadius: '10px', padding: '14px' }}>
+                <p style={{ color: '#111827', whiteSpace: 'pre-wrap', lineHeight: '1.6', fontSize: '14px' }}>{call.summary}</p>
               </div>
             </div>
           )}
 
-          {/* Transcript */}
           {call.transcript && (
-            <div style={{ backgroundColor: 'white', borderRadius: '16px', padding: '24px', boxShadow: '0 4px 20px -2px rgba(30, 42, 69, 0.08)' }}>
-              <h2 style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '18px', fontFamily: 'Playfair Display, serif', fontWeight: '600', color: '#151c30', marginBottom: '16px' }}>
-                <MessageSquare style={{ width: '20px', height: '20px', color: '#deb040' }} />
-                Call Transcript
+            <div style={cardStyle}>
+              <h2 style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '15px', fontWeight: '700', color: '#111827', marginBottom: '14px' }}>
+                <MessageSquare style={{ width: '16px', height: '16px', color: '#7c3aed' }} /> Transcript
               </h2>
-              <div style={{ backgroundColor: '#f7f6f4', borderRadius: '12px', padding: '16px', maxHeight: '500px', overflowY: 'auto' }}>
+              <div style={{ background: '#f9fafb', borderRadius: '10px', padding: '14px', maxHeight: '500px', overflowY: 'auto', border: '1px solid #e5e7eb' }}>
                 {formatTranscript(call.transcript)}
               </div>
             </div>
           )}
 
-          {/* No data found after auto-sync — show retry button */}
           {!isLoadingData && !hasCallData && !isActive && (
-            <div style={{ backgroundColor: 'white', borderRadius: '16px', padding: '40px', boxShadow: '0 4px 20px -2px rgba(30, 42, 69, 0.08)', textAlign: 'center' }}>
-              <PhoneOff style={{ width: '48px', height: '48px', color: '#d1cdc7', margin: '0 auto 16px' }} />
-              <h3 style={{ fontSize: '18px', fontFamily: 'Playfair Display, serif', color: '#151c30', marginBottom: '8px' }}>
-                No Call Data Available
-              </h3>
-              <p style={{ color: '#99826a', maxWidth: '420px', margin: '0 auto 12px', lineHeight: '1.5' }}>
-                No transcript, recording, or summary was found for this call.
-              </p>
-              <p style={{ color: '#ab9a82', maxWidth: '420px', margin: '0 auto 20px', lineHeight: '1.5', fontSize: '13px' }}>
-                Call data usually arrives via Telnyx webhooks. If you are running locally, webhooks may not reach your server—use a tunnel (e.g. ngrok) with your webhook URL in the Telnyx dashboard. You can also try Sync from Telnyx or set the outcome manually above.
-              </p>
-              {lastSyncDebug && lastSyncDebug.length > 0 && (
-                <div style={{ maxWidth: '420px', margin: '0 auto 20px', padding: '12px 16px', backgroundColor: '#f7f6f4', borderRadius: '10px', textAlign: 'left', fontSize: '13px', color: '#6b5b4a' }}>
-                  <strong style={{ display: 'block', marginBottom: '6px' }}>Last sync:</strong>
-                  {lastSyncDebug.map((msg, i) => (
-                    <div key={i} style={{ marginBottom: i < lastSyncDebug.length - 1 ? '4px' : 0 }}>{msg}</div>
-                  ))}
+            <div style={{ ...cardStyle, padding: '40px', textAlign: 'center' }}>
+              <PhoneOff style={{ width: '40px', height: '40px', color: '#9ca3af', margin: '0 auto 14px' }} />
+              <h3 style={{ fontSize: '16px', fontWeight: '700', color: '#111827', marginBottom: '6px' }}>No Call Data</h3>
+              <p style={{ color: '#4b5563', maxWidth: '400px', margin: '0 auto 10px', lineHeight: '1.5', fontSize: '13px' }}>No transcript, recording, or summary found. Set up webhooks (ngrok) for local dev.</p>
+              {lastSyncDebug?.length > 0 && (
+                <div style={{ maxWidth: '400px', margin: '0 auto 14px', padding: '10px 12px', background: '#f9fafb', borderRadius: '8px', textAlign: 'left', fontSize: '12px', color: '#4b5563', border: '1px solid #e5e7eb' }}>
+                  <strong style={{ display: 'block', marginBottom: '4px', color: '#9ca3af' }}>Last sync:</strong>
+                  {lastSyncDebug.map((msg, i) => <div key={i} style={{ marginBottom: i < lastSyncDebug.length - 1 ? '3px' : 0 }}>{msg}</div>)}
                 </div>
               )}
-              <button
-                onClick={syncFromTelnyx}
-                disabled={syncing}
-                style={{
-                  display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '10px 20px',
-                  backgroundColor: '#1e2a45', color: 'white', border: 'none', borderRadius: '10px',
-                  cursor: syncing ? 'default' : 'pointer', fontSize: '14px', fontWeight: '500',
-                  opacity: syncing ? 0.7 : 1
-                }}
-              >
-                <RefreshCw style={{ width: '16px', height: '16px', animation: syncing ? 'spin 1s linear infinite' : 'none' }} />
+              <button onClick={syncFromTelnyx} disabled={syncing}
+                style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '10px 18px', background: '#4f46e5', color: 'white', border: 'none', borderRadius: '10px', cursor: syncing ? 'default' : 'pointer', fontSize: '13px', fontWeight: '600', opacity: syncing ? 0.7 : 1, boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
+                <RefreshCw style={{ width: '14px', height: '14px', animation: syncing ? 'spin 1s linear infinite' : 'none' }} />
                 {syncing ? 'Syncing...' : 'Sync from Telnyx'}
               </button>
             </div>
@@ -448,108 +253,55 @@ export default function CallDetail() {
         </div>
 
         {/* Sidebar */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-          {/* Contact Info */}
-          <div style={{ backgroundColor: 'white', borderRadius: '16px', padding: '24px', boxShadow: '0 4px 20px -2px rgba(30, 42, 69, 0.08)' }}>
-            <h2 style={{ fontSize: '18px', fontFamily: 'Playfair Display, serif', fontWeight: '600', color: '#151c30', marginBottom: '16px' }}>
-              Contact Details
-            </h2>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-              <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
-                <User style={{ width: '20px', height: '20px', color: '#ab9a82', marginTop: '2px' }} />
-                <div>
-                  <p style={{ fontSize: '14px', color: '#99826a' }}>Name</p>
-                  <p style={{ fontWeight: '500', color: '#1e2a45' }}>{call.first_name} {call.last_name}</p>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          <div style={cardStyle}>
+            <h2 style={{ fontSize: '15px', fontWeight: '700', color: '#111827', marginBottom: '14px' }}>Contact</h2>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              {[
+                { icon: User, label: 'Name', value: `${call.first_name} ${call.last_name}` },
+                { icon: Phone, label: 'Phone', value: call.phone },
+                ...(call.email ? [{ icon: Mail, label: 'Email', value: call.email }] : [])
+              ].map(({ icon: Icon, label, value }) => (
+                <div key={label} style={{ display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
+                  <Icon style={{ width: '16px', height: '16px', color: '#9ca3af', marginTop: '2px' }} />
+                  <div><p style={{ fontSize: '11px', color: '#9ca3af' }}>{label}</p><p style={{ fontWeight: '600', color: '#111827', fontSize: '14px' }}>{value}</p></div>
                 </div>
-              </div>
-              
-              <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
-                <Phone style={{ width: '20px', height: '20px', color: '#ab9a82', marginTop: '2px' }} />
-                <div>
-                  <p style={{ fontSize: '14px', color: '#99826a' }}>Phone</p>
-                  <p style={{ fontWeight: '500', color: '#1e2a45' }}>{call.phone}</p>
-                </div>
-              </div>
-              
-              {call.email && (
-                <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
-                  <Mail style={{ width: '20px', height: '20px', color: '#ab9a82', marginTop: '2px' }} />
-                  <div>
-                    <p style={{ fontSize: '14px', color: '#99826a' }}>Email</p>
-                    <p style={{ fontWeight: '500', color: '#1e2a45' }}>{call.email}</p>
-                  </div>
-                </div>
-              )}
+              ))}
             </div>
           </div>
 
-          {/* Call Info */}
-          <div style={{ backgroundColor: 'white', borderRadius: '16px', padding: '24px', boxShadow: '0 4px 20px -2px rgba(30, 42, 69, 0.08)' }}>
-            <h2 style={{ fontSize: '18px', fontFamily: 'Playfair Display, serif', fontWeight: '600', color: '#151c30', marginBottom: '16px' }}>
-              Call Information
-            </h2>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-              <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
-                <Calendar style={{ width: '20px', height: '20px', color: '#ab9a82', marginTop: '2px' }} />
-                <div>
-                  <p style={{ fontSize: '14px', color: '#99826a' }}>Started</p>
-                  <p style={{ fontWeight: '500', color: '#1e2a45' }}>{formatDateTime(call.started_at || call.created_at)}</p>
+          <div style={cardStyle}>
+            <h2 style={{ fontSize: '15px', fontWeight: '700', color: '#111827', marginBottom: '14px' }}>Call Info</h2>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              {[
+                { icon: Calendar, label: 'Started', value: formatDateTime(call.started_at || call.created_at) },
+                { icon: Clock, label: 'Duration', value: formatDuration(call.duration_seconds) },
+                ...(call.ended_at ? [{ icon: PhoneOff, label: 'Ended', value: formatDateTime(call.ended_at) }] : []),
+                ...(call.telnyx_call_id ? [{ icon: Activity, label: 'Telnyx ID', value: call.telnyx_call_id, mono: true }] : [])
+              ].map(({ icon: Icon, label, value, mono }) => (
+                <div key={label} style={{ display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
+                  <Icon style={{ width: '16px', height: '16px', color: '#9ca3af', marginTop: '2px' }} />
+                  <div><p style={{ fontSize: '11px', color: '#9ca3af' }}>{label}</p><p style={{ fontWeight: '600', color: '#111827', fontSize: mono ? '11px' : '14px', wordBreak: mono ? 'break-all' : 'normal', fontFamily: mono ? 'monospace' : 'inherit' }}>{value}</p></div>
                 </div>
-              </div>
-              
-              <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
-                <Clock style={{ width: '20px', height: '20px', color: '#ab9a82', marginTop: '2px' }} />
-                <div>
-                  <p style={{ fontSize: '14px', color: '#99826a' }}>Duration</p>
-                  <p style={{ fontWeight: '500', color: '#1e2a45' }}>{formatDuration(call.duration_seconds)}</p>
-                </div>
-              </div>
-
-              {call.ended_at && (
-                <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
-                  <PhoneOff style={{ width: '20px', height: '20px', color: '#ab9a82', marginTop: '2px' }} />
-                  <div>
-                    <p style={{ fontSize: '14px', color: '#99826a' }}>Ended</p>
-                    <p style={{ fontWeight: '500', color: '#1e2a45' }}>{formatDateTime(call.ended_at)}</p>
-                  </div>
-                </div>
-              )}
-
-              {call.telnyx_call_id && (
-                <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
-                  <Activity style={{ width: '20px', height: '20px', color: '#ab9a82', marginTop: '2px' }} />
-                  <div>
-                    <p style={{ fontSize: '14px', color: '#99826a' }}>Telnyx Call ID</p>
-                    <p style={{ fontWeight: '500', color: '#1e2a45', fontSize: '12px', wordBreak: 'break-all' }}>{call.telnyx_call_id}</p>
-                  </div>
-                </div>
-              )}
+              ))}
             </div>
           </div>
 
-          {/* Campaign Info */}
-          <div style={{ background: 'linear-gradient(to bottom right, #1e2a45, #151c30)', borderRadius: '16px', padding: '24px', color: 'white' }}>
-            <h2 style={{ fontSize: '18px', fontFamily: 'Playfair Display, serif', fontWeight: '600', marginBottom: '16px' }}>
-              Campaign
-            </h2>
-            <p style={{ fontWeight: '500', fontSize: '18px' }}>{call.campaign_name}</p>
-            <p style={{ color: '#a3b4d5', marginTop: '4px', textTransform: 'capitalize' }}>{call.campaign_type?.replace(/_/g, ' ')}</p>
-            <Link 
-              to={`/campaigns/${call.campaign_id}`}
-              style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', marginTop: '16px', color: '#e7c663', fontSize: '14px', fontWeight: '500', textDecoration: 'none' }}
-            >
-              View Campaign <ArrowLeft style={{ width: '16px', height: '16px', transform: 'rotate(180deg)' }} />
+          <div style={{
+            background: '#eef2ff',
+            borderRadius: '12px', padding: '22px',
+            border: '1px solid #c7d2fe',
+            boxShadow: '0 1px 3px rgba(0,0,0,0.03)'
+          }}>
+            <h2 style={{ fontSize: '15px', fontWeight: '700', color: '#111827', marginBottom: '10px' }}>Campaign</h2>
+            <p style={{ fontWeight: '700', fontSize: '16px', color: '#111827' }}>{call.campaign_name}</p>
+            <p style={{ color: '#4b5563', marginTop: '3px', textTransform: 'capitalize', fontSize: '13px' }}>{call.campaign_type?.replace(/_/g, ' ')}</p>
+            <Link to={`/campaigns/${call.campaign_id}`} style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', marginTop: '14px', color: '#4f46e5', fontSize: '13px', fontWeight: '600', textDecoration: 'none' }}>
+              View Campaign <ArrowLeft style={{ width: '14px', height: '14px', transform: 'rotate(180deg)' }} />
             </Link>
           </div>
         </div>
       </div>
-
-      <style>{`
-        @keyframes pulse {
-          0%, 100% { opacity: 1; }
-          50% { opacity: 0.4; }
-        }
-      `}</style>
     </div>
   );
 }

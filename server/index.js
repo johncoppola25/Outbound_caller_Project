@@ -17,6 +17,7 @@ import callsRouter from './routes/calls.js';
 import statsRouter from './routes/stats.js';
 import webhooksRouter from './routes/webhooks.js';
 import dncRouter from './routes/dnc.js';
+import authRouter from './routes/auth.js';
 import { initDatabase } from './db/init.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -63,6 +64,7 @@ export const broadcast = (data) => {
 };
 
 // API Routes
+app.use('/api/auth', authRouter);
 app.use('/api/campaigns', campaignsRouter);
 app.use('/api/contacts', contactsRouter);
 app.use('/api/calls', callsRouter);

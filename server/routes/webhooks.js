@@ -2,6 +2,7 @@ import express from 'express';
 import { getDb } from '../db/init.js';
 import { broadcast } from '../index.js';
 import { startAIConversation } from '../services/telnyx.js';
+import { calculateLeadScore } from '../services/leadScoring.js';
 
 const router = express.Router();
 
@@ -89,18 +90,72 @@ router.post('/telnyx', async (req, res) => {
       case 'call.hangup':
         const duration = payload.duration_seconds || 0;
         db.prepare(`
-          UPDATE calls 
+          UPDATE calls
           SET status = 'completed', duration_seconds = ?, ended_at = datetime('now')
           WHERE id = ?
         `).run(duration, callId);
-        
+
+        // Estimate cost: ~$0.02/min for Telnyx outbound calls
+        const durationMins = Math.ceil(duration / 60);
+        const estimatedCost = durationMins * 0.02;
+        db.prepare('UPDATE calls SET estimated_cost = ? WHERE id = ?').run(estimatedCost, callId);
+
         // Update contact status
-        const callRecord = db.prepare('SELECT contact_id FROM calls WHERE id = ?').get(callId);
+        const callRecord = db.prepare('SELECT * FROM calls WHERE id = ?').get(callId);
         if (callRecord) {
+          const contactId = callRecord.contact_id;
+          const campaignId = callRecord.campaign_id;
+
           db.prepare(`
             UPDATE contacts SET status = 'called'
             WHERE id = ?
-          `).run(callRecord.contact_id);
+          `).run(contactId);
+
+          // Determine outcome for retry logic
+          const outcome = callRecord.outcome;
+
+          // Handle retries for no-answer/voicemail
+          if (['voicemail', 'no_answer'].includes(outcome)) {
+            const hangupCampaign = db.prepare('SELECT * FROM campaigns WHERE id = ?').get(campaignId);
+            const hangupContact = db.prepare('SELECT * FROM contacts WHERE id = ?').get(contactId);
+            if (hangupCampaign && hangupContact) {
+              const attempts = (hangupContact.call_attempts || 0) + 1;
+              const maxRetries = hangupCampaign.max_retries || 1;
+              if (attempts < maxRetries) {
+                const retryHours = hangupCampaign.retry_delay_hours || 48;
+                const nextRetry = new Date(Date.now() + retryHours * 3600 * 1000).toISOString();
+                db.prepare('UPDATE contacts SET call_attempts = ?, next_retry_at = ?, status = ? WHERE id = ?')
+                  .run(attempts, nextRetry, 'pending', contactId);
+              }
+              db.prepare('UPDATE contacts SET call_attempts = ?, last_called_at = ? WHERE id = ?')
+                .run(attempts, new Date().toISOString(), contactId);
+            }
+          }
+
+          // Recalculate lead score after call hangup
+          try {
+            const hangupContactForScore = db.prepare('SELECT * FROM contacts WHERE id = ?').get(contactId);
+            const contactCallsForScore = db.prepare('SELECT * FROM calls WHERE contact_id = ? ORDER BY created_at DESC').all(contactId);
+            const newScore = calculateLeadScore(hangupContactForScore, contactCallsForScore);
+            db.prepare('UPDATE contacts SET lead_score = ? WHERE id = ?').run(newScore, contactId);
+          } catch (scoreErr) {
+            console.error('Lead score update error:', scoreErr.message);
+          }
+
+          // Send SMS follow-up if enabled
+          try {
+            const smsCampaign = db.prepare('SELECT * FROM campaigns WHERE id = ?').get(campaignId);
+            const smsContact = db.prepare('SELECT * FROM contacts WHERE id = ?').get(contactId);
+            if (smsCampaign && smsCampaign.sms_follow_up && smsCampaign.sms_template && smsContact) {
+              const { sendSMS, personalizeTemplate } = await import('../services/sms.js');
+              const message = personalizeTemplate(smsCampaign.sms_template, smsContact, smsCampaign);
+              if (message) {
+                await sendSMS(smsCampaign.caller_id, smsContact.phone, message);
+              }
+            }
+          } catch (smsErr) {
+            console.error('SMS follow-up error:', smsErr.message);
+          }
         }
         break;
         
@@ -175,13 +230,28 @@ router.post('/telnyx', async (req, res) => {
             UPDATE calls SET outcome = 'callback_requested', summary = ?, callback_preferred_at = ?
             WHERE id = ?
           `).run(JSON.stringify(functionArgs), cbTime, callId);
-          
+
           const cbCall = db.prepare('SELECT contact_id FROM calls WHERE id = ?').get(callId);
           if (cbCall) {
             db.prepare(`
               UPDATE contacts SET status = 'callback'
               WHERE id = ?
             `).run(cbCall.contact_id);
+          }
+        }
+
+        // Recalculate lead score after function call outcome
+        {
+          const fnCallRecord = db.prepare('SELECT contact_id FROM calls WHERE id = ?').get(callId);
+          if (fnCallRecord?.contact_id) {
+            try {
+              const fnContact = db.prepare('SELECT * FROM contacts WHERE id = ?').get(fnCallRecord.contact_id);
+              const fnContactCalls = db.prepare('SELECT * FROM calls WHERE contact_id = ? ORDER BY created_at DESC').all(fnCallRecord.contact_id);
+              const fnScore = calculateLeadScore(fnContact, fnContactCalls);
+              db.prepare('UPDATE contacts SET lead_score = ? WHERE id = ?').run(fnScore, fnCallRecord.contact_id);
+            } catch (scoreErr) {
+              console.error('Lead score update error:', scoreErr.message);
+            }
           }
         }
         break;

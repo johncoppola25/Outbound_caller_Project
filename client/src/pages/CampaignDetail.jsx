@@ -96,7 +96,7 @@ function PreviewPromptWithHighlights({ prompt, contact, botName, campaign }) {
     <>
       {parts.map((part, i) => 
         part.type === 'highlight' ? (
-          <span key={i} style={{ backgroundColor: '#d1fae5', color: '#065f46', padding: '2px 4px', borderRadius: '4px', fontWeight: '600' }}>
+          <span key={i} style={{ backgroundColor: '#ecfdf5', color: '#059669', padding: '2px 4px', borderRadius: '4px', fontWeight: '600' }}>
             {part.content}
           </span>
         ) : (
@@ -745,7 +745,7 @@ export default function CampaignDetail() {
   if (loading) {
     return (
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '256px' }}>
-        <div style={{ width: '32px', height: '32px', border: '4px solid #deb040', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 1s linear infinite' }}></div>
+        <div style={{ width: '32px', height: '32px', border: '4px solid #e5e7eb', borderTopColor: '#4f46e5', borderRadius: '50%', animation: 'spin 1s linear infinite' }}></div>
       </div>
     );
   }
@@ -753,9 +753,9 @@ export default function CampaignDetail() {
   if (!campaign || campaign.error) {
     return (
       <div style={{ padding: '48px', textAlign: 'center' }}>
-        <h2 style={{ fontSize: '24px', fontFamily: 'Playfair Display, serif', color: '#151c30', marginBottom: '12px' }}>Campaign not found</h2>
-        <p style={{ color: '#99826a', marginBottom: '24px' }}>The campaign may have been deleted or the server may be unreachable.</p>
-        <Link to="/campaigns" style={{ display: 'inline-flex', alignItems: 'center', padding: '12px 24px', backgroundColor: '#1e2a45', color: 'white', borderRadius: '8px', textDecoration: 'none', fontWeight: '500' }}>
+        <h2 style={{ fontSize: '24px', fontFamily: 'Inter, sans-serif', color: '#111827', marginBottom: '12px' }}>Campaign not found</h2>
+        <p style={{ color: '#6b7280', marginBottom: '24px' }}>The campaign may have been deleted or the server may be unreachable.</p>
+        <Link to="/campaigns" style={{ display: 'inline-flex', alignItems: 'center', padding: '12px 24px', backgroundColor: '#eef2ff', color: 'white', borderRadius: '8px', textDecoration: 'none', fontWeight: '500' }}>
           <ArrowLeft style={{ width: '18px', height: '18px', marginRight: '8px' }} /> Back to Campaigns
         </Link>
       </div>
@@ -768,7 +768,7 @@ export default function CampaignDetail() {
     <div>
       {/* Header */}
       <div style={{ marginBottom: '32px' }}>
-        <Link to="/campaigns" style={{ display: 'inline-flex', alignItems: 'center', fontSize: '14px', color: '#99826a', textDecoration: 'none', marginBottom: '16px' }}>
+        <Link to="/campaigns" style={{ display: 'inline-flex', alignItems: 'center', fontSize: '14px', color: '#6b7280', textDecoration: 'none', marginBottom: '16px' }}>
           <ArrowLeft style={{ width: '16px', height: '16px', marginRight: '4px' }} /> Back to Campaigns
         </Link>
         
@@ -782,12 +782,12 @@ export default function CampaignDetail() {
           <div style={{ flex: 1 }}>
             <h1 style={{ 
               fontSize: isMobile ? '24px' : '30px', 
-              fontFamily: 'Playfair Display, serif', 
+              fontFamily: 'Inter, sans-serif', 
               fontWeight: '600', 
-              color: '#151c30',
+              color: '#111827',
               wordBreak: 'break-word'
             }}>{campaign.name}</h1>
-            <p style={{ color: '#8c735e', marginTop: '4px' }}>{campaign.description || `${campaign.type?.replace('_', ' ')} campaign`}</p>
+            <p style={{ color: '#6b7280', marginTop: '4px' }}>{campaign.description || `${campaign.type?.replace('_', ' ')} campaign`}</p>
             {campaign.telnyx_assistant_id && (
               <p style={{ fontSize: '12px', color: '#059669', marginTop: '4px', wordBreak: 'break-all' }}>✓ Telnyx Assistant: {campaign.telnyx_assistant_id}</p>
             )}
@@ -807,11 +807,11 @@ export default function CampaignDetail() {
                 alignItems: 'center', 
                 justifyContent: 'center',
                 padding: isMobile ? '14px 20px' : '12px 20px', 
-                backgroundColor: 'white', 
-                color: '#1e2a45', 
+                background: '#ffffff', 
+                color: '#4b5563', 
                 fontWeight: '500', 
                 borderRadius: '8px', 
-                border: '1px solid #dbd5ca', 
+                border: '1px solid #e5e7eb', 
                 cursor: 'pointer',
                 width: isMobile ? '100%' : 'auto',
                 minHeight: '44px'
@@ -827,7 +827,7 @@ export default function CampaignDetail() {
                 alignItems: 'center', 
                 justifyContent: 'center',
                 padding: isMobile ? '14px 20px' : '12px 20px', 
-                backgroundColor: 'white', 
+                background: '#ffffff', 
                 color: '#dc2626', 
                 fontWeight: '500', 
                 borderRadius: '8px', 
@@ -896,8 +896,8 @@ export default function CampaignDetail() {
                   alignItems: 'center', 
                   justifyContent: 'center',
                   padding: window.innerWidth < 768 ? '14px 24px' : '12px 24px', 
-                  background: pendingContacts === 0 ? '#dbd5ca' : 'linear-gradient(to right, #deb040, #c8932f)', 
-                  color: '#151c30', 
+                  background: pendingContacts === 0 ? '#e5e7eb' : '#4f46e5', 
+                  color: '#111827', 
                   fontWeight: '600', 
                   borderRadius: '8px', 
                   border: 'none', 
@@ -921,19 +921,19 @@ export default function CampaignDetail() {
         marginBottom: '32px' 
       }}>
         {[
-          { label: 'Contacts', value: stats?.basic?.total_contacts || 0, icon: Users, bg: '#e9ecf5', color: '#1e2a45' },
-          { label: 'Total Calls', value: stats?.basic?.total_calls || 0, icon: Phone, bg: '#fbf7e8', color: '#deb040' },
-          { label: 'Completed', value: stats?.basic?.completed_calls || 0, icon: CheckCircle2, bg: '#d1fae5', color: '#059669' },
-          { label: 'Conversion', value: `${(stats?.conversionRate || 0).toFixed(1)}%`, icon: TrendingUp, bg: '#ede9fe', color: '#7c3aed' }
+          { label: 'Contacts', value: stats?.basic?.total_contacts || 0, icon: Users, bg: '#eef2ff', color: '#4f46e5' },
+          { label: 'Total Calls', value: stats?.basic?.total_calls || 0, icon: Phone, bg: '#eef2ff', color: '#7c3aed' },
+          { label: 'Completed', value: stats?.basic?.completed_calls || 0, icon: CheckCircle2, bg: '#ecfdf5', color: '#059669' },
+          { label: 'Conversion', value: `${(stats?.conversionRate || 0).toFixed(1)}%`, icon: TrendingUp, bg: '#eef2ff', color: '#7c3aed' }
         ].map((stat) => (
-          <div key={stat.label} style={{ backgroundColor: 'white', borderRadius: '12px', padding: '16px', boxShadow: '0 4px 20px -2px rgba(30, 42, 69, 0.08)' }}>
+          <div key={stat.label} style={{ background: '#ffffff', borderRadius: '12px', padding: '16px', boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
               <div style={{ width: '40px', height: '40px', backgroundColor: stat.bg, borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 <stat.icon style={{ width: '20px', height: '20px', color: stat.color }} />
               </div>
               <div>
-                <p style={{ fontSize: '24px', fontWeight: '600', color: '#1e2a45' }}>{stat.value}</p>
-                <p style={{ fontSize: '12px', color: '#99826a' }}>{stat.label}</p>
+                <p style={{ fontSize: '24px', fontWeight: '600', color: '#4b5563' }}>{stat.value}</p>
+                <p style={{ fontSize: '12px', color: '#6b7280' }}>{stat.label}</p>
               </div>
             </div>
           </div>
@@ -941,8 +941,8 @@ export default function CampaignDetail() {
       </div>
 
       {/* Tabs */}
-      <div style={{ backgroundColor: 'white', borderRadius: '16px', boxShadow: '0 4px 20px -2px rgba(30, 42, 69, 0.08)', overflow: 'hidden' }}>
-        <div style={{ borderBottom: '1px solid #edeae5', display: 'flex' }}>
+      <div style={{ background: '#ffffff', borderRadius: '16px', boxShadow: '0 1px 3px rgba(0,0,0,0.04)', overflow: 'hidden' }}>
+        <div style={{ borderBottom: '1px solid #f3f4f6', display: 'flex' }}>
           {['contacts', 'calls', 'prompt', 'voice'].map((tab) => (
             <button
               key={tab}
@@ -954,8 +954,8 @@ export default function CampaignDetail() {
                 textTransform: 'capitalize',
                 background: 'transparent',
                 border: 'none',
-                borderBottom: activeTab === tab ? '2px solid #deb040' : '2px solid transparent',
-                color: activeTab === tab ? '#deb040' : '#99826a',
+                borderBottom: activeTab === tab ? '2px solid #4f46e5' : '2px solid transparent',
+                color: activeTab === tab ? '#4f46e5' : '#6b7280',
                 cursor: 'pointer'
               }}
             >
@@ -969,11 +969,11 @@ export default function CampaignDetail() {
           {activeTab === 'contacts' && (
             <div>
               {/* Upload & Add Section */}
-              <div style={{ marginBottom: '24px', padding: '16px', backgroundColor: '#f7f6f4', borderRadius: '12px', border: '1px solid #edeae5' }}>
+              <div style={{ marginBottom: '24px', padding: '16px', backgroundColor: '#f9fafb', borderRadius: '12px', border: '1px solid #f3f4f6' }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                   <div>
-                    <h3 style={{ fontWeight: '500', color: '#1e2a45' }}>Add Contacts</h3>
-                    <p style={{ fontSize: '14px', color: '#99826a' }}>Upload CSV or add contacts manually</p>
+                    <h3 style={{ fontWeight: '500', color: '#4b5563' }}>Add Contacts</h3>
+                    <p style={{ fontSize: '14px', color: '#6b7280' }}>Upload CSV or add contacts manually</p>
                   </div>
                   <div style={{ 
                     display: 'flex', 
@@ -988,8 +988,8 @@ export default function CampaignDetail() {
                         alignItems: 'center', 
                         justifyContent: 'center',
                         padding: window.innerWidth < 768 ? '14px 20px' : '10px 20px', 
-                        background: 'linear-gradient(to right, #deb040, #c8932f)', 
-                        color: '#151c30', 
+                        background: '#4f46e5', 
+                        color: '#111827', 
                         fontWeight: '600', 
                         borderRadius: '8px', 
                         border: 'none', 
@@ -1007,8 +1007,8 @@ export default function CampaignDetail() {
                         alignItems: 'center', 
                         justifyContent: 'center',
                         padding: window.innerWidth < 768 ? '14px 20px' : '10px 20px', 
-                        backgroundColor: '#e9ecf5', 
-                        color: '#1e2a45', 
+                        backgroundColor: '#f3f4f6', 
+                        color: '#4b5563', 
                         fontWeight: '500', 
                         borderRadius: '8px', 
                         border: '1px solid #c4cee0', 
@@ -1028,11 +1028,11 @@ export default function CampaignDetail() {
                         alignItems: 'center', 
                         justifyContent: 'center',
                         padding: window.innerWidth < 768 ? '14px 20px' : '10px 20px', 
-                        backgroundColor: 'white', 
-                        color: '#1e2a45', 
+                        background: '#ffffff', 
+                        color: '#4b5563', 
                         fontWeight: '500', 
                         borderRadius: '8px', 
-                        border: '1px solid #dbd5ca', 
+                        border: '1px solid #e5e7eb', 
                         cursor: 'pointer',
                         width: isMobile ? '100%' : 'auto',
                         minHeight: '44px'
@@ -1045,11 +1045,11 @@ export default function CampaignDetail() {
                 
                 {/* Call All Contacts Button */}
                 {contacts.length > 0 && pendingContacts > 0 && (
-                  <div style={{ marginTop: '16px', paddingTop: '16px', borderTop: '1px solid #edeae5' }}>
+                  <div style={{ marginTop: '16px', paddingTop: '16px', borderTop: '1px solid #f3f4f6' }}>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                       <div>
-                        <h4 style={{ fontWeight: '500', color: '#1e2a45', marginBottom: '4px' }}>Call All Contacts</h4>
-                        <p style={{ fontSize: '12px', color: '#99826a' }}>Initiate calls for all {pendingContacts} pending contact(s)</p>
+                        <h4 style={{ fontWeight: '500', color: '#4b5563', marginBottom: '4px' }}>Call All Contacts</h4>
+                        <p style={{ fontSize: '12px', color: '#6b7280' }}>Initiate calls for all {pendingContacts} pending contact(s)</p>
                       </div>
                       <button
                         onClick={callAllContacts}
@@ -1060,9 +1060,9 @@ export default function CampaignDetail() {
                           justifyContent: 'center',
                           padding: window.innerWidth < 768 ? '14px 20px' : '10px 20px', 
                           background: callingAllContacts || pendingContacts === 0 
-                            ? '#dbd5ca' 
-                            : 'linear-gradient(to right, #059669, #047857)', 
-                          color: callingAllContacts || pendingContacts === 0 ? '#99826a' : 'white', 
+                            ? '#e5e7eb' 
+                            : '#059669', 
+                          color: callingAllContacts || pendingContacts === 0 ? '#6b7280' : 'white', 
                           fontWeight: '600', 
                           borderRadius: '8px', 
                           border: 'none', 
@@ -1095,12 +1095,12 @@ export default function CampaignDetail() {
                 )}
                 
                 {uploadResult && (
-                  <div style={{ marginTop: '12px', padding: '12px', borderRadius: '8px', backgroundColor: uploadResult.error ? '#fee2e2' : '#d1fae5', color: uploadResult.error ? '#dc2626' : '#059669' }}>
+                  <div style={{ marginTop: '12px', padding: '12px', borderRadius: '8px', backgroundColor: uploadResult.error ? '#fef2f2' : '#ecfdf5', color: uploadResult.error ? '#f87171' : '#059669' }}>
                     {uploadResult.error ? uploadResult.error : `✓ Imported ${uploadResult.imported} contacts${uploadResult.errors > 0 ? ` (${uploadResult.errors} errors)` : ''}`}
                   </div>
                 )}
 
-                <p style={{ fontSize: '12px', color: '#ab9a82', marginTop: '12px' }}>
+                <p style={{ fontSize: '12px', color: '#4b5563', marginTop: '12px' }}>
                   CSV columns: first_name, last_name, phone, email (optional), property_address (optional)
                 </p>
               </div>
@@ -1114,22 +1114,22 @@ export default function CampaignDetail() {
                 }}>
                   <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '600px' }}>
                   <thead>
-                    <tr style={{ backgroundColor: '#f7f6f4' }}>
-                      <th style={{ padding: '12px 16px', textAlign: 'left', fontSize: '12px', fontWeight: '600', color: '#755f4e', textTransform: 'uppercase' }}>Name</th>
-                      <th style={{ padding: '12px 16px', textAlign: 'left', fontSize: '12px', fontWeight: '600', color: '#755f4e', textTransform: 'uppercase' }}>Phone</th>
-                      <th style={{ padding: '12px 16px', textAlign: 'left', fontSize: '12px', fontWeight: '600', color: '#755f4e', textTransform: 'uppercase' }}>Email</th>
-                      <th style={{ padding: '12px 16px', textAlign: 'left', fontSize: '12px', fontWeight: '600', color: '#755f4e', textTransform: 'uppercase' }}>Status</th>
-                      <th style={{ padding: '12px 16px', textAlign: 'left', fontSize: '12px', fontWeight: '600', color: '#755f4e', textTransform: 'uppercase' }}>Actions</th>
+                    <tr style={{ backgroundColor: '#f9fafb' }}>
+                      <th style={{ padding: '12px 16px', textAlign: 'left', fontSize: '12px', fontWeight: '600', color: '#9ca3af', textTransform: 'uppercase' }}>Name</th>
+                      <th style={{ padding: '12px 16px', textAlign: 'left', fontSize: '12px', fontWeight: '600', color: '#9ca3af', textTransform: 'uppercase' }}>Phone</th>
+                      <th style={{ padding: '12px 16px', textAlign: 'left', fontSize: '12px', fontWeight: '600', color: '#9ca3af', textTransform: 'uppercase' }}>Email</th>
+                      <th style={{ padding: '12px 16px', textAlign: 'left', fontSize: '12px', fontWeight: '600', color: '#9ca3af', textTransform: 'uppercase' }}>Status</th>
+                      <th style={{ padding: '12px 16px', textAlign: 'left', fontSize: '12px', fontWeight: '600', color: '#9ca3af', textTransform: 'uppercase' }}>Actions</th>
                     </tr>
                   </thead>
                   <tbody>
                     {contacts.map((contact, idx) => (
-                      <tr key={contact.id} style={{ borderBottom: idx < contacts.length - 1 ? '1px solid #edeae5' : 'none' }}>
-                        <td style={{ padding: '16px', fontWeight: '500', color: '#1e2a45' }}>
+                      <tr key={contact.id} style={{ borderBottom: idx < contacts.length - 1 ? '1px solid #f3f4f6' : 'none' }}>
+                        <td style={{ padding: '16px', fontWeight: '500', color: '#4b5563' }}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                             <button 
                               onClick={() => { setViewingContact(contact); setShowViewContactModal(true); }}
-                              style={{ padding: '6px', background: 'transparent', border: 'none', cursor: 'pointer', borderRadius: '6px', color: '#3b82f6', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                              style={{ padding: '6px', background: 'transparent', border: 'none', cursor: 'pointer', borderRadius: '6px', color: '#4f46e5', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                               title="View contact details"
                             >
                               <Eye style={{ width: '16px', height: '16px' }} />
@@ -1137,8 +1137,8 @@ export default function CampaignDetail() {
                             {contact.first_name} {contact.last_name}
                           </div>
                         </td>
-                        <td style={{ padding: '16px', color: '#755f4e' }}>{contact.phone}</td>
-                        <td style={{ padding: '16px', color: '#755f4e' }}>{contact.email || '-'}</td>
+                        <td style={{ padding: '16px', color: '#9ca3af' }}>{contact.phone}</td>
+                        <td style={{ padding: '16px', color: '#9ca3af' }}>{contact.email || '-'}</td>
                         <td style={{ padding: '16px' }}>
                           <span style={{
                             display: 'inline-block',
@@ -1146,8 +1146,8 @@ export default function CampaignDetail() {
                             borderRadius: '20px',
                             fontSize: '12px',
                             fontWeight: '500',
-                            backgroundColor: contact.status === 'pending' ? '#fef3c7' : contact.status === 'called' ? '#d1fae5' : '#e0e7ff',
-                            color: contact.status === 'pending' ? '#92400e' : contact.status === 'called' ? '#065f46' : '#3730a3'
+                            backgroundColor: contact.status === 'pending' ? '#fffbeb' : contact.status === 'called' ? '#ecfdf5' : '#eef2ff',
+                            color: contact.status === 'pending' ? '#92400e' : contact.status === 'called' ? '#059669' : '#3730a3'
                           }}>
                             {contact.status}
                           </span>
@@ -1159,7 +1159,7 @@ export default function CampaignDetail() {
                                 onClick={() => callSingleContact(contact.id)} 
                                 disabled={callingContactId === contact.id}
                                 style={{ 
-                                  color: callingContactId === contact.id ? '#99826a' : '#deb040', 
+                                  color: callingContactId === contact.id ? '#6b7280' : '#4f46e5', 
                                   background: 'transparent', 
                                   border: 'none', 
                                   cursor: callingContactId === contact.id ? 'not-allowed' : 'pointer', 
@@ -1176,7 +1176,7 @@ export default function CampaignDetail() {
                                     <div style={{ 
                                       width: '14px', 
                                       height: '14px', 
-                                      border: '2px solid #deb040', 
+                                      border: '2px solid #4f46e5', 
                                       borderTopColor: 'transparent', 
                                       borderRadius: '50%', 
                                       animation: 'spin 1s linear infinite'
@@ -1198,7 +1198,7 @@ export default function CampaignDetail() {
                                 style={{
                                   display: 'inline-flex', alignItems: 'center', gap: '4px',
                                   padding: '4px 10px', borderRadius: '6px', border: '1px solid #2563eb',
-                                  backgroundColor: callingContactId === contact.id ? '#dbeafe' : 'transparent',
+                                  backgroundColor: callingContactId === contact.id ? '#eef2ff' : 'transparent',
                                   color: '#2563eb', cursor: callingContactId === contact.id ? 'not-allowed' : 'pointer',
                                   fontSize: '12px', fontWeight: '500'
                                 }}
@@ -1217,8 +1217,8 @@ export default function CampaignDetail() {
               ) : (
                 <div style={{ textAlign: 'center', padding: '48px' }}>
                   <Users style={{ width: '48px', height: '48px', color: '#c4b9a7', margin: '0 auto 12px' }} />
-                  <p style={{ color: '#99826a' }}>No contacts yet</p>
-                  <p style={{ fontSize: '14px', color: '#ab9a82', marginTop: '4px' }}>Add contacts manually or upload a CSV to get started</p>
+                  <p style={{ color: '#6b7280' }}>No contacts yet</p>
+                  <p style={{ fontSize: '14px', color: '#4b5563', marginTop: '4px' }}>Add contacts manually or upload a CSV to get started</p>
                 </div>
               )}
             </div>
@@ -1235,18 +1235,18 @@ export default function CampaignDetail() {
                 }}>
                   <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '600px' }}>
                   <thead>
-                    <tr style={{ backgroundColor: '#f7f6f4' }}>
-                      <th style={{ padding: '12px 16px', textAlign: 'left', fontSize: '12px', fontWeight: '600', color: '#755f4e', textTransform: 'uppercase' }}>Contact</th>
-                      <th style={{ padding: '12px 16px', textAlign: 'left', fontSize: '12px', fontWeight: '600', color: '#755f4e', textTransform: 'uppercase' }}>Status</th>
-                      <th style={{ padding: '12px 16px', textAlign: 'left', fontSize: '12px', fontWeight: '600', color: '#755f4e', textTransform: 'uppercase' }}>Outcome</th>
-                      <th style={{ padding: '12px 16px', textAlign: 'left', fontSize: '12px', fontWeight: '600', color: '#755f4e', textTransform: 'uppercase' }}>Duration</th>
-                      <th style={{ padding: '12px 16px', textAlign: 'left', fontSize: '12px', fontWeight: '600', color: '#755f4e', textTransform: 'uppercase' }}>Actions</th>
+                    <tr style={{ backgroundColor: '#f9fafb' }}>
+                      <th style={{ padding: '12px 16px', textAlign: 'left', fontSize: '12px', fontWeight: '600', color: '#9ca3af', textTransform: 'uppercase' }}>Contact</th>
+                      <th style={{ padding: '12px 16px', textAlign: 'left', fontSize: '12px', fontWeight: '600', color: '#9ca3af', textTransform: 'uppercase' }}>Status</th>
+                      <th style={{ padding: '12px 16px', textAlign: 'left', fontSize: '12px', fontWeight: '600', color: '#9ca3af', textTransform: 'uppercase' }}>Outcome</th>
+                      <th style={{ padding: '12px 16px', textAlign: 'left', fontSize: '12px', fontWeight: '600', color: '#9ca3af', textTransform: 'uppercase' }}>Duration</th>
+                      <th style={{ padding: '12px 16px', textAlign: 'left', fontSize: '12px', fontWeight: '600', color: '#9ca3af', textTransform: 'uppercase' }}>Actions</th>
                     </tr>
                   </thead>
                   <tbody>
                     {calls.map((call, idx) => (
-                      <tr key={call.id} style={{ borderBottom: idx < calls.length - 1 ? '1px solid #edeae5' : 'none' }}>
-                        <td style={{ padding: '16px', fontWeight: '500', color: '#1e2a45' }}>{call.first_name} {call.last_name}</td>
+                      <tr key={call.id} style={{ borderBottom: idx < calls.length - 1 ? '1px solid #f3f4f6' : 'none' }}>
+                        <td style={{ padding: '16px', fontWeight: '500', color: '#4b5563' }}>{call.first_name} {call.last_name}</td>
                         <td style={{ padding: '16px' }}>
                           <span style={{
                             display: 'inline-block',
@@ -1254,16 +1254,16 @@ export default function CampaignDetail() {
                             borderRadius: '20px',
                             fontSize: '12px',
                             fontWeight: '500',
-                            backgroundColor: call.status === 'completed' ? '#d1fae5' : call.status === 'in_progress' ? '#fef3c7' : '#e0e7ff',
-                            color: call.status === 'completed' ? '#065f46' : call.status === 'in_progress' ? '#92400e' : '#3730a3'
+                            backgroundColor: call.status === 'completed' ? '#ecfdf5' : call.status === 'in_progress' ? '#fffbeb' : '#eef2ff',
+                            color: call.status === 'completed' ? '#059669' : call.status === 'in_progress' ? '#92400e' : '#3730a3'
                           }}>
                             {call.status?.replace('_', ' ')}
                           </span>
                         </td>
-                        <td style={{ padding: '16px', color: '#755f4e', textTransform: 'capitalize' }}>{call.outcome?.replace('_', ' ') || '-'}</td>
-                        <td style={{ padding: '16px', color: '#755f4e' }}>{call.duration_seconds ? `${call.duration_seconds}s` : '-'}</td>
+                        <td style={{ padding: '16px', color: '#9ca3af', textTransform: 'capitalize' }}>{call.outcome?.replace('_', ' ') || '-'}</td>
+                        <td style={{ padding: '16px', color: '#9ca3af' }}>{call.duration_seconds ? `${call.duration_seconds}s` : '-'}</td>
                         <td style={{ padding: '16px' }}>
-                          <Link to={`/calls/${call.id}`} style={{ color: '#deb040', fontWeight: '500', fontSize: '14px', textDecoration: 'none' }}>View</Link>
+                          <Link to={`/calls/${call.id}`} style={{ color: '#4f46e5', fontWeight: '500', fontSize: '14px', textDecoration: 'none' }}>View</Link>
                         </td>
                       </tr>
                     ))}
@@ -1273,8 +1273,8 @@ export default function CampaignDetail() {
               ) : (
                 <div style={{ textAlign: 'center', padding: '48px' }}>
                   <Phone style={{ width: '48px', height: '48px', color: '#c4b9a7', margin: '0 auto 12px' }} />
-                  <p style={{ color: '#99826a' }}>No calls yet</p>
-                  <p style={{ fontSize: '14px', color: '#ab9a82', marginTop: '4px' }}>Start the campaign to begin calling</p>
+                  <p style={{ color: '#6b7280' }}>No calls yet</p>
+                  <p style={{ fontSize: '14px', color: '#4b5563', marginTop: '4px' }}>Start the campaign to begin calling</p>
                 </div>
               )}
             </div>
@@ -1285,8 +1285,8 @@ export default function CampaignDetail() {
             <div>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
                 <div>
-                  <h3 style={{ fontWeight: '500', color: '#1e2a45', marginBottom: '8px' }}>AI Assistant Prompt</h3>
-                  <p style={{ fontSize: '14px', color: '#99826a' }}>Edit your prompt below and click Save to sync with Telnyx.</p>
+                  <h3 style={{ fontWeight: '500', color: '#4b5563', marginBottom: '8px' }}>AI Assistant Prompt</h3>
+                  <p style={{ fontSize: '14px', color: '#6b7280' }}>Edit your prompt below and click Save to sync with Telnyx.</p>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                   {promptSaved && (
@@ -1303,12 +1303,12 @@ export default function CampaignDetail() {
                       alignItems: 'center', 
                       padding: '10px 20px', 
                       background: savingPrompt 
-                        ? '#dbd5ca' 
-                        : 'linear-gradient(to right, #deb040, #c8932f)', 
-                      color: savingPrompt ? '#99826a' : '#151c30', 
-                      fontWeight: '600', 
-                      borderRadius: '8px', 
-                      border: 'none', 
+                        ? '#e5e7eb' 
+                        : '#4f46e5', 
+                      color: savingPrompt ? '#6b7280' : '#ffffff',
+                      fontWeight: '600',
+                      borderRadius: '8px',
+                      border: 'none',
                       cursor: savingPrompt ? 'not-allowed' : 'pointer',
                       fontSize: '14px',
                       minWidth: '140px',
@@ -1320,8 +1320,8 @@ export default function CampaignDetail() {
                         <div style={{ 
                           width: '16px', 
                           height: '16px', 
-                          border: '2px solid #151c30', 
-                          borderTopColor: 'transparent', 
+                          border: '2px solid #e5e7eb',
+                          borderTopColor: '#4f46e5', 
                           borderRadius: '50%', 
                           animation: 'spin 1s linear infinite',
                           marginRight: '8px'
@@ -1339,8 +1339,8 @@ export default function CampaignDetail() {
               </div>
 
               {/* Variable Insert Buttons */}
-              <div style={{ marginBottom: '12px', padding: '12px', backgroundColor: '#f7f6f4', borderRadius: '8px', border: '1px solid #edeae5' }}>
-                <p style={{ fontSize: '12px', color: '#755f4e', marginBottom: '8px', fontWeight: '500' }}>Click to insert contact variables:</p>
+              <div style={{ marginBottom: '12px', padding: '12px', backgroundColor: '#f9fafb', borderRadius: '8px', border: '1px solid #f3f4f6' }}>
+                <p style={{ fontSize: '12px', color: '#9ca3af', marginBottom: '8px', fontWeight: '500' }}>Click to insert contact variables:</p>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
                   {[
                     { label: 'Owner Name', value: '[Owner Name]' },
@@ -1359,11 +1359,11 @@ export default function CampaignDetail() {
                       onClick={() => setInlinePrompt(prev => prev + v.value)}
                       style={{
                         padding: '6px 12px',
-                        backgroundColor: v.value === '[Bot Name]' ? '#e0f2fe' : 'white',
-                        border: `1px solid ${v.value === '[Bot Name]' ? '#7dd3fc' : '#dbd5ca'}`,
+                        backgroundColor: v.value === '[Bot Name]' ? '#eef2ff' : '#f9fafb',
+                        border: `1px solid ${v.value === '[Bot Name]' ? '#c7d2fe' : '#e5e7eb'}`,
                         borderRadius: '6px',
                         fontSize: '12px',
-                        color: '#1e2a45',
+                        color: '#4b5563',
                         cursor: 'pointer',
                         fontFamily: 'monospace'
                       }}
@@ -1375,22 +1375,22 @@ export default function CampaignDetail() {
               </div>
 
               {/* Contact Preview Selector */}
-              <div style={{ marginBottom: '16px', padding: '16px', backgroundColor: '#e8f4f0', borderRadius: '12px', border: '1px solid #a7d7c5' }}>
+              <div style={{ marginBottom: '16px', padding: '16px', backgroundColor: '#ecfdf5', borderRadius: '12px', border: '1px solid #a7f3d0' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                     <Users style={{ width: '18px', height: '18px', color: '#059669' }} />
-                    <label style={{ fontSize: '14px', fontWeight: '500', color: '#065f46' }}>Preview with contact:</label>
+                    <label style={{ fontSize: '14px', fontWeight: '500', color: '#059669' }}>Preview with contact:</label>
                   </div>
                   <select
                     value={previewContactId}
                     onChange={(e) => setPreviewContactId(e.target.value)}
-                    style={{ 
-                      padding: '10px 16px', 
-                      border: '1px solid #a7d7c5', 
+                    style={{
+                      padding: '10px 16px',
+                      border: '1px solid #a7f3d0', 
                       borderRadius: '8px', 
                       fontSize: '14px', 
                       outline: 'none', 
-                      backgroundColor: 'white',
+                      background: '#ffffff',
                       minWidth: '200px',
                       cursor: 'pointer'
                     }}
@@ -1407,7 +1407,7 @@ export default function CampaignDetail() {
                       onClick={() => setPreviewContactId('')}
                       style={{ 
                         padding: '8px 12px', 
-                        backgroundColor: '#fee2e2', 
+                        backgroundColor: '#fef2f2', 
                         color: '#dc2626', 
                         border: '1px solid #fecaca', 
                         borderRadius: '6px', 
@@ -1430,12 +1430,12 @@ export default function CampaignDetail() {
               {/* Prompt Editor or Preview */}
               {previewContactId ? (
                 <div>
-                  <div style={{ backgroundColor: '#fef3c7', borderRadius: '8px', padding: '12px 16px', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <div style={{ backgroundColor: '#fffbeb', borderRadius: '8px', padding: '12px 16px', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
                     <span style={{ fontSize: '14px', color: '#92400e' }}>
                       📖 <strong>Preview Mode</strong> - Click "Clear Preview" above to edit the prompt
                     </span>
                   </div>
-                  <div style={{ backgroundColor: '#f7f6f4', borderRadius: '12px', padding: '24px', fontFamily: 'monospace', fontSize: '13px', whiteSpace: 'pre-wrap', color: '#755f4e', maxHeight: '400px', overflowY: 'auto' }}>
+                  <div style={{ backgroundColor: '#f9fafb', borderRadius: '12px', padding: '24px', fontFamily: 'monospace', fontSize: '13px', whiteSpace: 'pre-wrap', color: '#9ca3af', maxHeight: '400px', overflowY: 'auto' }}>
                     <PreviewPromptWithHighlights prompt={inlinePrompt} contact={contacts.find(c => c.id === previewContactId)} botName={inlineBotName} campaign={campaign} />
                   </div>
                 </div>
@@ -1447,31 +1447,31 @@ export default function CampaignDetail() {
                   style={{ 
                     width: '100%', 
                     padding: '16px', 
-                    border: '1px solid #dbd5ca', 
+                    border: '1px solid #e5e7eb', 
                     borderRadius: '12px', 
                     fontSize: '13px', 
                     fontFamily: 'monospace',
                     outline: 'none', 
                     resize: 'vertical', 
                     boxSizing: 'border-box',
-                    backgroundColor: inlinePrompt !== campaign.ai_prompt ? '#fffbeb' : 'white',
-                    color: '#755f4e'
+                    backgroundColor: inlinePrompt !== campaign.ai_prompt ? '#fffbeb' : '#f9fafb',
+                    color: '#9ca3af'
                   }}
                   placeholder="Enter your AI prompt here..."
                 />
               )}
               
               {(inlinePrompt !== campaign.ai_prompt || inlineGreeting !== campaign.greeting || inlineBotName !== (campaign.bot_name || 'Julia')) && !previewContactId && (
-                <p style={{ fontSize: '12px', color: '#b45309', marginTop: '8px', display: 'flex', alignItems: 'center' }}>
+                <p style={{ fontSize: '12px', color: '#d97706', marginTop: '8px', display: 'flex', alignItems: 'center' }}>
                   <span style={{ width: '8px', height: '8px', backgroundColor: '#f59e0b', borderRadius: '50%', marginRight: '8px' }}></span>
                   You have unsaved changes. Click "Save Prompt" to sync with Telnyx.
                 </p>
               )}
 
               {/* Bot Name */}
-              <div style={{ marginTop: '16px', padding: '12px 16px', backgroundColor: '#f0f9ff', borderRadius: '8px', border: '1px solid #bae6fd' }}>
-                <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', color: '#1e2a45', marginBottom: '6px' }}>
-                  AI Caller Name <span style={{ fontWeight: '400', color: '#0284c7' }}>(replaces [Bot Name], [Your Name] in prompt)</span>
+              <div style={{ marginTop: '16px', padding: '12px 16px', backgroundColor: '#eef2ff', borderRadius: '8px', border: '1px solid #c7d2fe' }}>
+                <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', color: '#4b5563', marginBottom: '6px' }}>
+                  AI Caller Name <span style={{ fontWeight: '400', color: '#4f46e5' }}>(replaces [Bot Name], [Your Name] in prompt)</span>
                 </label>
                 <div style={{ display: 'flex', gap: '8px' }}>
                   <input
@@ -1482,13 +1482,13 @@ export default function CampaignDetail() {
                     style={{ 
                       flex: 1, 
                       padding: '10px 14px', 
-                      border: '1px solid #bae6fd', 
+                      border: '1px solid #c7d2fe',
                       borderRadius: '8px', 
                       fontSize: '14px', 
                       outline: 'none', 
                       boxSizing: 'border-box',
-                      backgroundColor: inlineBotName !== (campaign.bot_name || 'Julia') ? '#fffbeb' : 'white',
-                      color: '#1e2a45',
+                      backgroundColor: inlineBotName !== (campaign.bot_name || 'Julia') ? '#fffbeb' : '#f9fafb',
+                      color: '#4b5563',
                       fontWeight: '500'
                     }}
                   />
@@ -1497,12 +1497,12 @@ export default function CampaignDetail() {
 
               <div style={{ marginTop: '16px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
                 <div>
-                  <label style={{ display: 'block', fontSize: '14px', color: '#99826a', marginBottom: '4px' }}>Voice</label>
-                  <p style={{ color: '#1e2a45', textTransform: 'capitalize' }}>{campaign.voice}</p>
+                  <label style={{ display: 'block', fontSize: '14px', color: '#6b7280', marginBottom: '4px' }}>Voice</label>
+                  <p style={{ color: '#4b5563', textTransform: 'capitalize' }}>{campaign.voice}</p>
                 </div>
                 <div>
-                  <label style={{ display: 'block', fontSize: '14px', color: '#99826a', marginBottom: '4px' }}>Language</label>
-                  <p style={{ color: '#1e2a45' }}>{campaign.language}</p>
+                  <label style={{ display: 'block', fontSize: '14px', color: '#6b7280', marginBottom: '4px' }}>Language</label>
+                  <p style={{ color: '#4b5563' }}>{campaign.language}</p>
                 </div>
               </div>
             </div>
@@ -1513,8 +1513,8 @@ export default function CampaignDetail() {
             <div>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
                 <div>
-                  <h3 style={{ fontWeight: '500', color: '#1e2a45', marginBottom: '8px' }}>Voice & Call Settings</h3>
-                  <p style={{ fontSize: '14px', color: '#99826a' }}>Configure the AI voice, speed, language, and call behavior. Changes sync to Telnyx when saved.</p>
+                  <h3 style={{ fontWeight: '500', color: '#4b5563', marginBottom: '8px' }}>Voice & Call Settings</h3>
+                  <p style={{ fontSize: '14px', color: '#6b7280' }}>Configure the AI voice, speed, language, and call behavior. Changes sync to Telnyx when saved.</p>
                 </div>
                 <button 
                   onClick={handleSavePrompt}
@@ -1523,9 +1523,9 @@ export default function CampaignDetail() {
                     display: 'inline-flex', 
                     alignItems: 'center', 
                     padding: '10px 20px', 
-                    background: savingPrompt ? '#dbd5ca' : 'linear-gradient(to right, #deb040, #c8932f)', 
-                    color: savingPrompt ? '#99826a' : '#151c30', 
-                    fontWeight: '600', 
+                    background: savingPrompt ? '#e5e7eb' : '#4f46e5', 
+                    color: savingPrompt ? '#6b7280' : '#ffffff',
+                    fontWeight: '600',
                     borderRadius: '8px', 
                     border: 'none', 
                     cursor: savingPrompt ? 'not-allowed' : 'pointer',
@@ -1539,8 +1539,8 @@ export default function CampaignDetail() {
               </div>
 
               {/* Voice Selection */}
-              <div style={{ marginBottom: '24px', padding: '20px', backgroundColor: '#f7f6f4', borderRadius: '12px', border: '1px solid #edeae5' }}>
-                <h4 style={{ fontWeight: '600', color: '#1e2a45', marginBottom: '16px', fontSize: '15px' }}>AI Voice</h4>
+              <div style={{ marginBottom: '24px', padding: '20px', backgroundColor: '#f9fafb', borderRadius: '12px', border: '1px solid #f3f4f6' }}>
+                <h4 style={{ fontWeight: '600', color: '#4b5563', marginBottom: '16px', fontSize: '15px' }}>AI Voice</h4>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
                   {[
                     { value: 'astra', label: 'Astra', desc: 'Female, Warm & Friendly', gender: 'female' },
@@ -1557,8 +1557,8 @@ export default function CampaignDetail() {
                       onClick={() => setInlineVoice(v.value)}
                       style={{
                         padding: '14px 16px',
-                        border: `2px solid ${inlineVoice === v.value ? '#deb040' : '#dbd5ca'}`,
-                        backgroundColor: inlineVoice === v.value ? '#fbf7e8' : 'white',
+                        border: `2px solid ${inlineVoice === v.value ? '#4f46e5' : '#e5e7eb'}`,
+                        backgroundColor: inlineVoice === v.value ? '#eef2ff' : '#f9fafb',
                         borderRadius: '10px',
                         cursor: 'pointer',
                         display: 'flex',
@@ -1570,19 +1570,19 @@ export default function CampaignDetail() {
                       <div style={{
                         width: '40px', height: '40px', borderRadius: '50%',
                         background: inlineVoice === v.value 
-                          ? 'linear-gradient(135deg, #deb040, #c8932f)' 
-                          : v.gender === 'female' ? '#fce7f3' : '#dbeafe',
+                          ? '#4f46e5' 
+                          : v.gender === 'female' ? '#fdf2f8' : '#eef2ff',
                         display: 'flex', alignItems: 'center', justifyContent: 'center',
                         fontSize: '18px', flexShrink: 0
                       }}>
                         {v.gender === 'female' ? '♀' : '♂'}
                       </div>
                       <div>
-                        <p style={{ fontWeight: '600', color: '#1e2a45', fontSize: '14px' }}>{v.label}</p>
-                        <p style={{ fontSize: '12px', color: '#99826a' }}>{v.desc}</p>
+                        <p style={{ fontWeight: '600', color: '#4b5563', fontSize: '14px' }}>{v.label}</p>
+                        <p style={{ fontSize: '12px', color: '#6b7280' }}>{v.desc}</p>
                       </div>
                       {inlineVoice === v.value && (
-                        <CheckCircle2 style={{ width: '20px', height: '20px', color: '#deb040', marginLeft: 'auto' }} />
+                        <CheckCircle2 style={{ width: '20px', height: '20px', color: '#4f46e5', marginLeft: 'auto' }} />
                       )}
                     </div>
                   ))}
@@ -1590,9 +1590,9 @@ export default function CampaignDetail() {
               </div>
 
               {/* Voice Speed */}
-              <div style={{ marginBottom: '24px', padding: '20px', backgroundColor: '#f7f6f4', borderRadius: '12px', border: '1px solid #edeae5' }}>
-                <h4 style={{ fontWeight: '600', color: '#1e2a45', marginBottom: '16px', fontSize: '15px' }}>
-                  Voice Speed: <span style={{ color: '#deb040' }}>{inlineVoiceSpeed}x</span>
+              <div style={{ marginBottom: '24px', padding: '20px', backgroundColor: '#f9fafb', borderRadius: '12px', border: '1px solid #f3f4f6' }}>
+                <h4 style={{ fontWeight: '600', color: '#4b5563', marginBottom: '16px', fontSize: '15px' }}>
+                  Voice Speed: <span style={{ color: '#4f46e5' }}>{inlineVoiceSpeed}x</span>
                 </h4>
                 <input
                   type="range"
@@ -1601,9 +1601,9 @@ export default function CampaignDetail() {
                   step="0.1"
                   value={inlineVoiceSpeed}
                   onChange={(e) => setInlineVoiceSpeed(parseFloat(e.target.value))}
-                  style={{ width: '100%', accentColor: '#deb040', cursor: 'pointer', height: '8px' }}
+                  style={{ width: '100%', accentColor: '#4f46e5', cursor: 'pointer', height: '8px' }}
                 />
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: '#ab9a82', marginTop: '8px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: '#4b5563', marginTop: '8px' }}>
                   <span>0.5x Slow</span>
                   <span>0.8x</span>
                   <span>1.0x Normal</span>
@@ -1615,12 +1615,12 @@ export default function CampaignDetail() {
 
               {/* Language, Time Limit, Bot Name, Voicemail */}
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '24px' }}>
-                <div style={{ padding: '20px', backgroundColor: '#f7f6f4', borderRadius: '12px', border: '1px solid #edeae5' }}>
-                  <label style={{ display: 'block', fontSize: '12px', fontWeight: '600', color: '#755f4e', marginBottom: '8px', textTransform: 'uppercase' }}>Language</label>
+                <div style={{ padding: '20px', backgroundColor: '#f9fafb', borderRadius: '12px', border: '1px solid #f3f4f6' }}>
+                  <label style={{ display: 'block', fontSize: '12px', fontWeight: '600', color: '#9ca3af', marginBottom: '8px', textTransform: 'uppercase' }}>Language</label>
                   <select
                     value={inlineLanguage}
                     onChange={(e) => setInlineLanguage(e.target.value)}
-                    style={{ width: '100%', padding: '12px 14px', border: '1px solid #dbd5ca', borderRadius: '8px', fontSize: '14px', outline: 'none', backgroundColor: 'white' }}
+                    style={{ width: '100%', padding: '12px 14px', border: '1px solid #e5e7eb', borderRadius: '8px', fontSize: '14px', outline: 'none', background: '#ffffff', backdropFilter: 'blur(20px)' }}
                   >
                     <option value="en-US">English (US)</option>
                     <option value="en-GB">English (UK)</option>
@@ -1634,12 +1634,12 @@ export default function CampaignDetail() {
                   </select>
                 </div>
 
-                <div style={{ padding: '20px', backgroundColor: '#f7f6f4', borderRadius: '12px', border: '1px solid #edeae5' }}>
-                  <label style={{ display: 'block', fontSize: '12px', fontWeight: '600', color: '#755f4e', marginBottom: '8px', textTransform: 'uppercase' }}>Call Time Limit</label>
+                <div style={{ padding: '20px', backgroundColor: '#f9fafb', borderRadius: '12px', border: '1px solid #f3f4f6' }}>
+                  <label style={{ display: 'block', fontSize: '12px', fontWeight: '600', color: '#9ca3af', marginBottom: '8px', textTransform: 'uppercase' }}>Call Time Limit</label>
                   <select
                     value={inlineTimeLimitSecs}
                     onChange={(e) => setInlineTimeLimitSecs(parseInt(e.target.value))}
-                    style={{ width: '100%', padding: '12px 14px', border: '1px solid #dbd5ca', borderRadius: '8px', fontSize: '14px', outline: 'none', backgroundColor: 'white' }}
+                    style={{ width: '100%', padding: '12px 14px', border: '1px solid #e5e7eb', borderRadius: '8px', fontSize: '14px', outline: 'none', background: '#ffffff', backdropFilter: 'blur(20px)' }}
                   >
                     <option value={120}>2 minutes</option>
                     <option value={300}>5 minutes</option>
@@ -1650,29 +1650,29 @@ export default function CampaignDetail() {
                   </select>
                 </div>
 
-                <div style={{ padding: '20px', backgroundColor: '#f7f6f4', borderRadius: '12px', border: '1px solid #edeae5' }}>
-                  <label style={{ display: 'block', fontSize: '12px', fontWeight: '600', color: '#755f4e', marginBottom: '8px', textTransform: 'uppercase' }}>AI Caller Name</label>
+                <div style={{ padding: '20px', backgroundColor: '#f9fafb', borderRadius: '12px', border: '1px solid #f3f4f6' }}>
+                  <label style={{ display: 'block', fontSize: '12px', fontWeight: '600', color: '#9ca3af', marginBottom: '8px', textTransform: 'uppercase' }}>AI Caller Name</label>
                   <input
                     type="text"
                     value={inlineBotName}
                     onChange={(e) => setInlineBotName(e.target.value)}
                     placeholder="Julia"
-                    style={{ width: '100%', padding: '12px 14px', border: '1px solid #dbd5ca', borderRadius: '8px', fontSize: '14px', outline: 'none', boxSizing: 'border-box' }}
+                    style={{ width: '100%', padding: '12px 14px', border: '1px solid #e5e7eb', borderRadius: '8px', fontSize: '14px', outline: 'none', boxSizing: 'border-box' }}
                   />
-                  <p style={{ fontSize: '12px', color: '#ab9a82', marginTop: '6px' }}>The name the AI uses when speaking on calls</p>
+                  <p style={{ fontSize: '12px', color: '#4b5563', marginTop: '6px' }}>The name the AI uses when speaking on calls</p>
                 </div>
 
-                <div style={{ padding: '20px', backgroundColor: '#f7f6f4', borderRadius: '12px', border: '1px solid #edeae5' }}>
-                  <label style={{ display: 'block', fontSize: '12px', fontWeight: '600', color: '#755f4e', marginBottom: '8px', textTransform: 'uppercase' }}>Voicemail Detection</label>
+                <div style={{ padding: '20px', backgroundColor: '#f9fafb', borderRadius: '12px', border: '1px solid #f3f4f6' }}>
+                  <label style={{ display: 'block', fontSize: '12px', fontWeight: '600', color: '#9ca3af', marginBottom: '8px', textTransform: 'uppercase' }}>Voicemail Detection</label>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginTop: '4px' }}>
                     <input
                       type="checkbox"
                       id="vm-detection-tab"
                       checked={inlineVoicemailDetection}
                       onChange={(e) => setInlineVoicemailDetection(e.target.checked)}
-                      style={{ width: '20px', height: '20px', cursor: 'pointer', accentColor: '#deb040' }}
+                      style={{ width: '20px', height: '20px', cursor: 'pointer', accentColor: '#4f46e5' }}
                     />
-                    <label htmlFor="vm-detection-tab" style={{ fontSize: '14px', color: '#1e2a45', cursor: 'pointer', fontWeight: '500' }}>
+                    <label htmlFor="vm-detection-tab" style={{ fontSize: '14px', color: '#4b5563', cursor: 'pointer', fontWeight: '500' }}>
                       {inlineVoicemailDetection ? 'Enabled — will detect and leave voicemail' : 'Disabled — will hang up on voicemail'}
                     </label>
                   </div>
@@ -1680,7 +1680,7 @@ export default function CampaignDetail() {
               </div>
 
               {/* Summary */}
-              <div style={{ padding: '16px 20px', backgroundColor: '#e0f2fe', borderRadius: '12px', border: '1px solid #bae6fd' }}>
+              <div style={{ padding: '16px 20px', backgroundColor: '#eef2ff', borderRadius: '12px', border: '1px solid #bae6fd' }}>
                 <p style={{ fontSize: '13px', color: '#0369a1', margin: 0 }}>
                   <strong>Telnyx Config:</strong> Voice: Telnyx.NaturalHD.{inlineVoice} | Speed: {inlineVoiceSpeed}x | Lang: {inlineLanguage} | Limit: {Math.floor(inlineTimeLimitSecs / 60)}min | VM: {inlineVoicemailDetection ? 'On' : 'Off'} | Bot: {inlineBotName}
                 </p>
@@ -1693,28 +1693,28 @@ export default function CampaignDetail() {
       {/* Edit Campaign Modal */}
       {showEditModal && (
         <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 50, padding: isMobile ? '16px' : '0' }}>
-          <div style={{ backgroundColor: 'white', borderRadius: '16px', padding: isMobile ? '24px' : '32px', width: isMobile ? '100%' : '600px', maxWidth: '100%', maxHeight: '90vh', overflowY: 'auto' }}>
+          <div style={{ background: '#ffffff', borderRadius: '16px', padding: isMobile ? '24px' : '32px', width: isMobile ? '100%' : '600px', maxWidth: '100%', maxHeight: '90vh', overflowY: 'auto' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
-              <h2 style={{ fontSize: '24px', fontFamily: 'Playfair Display, serif', fontWeight: '600', color: '#151c30' }}>Edit Campaign</h2>
+              <h2 style={{ fontSize: '24px', fontFamily: 'Inter, sans-serif', fontWeight: '600', color: '#111827' }}>Edit Campaign</h2>
               <button onClick={() => setShowEditModal(false)} style={{ background: 'transparent', border: 'none', cursor: 'pointer', padding: '4px' }}>
-                <X style={{ width: '24px', height: '24px', color: '#99826a' }} />
+                <X style={{ width: '24px', height: '24px', color: '#6b7280' }} />
               </button>
             </div>
 
             <form onSubmit={handleSaveEdit}>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '20px' }}>
                 <div>
-                  <label style={{ display: 'block', fontSize: '14px', fontWeight: '500', color: '#1e2a45', marginBottom: '8px' }}>Campaign Name *</label>
+                  <label style={{ display: 'block', fontSize: '14px', fontWeight: '500', color: '#4b5563', marginBottom: '8px' }}>Campaign Name *</label>
                   <input
                     type="text"
                     value={editForm.name}
                     onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
                     required
-                    style={{ width: '100%', padding: '12px 16px', border: '1px solid #dbd5ca', borderRadius: '8px', fontSize: '14px', outline: 'none', boxSizing: 'border-box' }}
+                    style={{ width: '100%', padding: '12px 16px', border: '1px solid #e5e7eb', borderRadius: '8px', fontSize: '14px', outline: 'none', boxSizing: 'border-box' }}
                   />
                 </div>
                 <div>
-                  <label style={{ display: 'block', fontSize: '14px', fontWeight: '500', color: '#1e2a45', marginBottom: '8px' }}>
+                  <label style={{ display: 'block', fontSize: '14px', fontWeight: '500', color: '#4b5563', marginBottom: '8px' }}>
                     AI Caller Name
                   </label>
                   <input
@@ -1722,18 +1722,18 @@ export default function CampaignDetail() {
                     value={editForm.bot_name}
                     onChange={(e) => setEditForm({ ...editForm, bot_name: e.target.value })}
                     placeholder="Julia"
-                    style={{ width: '100%', padding: '12px 16px', border: '1px solid #dbd5ca', borderRadius: '8px', fontSize: '14px', outline: 'none', boxSizing: 'border-box' }}
+                    style={{ width: '100%', padding: '12px 16px', border: '1px solid #e5e7eb', borderRadius: '8px', fontSize: '14px', outline: 'none', boxSizing: 'border-box' }}
                   />
                 </div>
               </div>
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '20px' }}>
                 <div>
-                  <label style={{ display: 'block', fontSize: '14px', fontWeight: '500', color: '#1e2a45', marginBottom: '8px' }}>Type</label>
+                  <label style={{ display: 'block', fontSize: '14px', fontWeight: '500', color: '#4b5563', marginBottom: '8px' }}>Type</label>
                   <select
                     value={editForm.type}
                     onChange={(e) => setEditForm({ ...editForm, type: e.target.value })}
-                    style={{ width: '100%', padding: '12px 16px', border: '1px solid #dbd5ca', borderRadius: '8px', fontSize: '14px', outline: 'none', backgroundColor: 'white' }}
+                    style={{ width: '100%', padding: '12px 16px', border: '1px solid #e5e7eb', borderRadius: '8px', fontSize: '14px', outline: 'none', background: '#ffffff', backdropFilter: 'blur(20px)' }}
                   >
                     <option value="pre_foreclosure">Pre-Foreclosure Outreach</option>
                     <option value="cash_buyer">Cash Buyer / Quick Close</option>
@@ -1747,11 +1747,11 @@ export default function CampaignDetail() {
                   </select>
                 </div>
                 <div>
-                  <label style={{ display: 'block', fontSize: '14px', fontWeight: '500', color: '#1e2a45', marginBottom: '8px' }}>Voice (Telnyx NaturalHD)</label>
+                  <label style={{ display: 'block', fontSize: '14px', fontWeight: '500', color: '#4b5563', marginBottom: '8px' }}>Voice (Telnyx NaturalHD)</label>
                   <select
                     value={editForm.voice}
                     onChange={(e) => setEditForm({ ...editForm, voice: e.target.value })}
-                    style={{ width: '100%', padding: '12px 16px', border: '1px solid #dbd5ca', borderRadius: '8px', fontSize: '14px', outline: 'none', backgroundColor: 'white' }}
+                    style={{ width: '100%', padding: '12px 16px', border: '1px solid #e5e7eb', borderRadius: '8px', fontSize: '14px', outline: 'none', background: '#ffffff', backdropFilter: 'blur(20px)' }}
                   >
                     <optgroup label="Female Voices">
                       <option value="astra">Astra (Female, Warm)</option>
@@ -1771,11 +1771,11 @@ export default function CampaignDetail() {
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '20px' }}>
                 <div>
-                  <label style={{ display: 'block', fontSize: '14px', fontWeight: '500', color: '#1e2a45', marginBottom: '8px' }}>Background Audio</label>
+                  <label style={{ display: 'block', fontSize: '14px', fontWeight: '500', color: '#4b5563', marginBottom: '8px' }}>Background Audio</label>
                   <select
                     value={editForm.background_audio}
                     onChange={(e) => setEditForm({ ...editForm, background_audio: e.target.value })}
-                    style={{ width: '100%', padding: '12px 16px', border: '1px solid #dbd5ca', borderRadius: '8px', fontSize: '14px', outline: 'none', backgroundColor: 'white' }}
+                    style={{ width: '100%', padding: '12px 16px', border: '1px solid #e5e7eb', borderRadius: '8px', fontSize: '14px', outline: 'none', background: '#ffffff', backdropFilter: 'blur(20px)' }}
                   >
                     <option value="silence">Silence (No Background)</option>
                     <option value="office">Office Environment</option>
@@ -1784,34 +1784,34 @@ export default function CampaignDetail() {
                   </select>
                 </div>
                 <div>
-                  <label style={{ display: 'block', fontSize: '14px', fontWeight: '500', color: '#1e2a45', marginBottom: '8px' }}>Description</label>
+                  <label style={{ display: 'block', fontSize: '14px', fontWeight: '500', color: '#4b5563', marginBottom: '8px' }}>Description</label>
                   <input
                     type="text"
                     value={editForm.description}
                     onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
                     placeholder="Brief description of this campaign"
-                    style={{ width: '100%', padding: '12px 16px', border: '1px solid #dbd5ca', borderRadius: '8px', fontSize: '14px', outline: 'none', boxSizing: 'border-box' }}
+                    style={{ width: '100%', padding: '12px 16px', border: '1px solid #e5e7eb', borderRadius: '8px', fontSize: '14px', outline: 'none', boxSizing: 'border-box' }}
                   />
                 </div>
               </div>
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '20px' }}>
                 <div>
-                  <label style={{ display: 'block', fontSize: '14px', fontWeight: '500', color: '#1e2a45', marginBottom: '8px' }}>Caller ID (Telnyx Phone Number) *</label>
+                  <label style={{ display: 'block', fontSize: '14px', fontWeight: '500', color: '#4b5563', marginBottom: '8px' }}>Caller ID (Telnyx Phone Number) *</label>
                   <input
                     type="tel"
                     value={editForm.caller_id}
                     onChange={(e) => setEditForm({ ...editForm, caller_id: e.target.value })}
                     placeholder="+17324028535"
-                    style={{ width: '100%', padding: '12px 16px', border: '1px solid #dbd5ca', borderRadius: '8px', fontSize: '14px', outline: 'none', boxSizing: 'border-box' }}
+                    style={{ width: '100%', padding: '12px 16px', border: '1px solid #e5e7eb', borderRadius: '8px', fontSize: '14px', outline: 'none', boxSizing: 'border-box' }}
                   />
                 </div>
                 <div>
-                  <label style={{ display: 'block', fontSize: '14px', fontWeight: '500', color: '#1e2a45', marginBottom: '8px' }}>Call Time Limit</label>
+                  <label style={{ display: 'block', fontSize: '14px', fontWeight: '500', color: '#4b5563', marginBottom: '8px' }}>Call Time Limit</label>
                   <select
                     value={editForm.time_limit_secs}
                     onChange={(e) => setEditForm({ ...editForm, time_limit_secs: parseInt(e.target.value) })}
-                    style={{ width: '100%', padding: '12px 16px', border: '1px solid #dbd5ca', borderRadius: '8px', fontSize: '14px', outline: 'none', backgroundColor: 'white' }}
+                    style={{ width: '100%', padding: '12px 16px', border: '1px solid #e5e7eb', borderRadius: '8px', fontSize: '14px', outline: 'none', background: '#ffffff', backdropFilter: 'blur(20px)' }}
                   >
                     <option value={300}>5 minutes</option>
                     <option value={600}>10 minutes</option>
@@ -1823,15 +1823,15 @@ export default function CampaignDetail() {
               </div>
 
               <div style={{ marginBottom: '20px' }}>
-                <label style={{ display: 'block', fontSize: '14px', fontWeight: '500', color: '#1e2a45', marginBottom: '8px' }}>Opening Greeting</label>
+                <label style={{ display: 'block', fontSize: '14px', fontWeight: '500', color: '#4b5563', marginBottom: '8px' }}>Opening Greeting</label>
                 <input
                   type="text"
                   value={editForm.greeting}
                   onChange={(e) => setEditForm({ ...editForm, greeting: e.target.value })}
                   placeholder="Hello,"
-                  style={{ width: '100%', padding: '12px 16px', border: '1px solid #dbd5ca', borderRadius: '8px', fontSize: '14px', outline: 'none', boxSizing: 'border-box' }}
+                  style={{ width: '100%', padding: '12px 16px', border: '1px solid #e5e7eb', borderRadius: '8px', fontSize: '14px', outline: 'none', boxSizing: 'border-box' }}
                 />
-                <p style={{ fontSize: '12px', color: '#99826a', marginTop: '4px' }}>
+                <p style={{ fontSize: '12px', color: '#6b7280', marginTop: '4px' }}>
                   First words the AI says when the call connects (before following the prompt)
                 </p>
               </div>
@@ -1844,17 +1844,17 @@ export default function CampaignDetail() {
                   onChange={(e) => setEditForm({ ...editForm, voicemail_detection: e.target.checked })}
                   style={{ width: '18px', height: '18px', cursor: 'pointer' }}
                 />
-                <label htmlFor="voicemail_detection" style={{ fontSize: '14px', color: '#1e2a45', cursor: 'pointer' }}>
+                <label htmlFor="voicemail_detection" style={{ fontSize: '14px', color: '#4b5563', cursor: 'pointer' }}>
                   <strong>Voicemail Detection</strong> - Automatically detect voicemail and leave a message
                 </label>
               </div>
 
               <div style={{ marginBottom: '20px' }}>
-                <label style={{ display: 'block', fontSize: '14px', fontWeight: '500', color: '#1e2a45', marginBottom: '8px' }}>AI Prompt *</label>
+                <label style={{ display: 'block', fontSize: '14px', fontWeight: '500', color: '#4b5563', marginBottom: '8px' }}>AI Prompt *</label>
                 
                 {/* Variable Insert Buttons */}
-                <div style={{ marginBottom: '12px', padding: '12px', backgroundColor: '#f7f6f4', borderRadius: '8px', border: '1px solid #edeae5' }}>
-                  <p style={{ fontSize: '12px', color: '#755f4e', marginBottom: '8px', fontWeight: '500' }}>Click to insert contact variables:</p>
+                <div style={{ marginBottom: '12px', padding: '12px', backgroundColor: '#f9fafb', borderRadius: '8px', border: '1px solid #f3f4f6' }}>
+                  <p style={{ fontSize: '12px', color: '#9ca3af', marginBottom: '8px', fontWeight: '500' }}>Click to insert contact variables:</p>
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
                     {[
                       { label: 'First Name', value: '[First Name]' },
@@ -1871,24 +1871,24 @@ export default function CampaignDetail() {
                         onClick={() => insertVariable(v.value)}
                         style={{
                           padding: '6px 12px',
-                          backgroundColor: 'white',
-                          border: '1px solid #dbd5ca',
+                          background: '#ffffff',
+                          border: '1px solid #e5e7eb',
                           borderRadius: '6px',
                           fontSize: '12px',
-                          color: '#1e2a45',
+                          color: '#4b5563',
                           cursor: 'pointer',
                           fontFamily: 'monospace',
                           transition: 'all 0.15s ease'
                         }}
                         onMouseOver={(e) => {
-                          e.target.style.backgroundColor = '#deb040';
-                          e.target.style.borderColor = '#deb040';
-                          e.target.style.color = '#151c30';
+                          e.target.style.backgroundColor = '#4f46e5';
+                          e.target.style.borderColor = '#4f46e5';
+                          e.target.style.color = '#ffffff';
                         }}
                         onMouseOut={(e) => {
-                          e.target.style.backgroundColor = 'white';
-                          e.target.style.borderColor = '#dbd5ca';
-                          e.target.style.color = '#1e2a45';
+                          e.target.style.backgroundColor = '#f9fafb';
+                          e.target.style.borderColor = '#e5e7eb';
+                          e.target.style.color = '#4b5563';
                         }}
                       >
                         {v.label}
@@ -1904,9 +1904,9 @@ export default function CampaignDetail() {
                   required
                   rows={8}
                   placeholder="Enter instructions for the AI assistant..."
-                  style={{ width: '100%', padding: '12px 16px', border: '1px solid #dbd5ca', borderRadius: '8px', fontSize: '14px', outline: 'none', resize: 'vertical', fontFamily: 'monospace', boxSizing: 'border-box' }}
+                  style={{ width: '100%', padding: '12px 16px', border: '1px solid #e5e7eb', borderRadius: '8px', fontSize: '14px', outline: 'none', resize: 'vertical', fontFamily: 'monospace', boxSizing: 'border-box' }}
                 />
-                <p style={{ fontSize: '12px', color: '#99826a', marginTop: '8px' }}>
+                <p style={{ fontSize: '12px', color: '#6b7280', marginTop: '8px' }}>
                   Note: Updating the prompt will sync with Telnyx to update your AI assistant.
                 </p>
               </div>
@@ -1915,14 +1915,14 @@ export default function CampaignDetail() {
                 <button
                   type="button"
                   onClick={() => setShowEditModal(false)}
-                  style={{ padding: '12px 24px', backgroundColor: '#f7f6f4', color: '#1e2a45', fontWeight: '500', borderRadius: '8px', border: '1px solid #dbd5ca', cursor: 'pointer' }}
+                  style={{ padding: '12px 24px', backgroundColor: '#f9fafb', color: '#4b5563', fontWeight: '500', borderRadius: '8px', border: '1px solid #e5e7eb', cursor: 'pointer' }}
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={saving}
-                  style={{ padding: '12px 24px', background: 'linear-gradient(to right, #deb040, #c8932f)', color: '#151c30', fontWeight: '600', borderRadius: '8px', border: 'none', cursor: 'pointer' }}
+                  style={{ padding: '12px 24px', background: '#4f46e5', color: '#ffffff', fontWeight: '600', borderRadius: '8px', border: 'none', cursor: 'pointer' }}
                 >
                   {saving ? 'Saving...' : 'Save Changes'}
                 </button>
@@ -1935,79 +1935,79 @@ export default function CampaignDetail() {
       {/* Add Contact Modal */}
       {showAddContactModal && (
         <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 50, padding: isMobile ? '16px' : '0' }}>
-          <div style={{ backgroundColor: 'white', borderRadius: '16px', padding: isMobile ? '24px' : '32px', width: isMobile ? '100%' : '500px', maxWidth: '100%', maxHeight: '90vh', overflowY: 'auto' }}>
+          <div style={{ background: '#ffffff', borderRadius: '16px', padding: isMobile ? '24px' : '32px', width: isMobile ? '100%' : '500px', maxWidth: '100%', maxHeight: '90vh', overflowY: 'auto' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
-              <h2 style={{ fontSize: '24px', fontFamily: 'Playfair Display, serif', fontWeight: '600', color: '#151c30' }}>Add Contact</h2>
+              <h2 style={{ fontSize: '24px', fontFamily: 'Inter, sans-serif', fontWeight: '600', color: '#111827' }}>Add Contact</h2>
               <button onClick={() => setShowAddContactModal(false)} style={{ background: 'transparent', border: 'none', cursor: 'pointer', padding: '4px' }}>
-                <X style={{ width: '24px', height: '24px', color: '#99826a' }} />
+                <X style={{ width: '24px', height: '24px', color: '#6b7280' }} />
               </button>
             </div>
 
             <form onSubmit={handleAddContact}>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '20px' }}>
                 <div>
-                  <label style={{ display: 'block', fontSize: '14px', fontWeight: '500', color: '#1e2a45', marginBottom: '8px' }}>First Name *</label>
+                  <label style={{ display: 'block', fontSize: '14px', fontWeight: '500', color: '#4b5563', marginBottom: '8px' }}>First Name *</label>
                   <input
                     type="text"
                     value={contactForm.first_name}
                     onChange={(e) => setContactForm({ ...contactForm, first_name: e.target.value })}
                     required
-                    style={{ width: '100%', padding: '12px 16px', border: '1px solid #dbd5ca', borderRadius: '8px', fontSize: '14px', outline: 'none', boxSizing: 'border-box' }}
+                    style={{ width: '100%', padding: '12px 16px', border: '1px solid #e5e7eb', borderRadius: '8px', fontSize: '14px', outline: 'none', boxSizing: 'border-box' }}
                   />
                 </div>
                 <div>
-                  <label style={{ display: 'block', fontSize: '14px', fontWeight: '500', color: '#1e2a45', marginBottom: '8px' }}>Last Name</label>
+                  <label style={{ display: 'block', fontSize: '14px', fontWeight: '500', color: '#4b5563', marginBottom: '8px' }}>Last Name</label>
                   <input
                     type="text"
                     value={contactForm.last_name}
                     onChange={(e) => setContactForm({ ...contactForm, last_name: e.target.value })}
-                    style={{ width: '100%', padding: '12px 16px', border: '1px solid #dbd5ca', borderRadius: '8px', fontSize: '14px', outline: 'none', boxSizing: 'border-box' }}
+                    style={{ width: '100%', padding: '12px 16px', border: '1px solid #e5e7eb', borderRadius: '8px', fontSize: '14px', outline: 'none', boxSizing: 'border-box' }}
                   />
                 </div>
               </div>
 
               <div style={{ marginBottom: '20px' }}>
-                <label style={{ display: 'block', fontSize: '14px', fontWeight: '500', color: '#1e2a45', marginBottom: '8px' }}>Phone Number *</label>
+                <label style={{ display: 'block', fontSize: '14px', fontWeight: '500', color: '#4b5563', marginBottom: '8px' }}>Phone Number *</label>
                 <input
                   type="tel"
                   value={contactForm.phone}
                   onChange={(e) => setContactForm({ ...contactForm, phone: e.target.value })}
                   required
                   placeholder="+1234567890"
-                  style={{ width: '100%', padding: '12px 16px', border: '1px solid #dbd5ca', borderRadius: '8px', fontSize: '14px', outline: 'none', boxSizing: 'border-box' }}
+                  style={{ width: '100%', padding: '12px 16px', border: '1px solid #e5e7eb', borderRadius: '8px', fontSize: '14px', outline: 'none', boxSizing: 'border-box' }}
                 />
               </div>
 
               <div style={{ marginBottom: '20px' }}>
-                <label style={{ display: 'block', fontSize: '14px', fontWeight: '500', color: '#1e2a45', marginBottom: '8px' }}>Email</label>
+                <label style={{ display: 'block', fontSize: '14px', fontWeight: '500', color: '#4b5563', marginBottom: '8px' }}>Email</label>
                 <input
                   type="email"
                   value={contactForm.email}
                   onChange={(e) => setContactForm({ ...contactForm, email: e.target.value })}
                   placeholder="email@example.com"
-                  style={{ width: '100%', padding: '12px 16px', border: '1px solid #dbd5ca', borderRadius: '8px', fontSize: '14px', outline: 'none', boxSizing: 'border-box' }}
+                  style={{ width: '100%', padding: '12px 16px', border: '1px solid #e5e7eb', borderRadius: '8px', fontSize: '14px', outline: 'none', boxSizing: 'border-box' }}
                 />
               </div>
 
               <div style={{ marginBottom: '20px' }}>
-                <label style={{ display: 'block', fontSize: '14px', fontWeight: '500', color: '#1e2a45', marginBottom: '8px' }}>Property Address</label>
+                <label style={{ display: 'block', fontSize: '14px', fontWeight: '500', color: '#4b5563', marginBottom: '8px' }}>Property Address</label>
                 <input
                   type="text"
                   value={contactForm.property_address}
                   onChange={(e) => setContactForm({ ...contactForm, property_address: e.target.value })}
                   placeholder="123 Main St, City, State"
-                  style={{ width: '100%', padding: '12px 16px', border: '1px solid #dbd5ca', borderRadius: '8px', fontSize: '14px', outline: 'none', boxSizing: 'border-box' }}
+                  style={{ width: '100%', padding: '12px 16px', border: '1px solid #e5e7eb', borderRadius: '8px', fontSize: '14px', outline: 'none', boxSizing: 'border-box' }}
                 />
               </div>
 
               <div style={{ marginBottom: '20px' }}>
-                <label style={{ display: 'block', fontSize: '14px', fontWeight: '500', color: '#1e2a45', marginBottom: '8px' }}>Notes</label>
+                <label style={{ display: 'block', fontSize: '14px', fontWeight: '500', color: '#4b5563', marginBottom: '8px' }}>Notes</label>
                 <textarea
                   value={contactForm.notes}
                   onChange={(e) => setContactForm({ ...contactForm, notes: e.target.value })}
                   rows={3}
                   placeholder="Any additional notes about this contact..."
-                  style={{ width: '100%', padding: '12px 16px', border: '1px solid #dbd5ca', borderRadius: '8px', fontSize: '14px', outline: 'none', resize: 'vertical', boxSizing: 'border-box' }}
+                  style={{ width: '100%', padding: '12px 16px', border: '1px solid #e5e7eb', borderRadius: '8px', fontSize: '14px', outline: 'none', resize: 'vertical', boxSizing: 'border-box' }}
                 />
               </div>
 
@@ -2015,14 +2015,14 @@ export default function CampaignDetail() {
                 <button
                   type="button"
                   onClick={() => setShowAddContactModal(false)}
-                  style={{ padding: '12px 24px', backgroundColor: '#f7f6f4', color: '#1e2a45', fontWeight: '500', borderRadius: '8px', border: '1px solid #dbd5ca', cursor: 'pointer' }}
+                  style={{ padding: '12px 24px', backgroundColor: '#f9fafb', color: '#4b5563', fontWeight: '500', borderRadius: '8px', border: '1px solid #e5e7eb', cursor: 'pointer' }}
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={addingContact}
-                  style={{ padding: '12px 24px', background: 'linear-gradient(to right, #deb040, #c8932f)', color: '#151c30', fontWeight: '600', borderRadius: '8px', border: 'none', cursor: 'pointer' }}
+                  style={{ padding: '12px 24px', background: '#4f46e5', color: '#ffffff', fontWeight: '600', borderRadius: '8px', border: 'none', cursor: 'pointer' }}
                 >
                   {addingContact ? 'Adding...' : 'Add Contact'}
                 </button>
@@ -2035,30 +2035,30 @@ export default function CampaignDetail() {
       {/* Add from Contacts Modal */}
       {showAddFromContactsModal && (
         <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 50, padding: isMobile ? '16px' : '0' }}>
-          <div style={{ backgroundColor: 'white', borderRadius: '16px', padding: isMobile ? '24px' : '32px', width: isMobile ? '100%' : '700px', maxWidth: '100%', maxHeight: '90vh', overflowY: 'auto' }}>
+          <div style={{ background: '#ffffff', borderRadius: '16px', padding: isMobile ? '24px' : '32px', width: isMobile ? '100%' : '700px', maxWidth: '100%', maxHeight: '90vh', overflowY: 'auto' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
               <div>
-                <h2 style={{ fontSize: '24px', fontFamily: 'Playfair Display, serif', fontWeight: '600', color: '#151c30' }}>Add from Contacts</h2>
-                <p style={{ fontSize: '14px', color: '#99826a', marginTop: '4px' }}>Select contacts from other campaigns to add to this one</p>
+                <h2 style={{ fontSize: '24px', fontFamily: 'Inter, sans-serif', fontWeight: '600', color: '#111827' }}>Add from Contacts</h2>
+                <p style={{ fontSize: '14px', color: '#6b7280', marginTop: '4px' }}>Select contacts from other campaigns to add to this one</p>
               </div>
               <button onClick={() => setShowAddFromContactsModal(false)} style={{ background: 'transparent', border: 'none', cursor: 'pointer', padding: '4px' }}>
-                <X style={{ width: '24px', height: '24px', color: '#99826a' }} />
+                <X style={{ width: '24px', height: '24px', color: '#6b7280' }} />
               </button>
             </div>
 
             {loadingAllContacts ? (
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '48px' }}>
-                <div style={{ width: '32px', height: '32px', border: '4px solid #deb040', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 1s linear infinite' }}></div>
+                <div style={{ width: '32px', height: '32px', border: '4px solid #e5e7eb', borderTopColor: '#4f46e5', borderRadius: '50%', animation: 'spin 1s linear infinite' }}></div>
               </div>
             ) : allContacts.length === 0 ? (
               <div style={{ textAlign: 'center', padding: '48px' }}>
                 <Users style={{ width: '48px', height: '48px', color: '#c4b9a7', margin: '0 auto 12px' }} />
-                <p style={{ color: '#99826a' }}>No contacts found in other campaigns</p>
+                <p style={{ color: '#6b7280' }}>No contacts found in other campaigns</p>
               </div>
             ) : (
               <>
                 <div style={{ marginBottom: '16px', padding: '12px', backgroundColor: '#e8f4f0', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <span style={{ fontSize: '14px', color: '#065f46' }}>
+                  <span style={{ fontSize: '14px', color: '#059669' }}>
                     {selectedContactIds.length} contact(s) selected
                   </span>
                   {selectedContactIds.length > 0 && (
@@ -2071,14 +2071,14 @@ export default function CampaignDetail() {
                   )}
                 </div>
 
-                <div style={{ maxHeight: '400px', overflowY: 'auto', border: '1px solid #edeae5', borderRadius: '8px' }}>
+                <div style={{ maxHeight: '400px', overflowY: 'auto', border: '1px solid #f3f4f6', borderRadius: '8px' }}>
                   <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                     <thead>
-                      <tr style={{ backgroundColor: '#f7f6f4', position: 'sticky', top: 0 }}>
-                        <th style={{ padding: '12px 16px', textAlign: 'left', fontSize: '12px', fontWeight: '600', color: '#755f4e', width: '40px' }}></th>
-                        <th style={{ padding: '12px 16px', textAlign: 'left', fontSize: '12px', fontWeight: '600', color: '#755f4e', textTransform: 'uppercase' }}>Name</th>
-                        <th style={{ padding: '12px 16px', textAlign: 'left', fontSize: '12px', fontWeight: '600', color: '#755f4e', textTransform: 'uppercase' }}>Phone</th>
-                        <th style={{ padding: '12px 16px', textAlign: 'left', fontSize: '12px', fontWeight: '600', color: '#755f4e', textTransform: 'uppercase' }}>Campaign</th>
+                      <tr style={{ backgroundColor: '#f9fafb', position: 'sticky', top: 0 }}>
+                        <th style={{ padding: '12px 16px', textAlign: 'left', fontSize: '12px', fontWeight: '600', color: '#9ca3af', width: '40px' }}></th>
+                        <th style={{ padding: '12px 16px', textAlign: 'left', fontSize: '12px', fontWeight: '600', color: '#9ca3af', textTransform: 'uppercase' }}>Name</th>
+                        <th style={{ padding: '12px 16px', textAlign: 'left', fontSize: '12px', fontWeight: '600', color: '#9ca3af', textTransform: 'uppercase' }}>Phone</th>
+                        <th style={{ padding: '12px 16px', textAlign: 'left', fontSize: '12px', fontWeight: '600', color: '#9ca3af', textTransform: 'uppercase' }}>Campaign</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -2087,8 +2087,8 @@ export default function CampaignDetail() {
                           key={contact.id} 
                           onClick={() => toggleContactSelection(contact.id)}
                           style={{ 
-                            borderBottom: idx < allContacts.length - 1 ? '1px solid #edeae5' : 'none',
-                            backgroundColor: selectedContactIds.includes(contact.id) ? '#fef3c7' : 'white',
+                            borderBottom: idx < allContacts.length - 1 ? '1px solid #f3f4f6' : 'none',
+                            backgroundColor: selectedContactIds.includes(contact.id) ? '#eef2ff' : 'transparent',
                             cursor: 'pointer'
                           }}
                         >
@@ -2100,11 +2100,11 @@ export default function CampaignDetail() {
                               style={{ width: '18px', height: '18px', cursor: 'pointer' }}
                             />
                           </td>
-                          <td style={{ padding: '12px 16px', fontWeight: '500', color: '#1e2a45' }}>
+                          <td style={{ padding: '12px 16px', fontWeight: '500', color: '#4b5563' }}>
                             {contact.first_name} {contact.last_name}
                           </td>
-                          <td style={{ padding: '12px 16px', color: '#755f4e' }}>{contact.phone}</td>
-                          <td style={{ padding: '12px 16px', color: '#755f4e', fontSize: '13px' }}>{contact.campaign_name}</td>
+                          <td style={{ padding: '12px 16px', color: '#9ca3af' }}>{contact.phone}</td>
+                          <td style={{ padding: '12px 16px', color: '#9ca3af', fontSize: '13px' }}>{contact.campaign_name}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -2115,7 +2115,7 @@ export default function CampaignDetail() {
                   <button
                     type="button"
                     onClick={() => setShowAddFromContactsModal(false)}
-                    style={{ padding: '12px 24px', backgroundColor: '#f7f6f4', color: '#1e2a45', fontWeight: '500', borderRadius: '8px', border: '1px solid #dbd5ca', cursor: 'pointer' }}
+                    style={{ padding: '12px 24px', backgroundColor: '#f9fafb', color: '#4b5563', fontWeight: '500', borderRadius: '8px', border: '1px solid #e5e7eb', cursor: 'pointer' }}
                   >
                     Cancel
                   </button>
@@ -2124,8 +2124,8 @@ export default function CampaignDetail() {
                     disabled={addingFromContacts || selectedContactIds.length === 0}
                     style={{ 
                       padding: '12px 24px', 
-                      background: addingFromContacts || selectedContactIds.length === 0 ? '#dbd5ca' : 'linear-gradient(to right, #deb040, #c8932f)', 
-                      color: addingFromContacts || selectedContactIds.length === 0 ? '#99826a' : '#151c30', 
+                      background: addingFromContacts || selectedContactIds.length === 0 ? '#e5e7eb' : '#4f46e5', 
+                      color: addingFromContacts || selectedContactIds.length === 0 ? '#6b7280' : '#ffffff', 
                       fontWeight: '600', 
                       borderRadius: '8px', 
                       border: 'none', 
@@ -2145,21 +2145,21 @@ export default function CampaignDetail() {
       {/* View Contact Modal */}
       {showViewContactModal && viewingContact && (
         <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 50, padding: isMobile ? '16px' : '0' }}>
-          <div style={{ backgroundColor: 'white', borderRadius: '16px', padding: isMobile ? '24px' : '32px', width: isMobile ? '100%' : '500px', maxWidth: '100%', maxHeight: '90vh', overflowY: 'auto' }}>
+          <div style={{ background: '#ffffff', borderRadius: '16px', padding: isMobile ? '24px' : '32px', width: isMobile ? '100%' : '500px', maxWidth: '100%', maxHeight: '90vh', overflowY: 'auto' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
-              <h2 style={{ fontSize: '24px', fontFamily: 'Playfair Display, serif', fontWeight: '600', color: '#151c30' }}>Contact Details</h2>
+              <h2 style={{ fontSize: '24px', fontFamily: 'Inter, sans-serif', fontWeight: '600', color: '#111827' }}>Contact Details</h2>
               <button onClick={() => { setShowViewContactModal(false); setViewingContact(null); }} style={{ background: 'transparent', border: 'none', cursor: 'pointer', padding: '4px' }}>
-                <X style={{ width: '24px', height: '24px', color: '#99826a' }} />
+                <X style={{ width: '24px', height: '24px', color: '#6b7280' }} />
               </button>
             </div>
 
             {/* Contact Name Header */}
-            <div style={{ textAlign: 'center', marginBottom: '24px', padding: '20px', backgroundColor: '#f7f6f4', borderRadius: '12px' }}>
+            <div style={{ textAlign: 'center', marginBottom: '24px', padding: '20px', backgroundColor: '#f9fafb', borderRadius: '12px' }}>
               <div style={{ 
                 width: '64px', 
                 height: '64px', 
                 borderRadius: '50%', 
-                background: 'linear-gradient(135deg, #deb040, #c8932f)', 
+                background: '#4f46e5', 
                 display: 'flex', 
                 alignItems: 'center', 
                 justifyContent: 'center', 
@@ -2170,14 +2170,14 @@ export default function CampaignDetail() {
               }}>
                 {viewingContact.first_name?.[0]?.toUpperCase()}{viewingContact.last_name?.[0]?.toUpperCase()}
               </div>
-              <h3 style={{ fontSize: '20px', fontWeight: '600', color: '#151c30', marginBottom: '4px' }}>
+              <h3 style={{ fontSize: '20px', fontWeight: '600', color: '#111827', marginBottom: '4px' }}>
                 {viewingContact.first_name} {viewingContact.last_name}
               </h3>
               <span style={{ 
                 display: 'inline-block',
                 padding: '4px 12px', 
-                backgroundColor: viewingContact.status === 'completed' ? '#d1fae5' : viewingContact.status === 'called' ? '#fef3c7' : '#e9ecf5',
-                color: viewingContact.status === 'completed' ? '#059669' : viewingContact.status === 'called' ? '#d97706' : '#1e2a45',
+                backgroundColor: viewingContact.status === 'completed' ? '#ecfdf5' : viewingContact.status === 'called' ? '#fffbeb' : '#f3f4f6',
+                color: viewingContact.status === 'completed' ? '#059669' : viewingContact.status === 'called' ? '#d97706' : '#e5e7eb',
                 borderRadius: '20px',
                 fontSize: '12px',
                 fontWeight: '500'
@@ -2188,32 +2188,32 @@ export default function CampaignDetail() {
 
             {/* Contact Details */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px', backgroundColor: '#f7f6f4', borderRadius: '8px' }}>
-                <Phone style={{ width: '20px', height: '20px', color: '#deb040' }} />
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px', backgroundColor: '#f9fafb', borderRadius: '8px' }}>
+                <Phone style={{ width: '20px', height: '20px', color: '#4f46e5' }} />
                 <div>
-                  <p style={{ fontSize: '12px', color: '#99826a', marginBottom: '2px' }}>Phone</p>
-                  <p style={{ fontSize: '14px', fontWeight: '500', color: '#1e2a45' }}>{viewingContact.phone || '-'}</p>
+                  <p style={{ fontSize: '12px', color: '#6b7280', marginBottom: '2px' }}>Phone</p>
+                  <p style={{ fontSize: '14px', fontWeight: '500', color: '#4b5563' }}>{viewingContact.phone || '-'}</p>
                 </div>
               </div>
 
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px', backgroundColor: '#f7f6f4', borderRadius: '8px' }}>
-                <Mail style={{ width: '20px', height: '20px', color: '#deb040' }} />
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px', backgroundColor: '#f9fafb', borderRadius: '8px' }}>
+                <Mail style={{ width: '20px', height: '20px', color: '#4f46e5' }} />
                 <div>
-                  <p style={{ fontSize: '12px', color: '#99826a', marginBottom: '2px' }}>Email</p>
-                  <p style={{ fontSize: '14px', fontWeight: '500', color: '#1e2a45' }}>{viewingContact.email || '-'}</p>
+                  <p style={{ fontSize: '12px', color: '#6b7280', marginBottom: '2px' }}>Email</p>
+                  <p style={{ fontSize: '14px', fontWeight: '500', color: '#4b5563' }}>{viewingContact.email || '-'}</p>
                 </div>
               </div>
 
-              <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px', padding: '12px', backgroundColor: '#f7f6f4', borderRadius: '8px' }}>
-                <MapPin style={{ width: '20px', height: '20px', color: '#deb040', flexShrink: 0 }} />
+              <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px', padding: '12px', backgroundColor: '#f9fafb', borderRadius: '8px' }}>
+                <MapPin style={{ width: '20px', height: '20px', color: '#4f46e5', flexShrink: 0 }} />
                 <div>
-                  <p style={{ fontSize: '12px', color: '#99826a', marginBottom: '2px' }}>Property Address</p>
-                  <p style={{ fontSize: '14px', fontWeight: '500', color: '#1e2a45' }}>{viewingContact.property_address || '-'}</p>
+                  <p style={{ fontSize: '12px', color: '#6b7280', marginBottom: '2px' }}>Property Address</p>
+                  <p style={{ fontSize: '14px', fontWeight: '500', color: '#4b5563' }}>{viewingContact.property_address || '-'}</p>
                 </div>
               </div>
 
               {viewingContact.notes && (
-                <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px', padding: '12px', backgroundColor: '#fef3c7', borderRadius: '8px' }}>
+                <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px', padding: '12px', backgroundColor: '#fffbeb', borderRadius: '8px' }}>
                   <FileText style={{ width: '20px', height: '20px', color: '#d97706', flexShrink: 0 }} />
                   <div>
                     <p style={{ fontSize: '12px', color: '#92400e', marginBottom: '2px' }}>Notes</p>
@@ -2227,7 +2227,7 @@ export default function CampaignDetail() {
             <div style={{ display: 'flex', gap: '12px', marginTop: '24px' }}>
               <button
                 onClick={() => { setShowViewContactModal(false); setViewingContact(null); }}
-                style={{ flex: 1, padding: '12px 24px', backgroundColor: '#f7f6f4', color: '#1e2a45', fontWeight: '500', borderRadius: '8px', border: '1px solid #dbd5ca', cursor: 'pointer' }}
+                style={{ flex: 1, padding: '12px 24px', backgroundColor: '#f9fafb', color: '#4b5563', fontWeight: '500', borderRadius: '8px', border: '1px solid #e5e7eb', cursor: 'pointer' }}
               >
                 Close
               </button>

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Phone, Clock, ArrowUpRight, User } from 'lucide-react';
+import { Phone, Clock, ArrowUpRight } from 'lucide-react';
 
 export default function Callbacks() {
   const [callbacks, setCallbacks] = useState([]);
@@ -26,59 +26,74 @@ export default function Callbacks() {
   if (loading) {
     return (
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '256px' }}>
-        <div style={{ width: '32px', height: '32px', border: '4px solid #deb040', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 1s linear infinite' }}></div>
+        <div style={{ width: '36px', height: '36px', border: '3px solid #e5e7eb', borderTopColor: '#4f46e5', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
       </div>
     );
   }
 
   return (
-    <div>
-      <div style={{ marginBottom: '32px' }}>
-        <h1 style={{ fontSize: '30px', fontFamily: 'Playfair Display, serif', fontWeight: '600', color: '#151c30' }}>Callbacks Due</h1>
-        <p style={{ color: '#8c735e', marginTop: '4px' }}>Contacts who requested a callback — follow up to convert leads</p>
+    <div style={{ animation: 'fadeIn 0.3s ease-out' }}>
+      <div style={{ marginBottom: '24px' }}>
+        <h1 style={{ fontSize: '26px', fontWeight: '800', color: '#111827', letterSpacing: '-0.03em' }}>Callbacks Due</h1>
+        <p style={{ color: '#6b7280', marginTop: '4px', fontSize: '14px' }}>Contacts who requested a callback - follow up to convert leads</p>
       </div>
 
       {callbacks.length === 0 ? (
-        <div style={{ backgroundColor: 'white', borderRadius: '16px', padding: '48px', textAlign: 'center', boxShadow: '0 4px 20px -2px rgba(30, 42, 69, 0.08)' }}>
-          <Phone style={{ width: '64px', height: '64px', color: '#c4b9a7', margin: '0 auto 16px' }} />
-          <h3 style={{ fontSize: '20px', fontFamily: 'Playfair Display, serif', fontWeight: '600', color: '#151c30', marginBottom: '8px' }}>No callbacks pending</h3>
-          <p style={{ color: '#99826a' }}>When contacts request a callback during AI calls, they will appear here.</p>
+        <div style={{
+          background: '#ffffff', borderRadius: '12px', padding: '60px', textAlign: 'center',
+          border: '1px solid #e5e7eb'
+        }}>
+          <div style={{
+            width: '56px', height: '56px', borderRadius: '12px',
+            background: '#f9fafb', border: '1px solid #e5e7eb',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            margin: '0 auto 16px'
+          }}>
+            <Phone style={{ width: '24px', height: '24px', color: '#9ca3af' }} />
+          </div>
+          <h3 style={{ fontSize: '18px', fontWeight: '700', color: '#111827', marginBottom: '8px' }}>No callbacks pending</h3>
+          <p style={{ color: '#6b7280', fontSize: '14px' }}>When contacts request a callback during AI calls, they will appear here.</p>
         </div>
       ) : (
-        <div style={{ backgroundColor: 'white', borderRadius: '16px', boxShadow: '0 4px 20px -2px rgba(30, 42, 69, 0.08)', overflow: 'hidden' }}>
+        <div style={{
+          background: '#ffffff', borderRadius: '12px', overflow: 'hidden',
+          border: '1px solid #e5e7eb', boxShadow: '0 1px 3px rgba(0,0,0,0.03)'
+        }}>
           {callbacks.map((cb, idx) => (
             <Link
               key={cb.id}
               to={`/calls/${cb.id}`}
               style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '16px',
-                padding: '16px',
-                borderBottom: idx < callbacks.length - 1 ? '1px solid #edeae5' : 'none',
-                textDecoration: 'none',
-                transition: 'background-color 0.2s',
-                color: 'inherit'
+                display: 'flex', alignItems: 'center', gap: '14px',
+                padding: '16px 20px',
+                borderBottom: idx < callbacks.length - 1 ? '1px solid #f3f4f6' : 'none',
+                textDecoration: 'none', transition: 'background-color 0.15s', color: 'inherit'
               }}
+              onMouseEnter={e => e.currentTarget.style.backgroundColor = '#f9fafb'}
+              onMouseLeave={e => e.currentTarget.style.backgroundColor = 'transparent'}
             >
-              <div style={{ width: '48px', height: '48px', borderRadius: '50%', backgroundColor: '#dbeafe', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                <Phone style={{ width: '24px', height: '24px', color: '#2563eb' }} />
+              <div style={{
+                width: '42px', height: '42px', borderRadius: '10px',
+                background: '#eef2ff',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0
+              }}>
+                <Phone style={{ width: '20px', height: '20px', color: '#4f46e5' }} />
               </div>
               <div style={{ flex: 1, minWidth: 0 }}>
-                <p style={{ fontWeight: '500', color: '#151c30' }}>{cb.first_name} {cb.last_name}</p>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginTop: '4px' }}>
-                  <span style={{ fontSize: '14px', color: '#99826a' }}>{cb.phone}</span>
-                  <span style={{ color: '#c4b9a7' }}>•</span>
-                  <span style={{ fontSize: '14px', color: '#99826a' }}>{cb.campaign_name}</span>
+                <p style={{ fontWeight: '600', color: '#111827', fontSize: '14px' }}>{cb.first_name} {cb.last_name}</p>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '3px' }}>
+                  <span style={{ fontSize: '13px', color: '#6b7280' }}>{cb.phone}</span>
+                  <span style={{ color: '#e5e7eb', fontSize: '10px' }}>|</span>
+                  <span style={{ fontSize: '13px', color: '#6b7280' }}>{cb.campaign_name}</span>
                 </div>
                 {cb.callback_preferred_at && (
                   <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '6px' }}>
-                    <Clock style={{ width: '14px', height: '14px', color: '#deb040' }} />
-                    <span style={{ fontSize: '13px', color: '#a67328' }}>Preferred: {cb.callback_preferred_at}</span>
+                    <Clock style={{ width: '13px', height: '13px', color: '#d97706' }} />
+                    <span style={{ fontSize: '12px', color: '#d97706', fontWeight: '500' }}>Preferred: {cb.callback_preferred_at}</span>
                   </div>
                 )}
               </div>
-              <ArrowUpRight style={{ width: '20px', height: '20px', color: '#c4b9a7', flexShrink: 0 }} />
+              <ArrowUpRight style={{ width: '16px', height: '16px', color: '#d1d5db', flexShrink: 0 }} />
             </Link>
           ))}
         </div>

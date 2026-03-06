@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { 
-  Plus, 
-  Search, 
-  Users, 
-  Phone, 
+import {
+  Plus,
+  Search,
+  Users,
+  Phone,
   ChevronRight,
   Sparkles,
   Trash2
@@ -37,7 +37,6 @@ export default function Campaigns() {
     e.preventDefault();
     e.stopPropagation();
     if (!confirm('Are you sure you want to delete this campaign?')) return;
-    
     try {
       await fetch(`/api/campaigns/${id}`, { method: 'DELETE' });
       setCampaigns(campaigns.filter(c => c.id !== id));
@@ -46,55 +45,52 @@ export default function Campaigns() {
     }
   }
 
-  const filteredCampaigns = campaigns.filter(c => 
+  const filteredCampaigns = campaigns.filter(c =>
     c.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     c.type.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   const typeColors = {
-    pre_foreclosure: { bg: '#fee2e2', color: '#dc2626' },
-    cash_buyer: { bg: '#d1fae5', color: '#059669' },
-    short_sale: { bg: '#fbf7e8', color: '#a67328' },
-    live_verification: { bg: '#dbeafe', color: '#2563eb' },
-    follow_up: { bg: '#ede9fe', color: '#7c3aed' },
-    voicemail_drop: { bg: '#fef3c7', color: '#d97706' },
-    sms_follow_up: { bg: '#e0e7ff', color: '#4f46e5' },
-    appointment: { bg: '#cffafe', color: '#0891b2' },
-    outreach: { bg: '#f3e8ff', color: '#9333ea' }
+    pre_foreclosure: { bg: '#fef2f2', color: '#dc2626', border: '#fecaca' },
+    cash_buyer: { bg: '#ecfdf5', color: '#059669', border: '#a7f3d0' },
+    short_sale: { bg: '#fffbeb', color: '#d97706', border: '#fde68a' },
+    live_verification: { bg: '#eef2ff', color: '#4f46e5', border: '#c7d2fe' },
+    follow_up: { bg: '#f5f3ff', color: '#7c3aed', border: '#ddd6fe' },
+    voicemail_drop: { bg: '#fffbeb', color: '#d97706', border: '#fde68a' },
+    sms_follow_up: { bg: '#eef2ff', color: '#4338ca', border: '#c7d2fe' },
+    appointment: { bg: '#ecfeff', color: '#0891b2', border: '#a5f3fc' },
+    outreach: { bg: '#faf5ff', color: '#9333ea', border: '#e9d5ff' }
   };
 
   if (loading) {
     return (
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '256px' }}>
-        <div style={{ width: '32px', height: '32px', border: '4px solid #deb040', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 1s linear infinite' }}></div>
+        <div style={{ width: '36px', height: '36px', border: '3px solid #e5e7eb', borderTopColor: '#4f46e5', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
       </div>
     );
   }
 
   return (
-    <div>
+    <div style={{ animation: 'fadeIn 0.3s ease-out' }}>
       {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '32px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px', flexWrap: 'wrap', gap: '16px' }}>
         <div>
-          <h1 style={{ fontSize: '30px', fontFamily: 'Playfair Display, serif', fontWeight: '600', color: '#151c30' }}>Campaigns</h1>
-          <p style={{ color: '#8c735e', marginTop: '4px' }}>Manage your AI outreach campaigns</p>
+          <h1 style={{ fontSize: '26px', fontWeight: '800', color: '#111827', letterSpacing: '-0.03em' }}>Campaigns</h1>
+          <p style={{ color: '#6b7280', marginTop: '4px', fontSize: '14px' }}>Manage your AI outreach campaigns</p>
         </div>
-        <button 
+        <button
           onClick={() => setShowCreateModal(true)}
           style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            padding: '12px 24px',
-            background: 'linear-gradient(to right, #deb040, #c8932f)',
-            color: '#151c30',
-            fontWeight: '600',
-            borderRadius: '8px',
-            border: 'none',
-            cursor: 'pointer',
-            fontSize: '14px'
+            display: 'inline-flex', alignItems: 'center', gap: '8px',
+            padding: '10px 20px',
+            background: '#4f46e5',
+            color: 'white', fontWeight: '600', borderRadius: '10px',
+            border: 'none', cursor: 'pointer', fontSize: '14px',
+            boxShadow: '0 1px 3px rgba(79,70,229,0.3)',
+            transition: 'all 0.2s'
           }}
         >
-          <Plus style={{ width: '20px', height: '20px', marginRight: '8px' }} />
+          <Plus style={{ width: '18px', height: '18px' }} />
           New Campaign
         </button>
       </div>
@@ -102,93 +98,104 @@ export default function Campaigns() {
       {/* Search */}
       <div style={{ marginBottom: '24px' }}>
         <div style={{ position: 'relative', maxWidth: '400px' }}>
-          <Search style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', width: '20px', height: '20px', color: '#ab9a82' }} />
+          <Search style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', width: '18px', height: '18px', color: '#9ca3af' }} />
           <input
             type="text"
             placeholder="Search campaigns..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             style={{
-              width: '100%',
-              padding: '12px 16px 12px 48px',
-              border: '1px solid #dbd5ca',
-              borderRadius: '8px',
-              fontSize: '14px',
-              outline: 'none'
+              width: '100%', padding: '10px 16px 10px 42px',
+              background: '#ffffff',
+              border: '1px solid #e5e7eb',
+              borderRadius: '10px', fontSize: '14px', outline: 'none',
+              color: '#111827', transition: 'border-color 0.2s'
             }}
+            onFocus={e => e.target.style.borderColor = '#4f46e5'}
+            onBlur={e => e.target.style.borderColor = '#e5e7eb'}
           />
         </div>
       </div>
 
       {/* Campaign Grid */}
       {filteredCampaigns.length === 0 ? (
-        <div style={{ backgroundColor: 'white', borderRadius: '16px', padding: '48px', textAlign: 'center', boxShadow: '0 4px 20px -2px rgba(30, 42, 69, 0.08)' }}>
-          <div style={{ width: '64px', height: '64px', backgroundColor: '#edeae5', borderRadius: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
-            <Sparkles style={{ width: '32px', height: '32px', color: '#ab9a82' }} />
+        <div style={{
+          background: '#ffffff',
+          borderRadius: '12px', padding: '60px', textAlign: 'center',
+          border: '1px solid #e5e7eb'
+        }}>
+          <div style={{
+            width: '64px', height: '64px', borderRadius: '12px',
+            background: '#f9fafb', border: '1px solid #e5e7eb',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            margin: '0 auto 20px'
+          }}>
+            <Sparkles style={{ width: '28px', height: '28px', color: '#9ca3af' }} />
           </div>
-          <h3 style={{ fontSize: '20px', fontFamily: 'Playfair Display, serif', fontWeight: '600', color: '#151c30', marginBottom: '8px' }}>
+          <h3 style={{ fontSize: '18px', fontWeight: '700', color: '#111827', marginBottom: '8px' }}>
             {searchQuery ? 'No campaigns found' : 'Create your first campaign'}
           </h3>
-          <p style={{ color: '#99826a', marginBottom: '24px', maxWidth: '400px', margin: '0 auto 24px' }}>
+          <p style={{ color: '#6b7280', marginBottom: '24px', maxWidth: '400px', margin: '0 auto 24px', fontSize: '14px' }}>
             {searchQuery ? 'Try adjusting your search terms' : 'Set up an AI-powered outreach campaign to start connecting with your clients.'}
           </p>
           {!searchQuery && (
-            <button 
+            <button
               onClick={() => setShowCreateModal(true)}
               style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                padding: '12px 24px',
-                backgroundColor: '#1e2a45',
-                color: 'white',
-                fontWeight: '500',
-                borderRadius: '8px',
-                border: 'none',
-                cursor: 'pointer'
+                display: 'inline-flex', alignItems: 'center', gap: '8px',
+                padding: '10px 20px',
+                background: '#4f46e5',
+                color: 'white', fontWeight: '600', borderRadius: '10px',
+                border: 'none', cursor: 'pointer', fontSize: '14px'
               }}
             >
-              <Plus style={{ width: '20px', height: '20px', marginRight: '8px' }} />
+              <Plus style={{ width: '18px', height: '18px' }} />
               Create Campaign
             </button>
           )}
         </div>
       ) : (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '24px' }}>
-          {filteredCampaigns.map((campaign) => {
-            const colors = typeColors[campaign.type] || { bg: '#edeae5', color: '#755f4e' };
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '16px' }}>
+          {filteredCampaigns.map((campaign, i) => {
+            const colors = typeColors[campaign.type] || { bg: '#f3f4f6', color: '#6b7280', border: '#e5e7eb' };
             return (
               <Link
                 key={campaign.id}
                 to={`/campaigns/${campaign.id}`}
                 style={{
-                  backgroundColor: 'white',
-                  borderRadius: '16px',
-                  boxShadow: '0 4px 20px -2px rgba(30, 42, 69, 0.08)',
-                  overflow: 'hidden',
-                  textDecoration: 'none',
-                  display: 'block',
-                  transition: 'transform 0.2s, box-shadow 0.2s'
+                  background: '#ffffff',
+                  borderRadius: '12px', overflow: 'hidden', textDecoration: 'none',
+                  display: 'block', border: '1px solid #e5e7eb',
+                  boxShadow: '0 1px 3px rgba(0,0,0,0.03)',
+                  transition: 'all 0.2s ease',
+                  animation: `fadeIn 0.4s ease-out ${i * 0.05}s both`
+                }}
+                onMouseEnter={e => {
+                  e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.08)';
+                  e.currentTarget.style.transform = 'translateY(-2px)';
+                }}
+                onMouseLeave={e => {
+                  e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.03)';
+                  e.currentTarget.style.transform = 'translateY(0)';
                 }}
               >
-                <div style={{ padding: '24px' }}>
-                  <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '16px' }}>
+                <div style={{ padding: '22px' }}>
+                  <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '14px' }}>
                     <div>
-                      <span style={{ 
-                        display: 'inline-block',
-                        padding: '4px 10px',
-                        borderRadius: '9999px',
-                        fontSize: '12px',
-                        fontWeight: '500',
-                        backgroundColor: colors.bg,
-                        color: colors.color
+                      <span style={{
+                        display: 'inline-block', padding: '3px 10px',
+                        borderRadius: '6px', fontSize: '11px', fontWeight: '600',
+                        backgroundColor: colors.bg, color: colors.color,
+                        border: `1px solid ${colors.border}`,
+                        letterSpacing: '0.03em', textTransform: 'uppercase'
                       }}>
                         {campaign.type.replace('_', ' ')}
                       </span>
-                      <h3 style={{ fontSize: '18px', fontFamily: 'Playfair Display, serif', fontWeight: '600', color: '#151c30', marginTop: '8px' }}>
+                      <h3 style={{ fontSize: '17px', fontWeight: '700', color: '#111827', marginTop: '10px', letterSpacing: '-0.02em' }}>
                         {campaign.name}
                       </h3>
                       {campaign.description && (
-                        <p style={{ fontSize: '14px', color: '#99826a', marginTop: '4px' }}>
+                        <p style={{ fontSize: '13px', color: '#6b7280', marginTop: '4px', lineHeight: '1.4' }}>
                           {campaign.description.substring(0, 60)}...
                         </p>
                       )}
@@ -196,43 +203,44 @@ export default function Campaigns() {
                     <button
                       onClick={(e) => deleteCampaign(campaign.id, e)}
                       style={{
-                        padding: '8px',
-                        background: 'transparent',
-                        border: 'none',
-                        cursor: 'pointer',
-                        borderRadius: '8px',
-                        color: '#ab9a82'
+                        padding: '6px', background: 'transparent', border: 'none',
+                        cursor: 'pointer', borderRadius: '6px', color: '#d1d5db',
+                        transition: 'color 0.2s'
                       }}
+                      onMouseEnter={e => e.currentTarget.style.color = '#ef4444'}
+                      onMouseLeave={e => e.currentTarget.style.color = '#d1d5db'}
                     >
-                      <Trash2 style={{ width: '16px', height: '16px' }} />
+                      <Trash2 style={{ width: '15px', height: '15px' }} />
                     </button>
                   </div>
 
                   {/* Stats */}
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px', padding: '16px 0', borderTop: '1px solid #edeae5', borderBottom: '1px solid #edeae5' }}>
-                    <div style={{ textAlign: 'center' }}>
-                      <Users style={{ width: '16px', height: '16px', color: '#99826a', margin: '0 auto' }} />
-                      <p style={{ fontSize: '18px', fontWeight: '600', color: '#1e2a45', marginTop: '4px' }}>{campaign.contact_count || 0}</p>
-                      <p style={{ fontSize: '12px', color: '#ab9a82' }}>Contacts</p>
-                    </div>
-                    <div style={{ textAlign: 'center' }}>
-                      <Phone style={{ width: '16px', height: '16px', color: '#99826a', margin: '0 auto' }} />
-                      <p style={{ fontSize: '18px', fontWeight: '600', color: '#1e2a45', marginTop: '4px' }}>{campaign.call_count || 0}</p>
-                      <p style={{ fontSize: '12px', color: '#ab9a82' }}>Calls</p>
-                    </div>
-                    <div style={{ textAlign: 'center' }}>
-                      <p style={{ fontSize: '18px', fontWeight: '600', color: '#1e2a45', marginTop: '4px' }}>{campaign.completed_calls || 0}</p>
-                      <p style={{ fontSize: '12px', color: '#ab9a82' }}>Done</p>
-                    </div>
+                  <div style={{
+                    display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px',
+                    padding: '14px 0',
+                    borderTop: '1px solid #f3f4f6',
+                    borderBottom: '1px solid #f3f4f6'
+                  }}>
+                    {[
+                      { icon: Users, value: campaign.contact_count || 0, label: 'Contacts' },
+                      { icon: Phone, value: campaign.call_count || 0, label: 'Calls' },
+                      { icon: null, value: campaign.completed_calls || 0, label: 'Done' }
+                    ].map((stat) => (
+                      <div key={stat.label} style={{ textAlign: 'center' }}>
+                        {stat.icon && <stat.icon style={{ width: '14px', height: '14px', color: '#9ca3af', margin: '0 auto 4px' }} />}
+                        <p style={{ fontSize: '18px', fontWeight: '700', color: '#111827' }}>{stat.value}</p>
+                        <p style={{ fontSize: '11px', color: '#9ca3af' }}>{stat.label}</p>
+                      </div>
+                    ))}
                   </div>
 
                   {/* Footer */}
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '16px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '14px' }}>
                     <span className={`status-badge status-${campaign.status}`}>
                       {campaign.status}
                     </span>
-                    <span style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '14px', color: '#deb040', fontWeight: '500' }}>
-                      View Details <ChevronRight style={{ width: '16px', height: '16px' }} />
+                    <span style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '13px', color: '#4f46e5', fontWeight: '500' }}>
+                      Details <ChevronRight style={{ width: '14px', height: '14px' }} />
                     </span>
                   </div>
                 </div>
@@ -242,9 +250,8 @@ export default function Campaigns() {
         </div>
       )}
 
-      {/* Create Campaign Modal */}
       {showCreateModal && (
-        <CreateCampaignModal 
+        <CreateCampaignModal
           onClose={() => setShowCreateModal(false)}
           onCreated={(campaign) => {
             setCampaigns([campaign, ...campaigns]);

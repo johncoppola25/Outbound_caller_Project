@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { 
-  Phone, 
+import {
+  Phone,
   Search,
   PhoneCall,
   CheckCircle2,
@@ -23,7 +23,6 @@ export default function Calls() {
 
   useEffect(() => {
     fetchCalls();
-    
     const unsubscribe = subscribe((message) => {
       if (message.type === 'call_update') {
         setCalls(prev => {
@@ -35,7 +34,6 @@ export default function Calls() {
         });
       }
     });
-    
     return unsubscribe;
   }, [subscribe]);
 
@@ -56,14 +54,12 @@ export default function Calls() {
       `${call.first_name} ${call.last_name}`.toLowerCase().includes(searchQuery.toLowerCase()) ||
       call.phone?.includes(searchQuery) ||
       call.campaign_name?.toLowerCase().includes(searchQuery.toLowerCase());
-    
     const matchesStatus = statusFilter === 'all' || call.status === statusFilter;
-    
     return matchesSearch && matchesStatus;
   });
 
   const statusOptions = [
-    { value: 'all', label: 'All Calls' },
+    { value: 'all', label: 'All' },
     { value: 'in_progress', label: 'In Progress' },
     { value: 'completed', label: 'Completed' },
     { value: 'queued', label: 'Queued' },
@@ -100,8 +96,7 @@ export default function Calls() {
   }
 
   function formatCallTime(dateStr) {
-    if (!dateStr) return '—';
-    // SQLite stores UTC without timezone; parse as UTC so display uses local time
+    if (!dateStr) return '--';
     let s = String(dateStr).trim().replace(' ', 'T');
     if (!s.endsWith('Z') && !/[-+]\d{2}:?\d{0,2}$/.test(s)) s += 'Z';
     const d = new Date(s);
@@ -117,54 +112,71 @@ export default function Calls() {
   if (loading) {
     return (
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '256px' }}>
-        <div style={{ width: '32px', height: '32px', border: '4px solid #deb040', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 1s linear infinite' }}></div>
+        <div style={{ width: '36px', height: '36px', border: '3px solid #e5e7eb', borderTopColor: '#4f46e5', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
       </div>
     );
   }
 
   return (
-    <div>
+    <div style={{ animation: 'fadeIn 0.3s ease-out' }}>
       {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '32px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px', flexWrap: 'wrap', gap: '16px' }}>
         <div>
-          <h1 style={{ fontSize: '30px', fontFamily: 'Playfair Display, serif', fontWeight: '600', color: '#151c30' }}>Call Activity</h1>
-          <p style={{ color: '#8c735e', marginTop: '4px' }}>Monitor and review all outbound calls</p>
+          <h1 style={{ fontSize: '26px', fontWeight: '800', color: '#111827', letterSpacing: '-0.03em' }}>Call Activity</h1>
+          <p style={{ color: '#6b7280', marginTop: '4px', fontSize: '14px' }}>Monitor and review all outbound calls</p>
         </div>
-        
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
           <a
             href="/api/calls/export"
             download="calls.csv"
-            style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '10px 18px', backgroundColor: '#1e2a45', color: 'white', borderRadius: '10px', textDecoration: 'none', fontSize: '14px', fontWeight: '500' }}
+            style={{
+              display: 'inline-flex', alignItems: 'center', gap: '8px',
+              padding: '10px 16px', background: '#ffffff',
+              border: '1px solid #e5e7eb',
+              color: '#4b5563', borderRadius: '10px', textDecoration: 'none',
+              fontSize: '13px', fontWeight: '500', transition: 'all 0.2s'
+            }}
           >
-            <Download style={{ width: '18px', height: '18px' }} />
-            Export CSV
+            <Download style={{ width: '16px', height: '16px' }} />
+            Export
           </a>
           {activeCalls > 0 && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 16px', backgroundColor: '#fbf7e8', borderRadius: '9999px' }}>
-              <PhoneCall style={{ width: '20px', height: '20px', color: '#deb040' }} />
-              <span style={{ fontWeight: '600', color: '#a67328' }}>{activeCalls} Active Call{activeCalls !== 1 ? 's' : ''}</span>
+            <div style={{
+              display: 'flex', alignItems: 'center', gap: '8px',
+              padding: '8px 14px', background: '#fffbeb',
+              border: '1px solid #fde68a',
+              borderRadius: '9999px'
+            }}>
+              <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#d97706', animation: 'pulse 2s infinite' }} />
+              <span style={{ fontWeight: '600', color: '#d97706', fontSize: '13px' }}>{activeCalls} Active</span>
             </div>
           )}
         </div>
       </div>
 
       {/* Stats Row */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px', marginBottom: '24px' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '12px', marginBottom: '20px' }}>
         {[
-          { label: 'Total Calls', value: calls.length, icon: Phone, bg: '#e9ecf5', color: '#1e2a45' },
-          { label: 'Active Now', value: activeCalls, icon: PhoneCall, bg: '#fbf7e8', color: '#deb040' },
-          { label: 'Completed', value: calls.filter(c => c.status === 'completed').length, icon: CheckCircle2, bg: '#d1fae5', color: '#059669' },
-          { label: 'Appointments', value: calls.filter(c => c.outcome === 'appointment_scheduled').length, icon: Calendar, bg: '#ede9fe', color: '#7c3aed' }
+          { label: 'Total Calls', value: calls.length, icon: Phone, color: '#4f46e5', bg: '#eef2ff' },
+          { label: 'Active Now', value: activeCalls, icon: PhoneCall, color: '#d97706', bg: '#fffbeb' },
+          { label: 'Completed', value: calls.filter(c => c.status === 'completed').length, icon: CheckCircle2, color: '#059669', bg: '#ecfdf5' },
+          { label: 'Appointments', value: calls.filter(c => c.outcome === 'appointment_scheduled').length, icon: Calendar, color: '#7c3aed', bg: '#f5f3ff' }
         ].map((stat) => (
-          <div key={stat.label} style={{ backgroundColor: 'white', borderRadius: '12px', padding: '16px', boxShadow: '0 4px 20px -2px rgba(30, 42, 69, 0.08)' }}>
+          <div key={stat.label} style={{
+            background: '#ffffff',
+            borderRadius: '12px', padding: '16px',
+            border: '1px solid #e5e7eb', boxShadow: '0 1px 3px rgba(0,0,0,0.03)'
+          }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <div>
-                <p style={{ fontSize: '14px', color: '#99826a' }}>{stat.label}</p>
-                <p style={{ fontSize: '24px', fontWeight: '600', color: stat.color }}>{stat.value}</p>
+                <p style={{ fontSize: '12px', color: '#6b7280', fontWeight: '500', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{stat.label}</p>
+                <p style={{ fontSize: '24px', fontWeight: '800', color: '#111827', letterSpacing: '-0.03em' }}>{stat.value}</p>
               </div>
-              <div style={{ width: '40px', height: '40px', backgroundColor: stat.bg, borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <stat.icon style={{ width: '20px', height: '20px', color: stat.color }} />
+              <div style={{
+                width: '36px', height: '36px', background: stat.bg,
+                borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center'
+              }}>
+                <stat.icon style={{ width: '18px', height: '18px', color: stat.color }} />
               </div>
             </div>
           </div>
@@ -172,33 +184,39 @@ export default function Calls() {
       </div>
 
       {/* Filters */}
-      <div style={{ backgroundColor: 'white', borderRadius: '12px', padding: '16px', boxShadow: '0 4px 20px -2px rgba(30, 42, 69, 0.08)', marginBottom: '24px' }}>
-        <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '16px' }}>
-          <div style={{ position: 'relative', flex: 1, minWidth: '250px' }}>
-            <Search style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', width: '20px', height: '20px', color: '#ab9a82' }} />
+      <div style={{
+        background: '#ffffff',
+        borderRadius: '12px', padding: '14px',
+        border: '1px solid #e5e7eb', marginBottom: '20px'
+      }}>
+        <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '12px' }}>
+          <div style={{ position: 'relative', flex: 1, minWidth: '200px' }}>
+            <Search style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', width: '16px', height: '16px', color: '#9ca3af' }} />
             <input
               type="text"
               placeholder="Search by name, phone, or campaign..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              style={{ width: '100%', padding: '10px 16px 10px 40px', border: '1px solid #dbd5ca', borderRadius: '8px', fontSize: '14px', outline: 'none' }}
+              style={{
+                width: '100%', padding: '9px 14px 9px 36px',
+                background: '#f9fafb', border: '1px solid #e5e7eb',
+                borderRadius: '8px', fontSize: '13px', outline: 'none', color: '#111827'
+              }}
+              onFocus={e => e.target.style.borderColor = '#4f46e5'}
+              onBlur={e => e.target.style.borderColor = '#e5e7eb'}
             />
           </div>
-          
-          <div style={{ display: 'flex', gap: '8px' }}>
+          <div style={{ display: 'flex', gap: '4px', background: '#f9fafb', borderRadius: '8px', padding: '3px', border: '1px solid #e5e7eb' }}>
             {statusOptions.map((option) => (
               <button
                 key={option.value}
                 onClick={() => setStatusFilter(option.value)}
                 style={{
-                  padding: '8px 16px',
-                  borderRadius: '8px',
-                  fontSize: '14px',
-                  fontWeight: '500',
-                  border: 'none',
-                  cursor: 'pointer',
-                  backgroundColor: statusFilter === option.value ? '#1e2a45' : '#edeae5',
-                  color: statusFilter === option.value ? 'white' : '#755f4e'
+                  padding: '6px 14px', borderRadius: '6px', fontSize: '13px', fontWeight: '500',
+                  border: 'none', cursor: 'pointer',
+                  backgroundColor: statusFilter === option.value ? '#4f46e5' : 'transparent',
+                  color: statusFilter === option.value ? '#ffffff' : '#6b7280',
+                  transition: 'all 0.2s'
                 }}
               >
                 {option.label}
@@ -210,81 +228,99 @@ export default function Calls() {
 
       {/* Calls List */}
       {filteredCalls.length === 0 ? (
-        <div style={{ backgroundColor: 'white', borderRadius: '16px', padding: '48px', textAlign: 'center', boxShadow: '0 4px 20px -2px rgba(30, 42, 69, 0.08)' }}>
-          <Phone style={{ width: '64px', height: '64px', color: '#c4b9a7', margin: '0 auto 16px' }} />
-          <h3 style={{ fontSize: '20px', fontFamily: 'Playfair Display, serif', fontWeight: '600', color: '#151c30', marginBottom: '8px' }}>No calls yet</h3>
-          <p style={{ color: '#99826a', marginBottom: '24px' }}>Start a campaign to begin making outbound calls.</p>
-          <Link to="/campaigns" style={{ display: 'inline-flex', alignItems: 'center', padding: '12px 24px', backgroundColor: '#1e2a45', color: 'white', fontWeight: '500', borderRadius: '8px', textDecoration: 'none' }}>
+        <div style={{
+          background: '#ffffff', borderRadius: '12px', padding: '60px', textAlign: 'center',
+          border: '1px solid #e5e7eb'
+        }}>
+          <div style={{
+            width: '56px', height: '56px', borderRadius: '12px',
+            background: '#f9fafb', border: '1px solid #e5e7eb',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            margin: '0 auto 16px'
+          }}>
+            <Phone style={{ width: '24px', height: '24px', color: '#9ca3af' }} />
+          </div>
+          <h3 style={{ fontSize: '18px', fontWeight: '700', color: '#111827', marginBottom: '8px' }}>No calls yet</h3>
+          <p style={{ color: '#6b7280', marginBottom: '24px', fontSize: '14px' }}>Start a campaign to begin making outbound calls.</p>
+          <Link to="/campaigns" style={{
+            display: 'inline-flex', alignItems: 'center', gap: '8px',
+            padding: '10px 20px', background: '#4f46e5',
+            color: 'white', fontWeight: '600', borderRadius: '10px', textDecoration: 'none', fontSize: '14px'
+          }}>
             View Campaigns
           </Link>
         </div>
       ) : (
-        <div style={{ backgroundColor: 'white', borderRadius: '16px', boxShadow: '0 4px 20px -2px rgba(30, 42, 69, 0.08)', overflow: 'hidden' }}>
+        <div style={{
+          background: '#ffffff',
+          borderRadius: '12px', overflow: 'hidden',
+          border: '1px solid #e5e7eb', boxShadow: '0 1px 3px rgba(0,0,0,0.03)'
+        }}>
           {filteredCalls.map((call, idx) => (
             <Link
               key={call.id}
               to={`/calls/${call.id}`}
               style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '16px',
-                padding: '16px',
-                borderBottom: idx < filteredCalls.length - 1 ? '1px solid #edeae5' : 'none',
-                textDecoration: 'none',
-                transition: 'background-color 0.2s'
+                display: 'flex', alignItems: 'center', gap: '14px',
+                padding: '14px 20px',
+                borderBottom: idx < filteredCalls.length - 1 ? '1px solid #f3f4f6' : 'none',
+                textDecoration: 'none', transition: 'background-color 0.15s'
               }}
+              onMouseEnter={e => e.currentTarget.style.backgroundColor = '#f9fafb'}
+              onMouseLeave={e => e.currentTarget.style.backgroundColor = 'transparent'}
             >
               <div style={{
-                width: '48px',
-                height: '48px',
-                borderRadius: '50%',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                flexShrink: 0,
-                backgroundColor: call.status === 'completed' ? '#d1fae5' : call.status === 'in_progress' ? '#fbf7e8' : '#edeae5'
+                width: '42px', height: '42px', borderRadius: '10px',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+                background: call.status === 'completed' ? '#ecfdf5' : call.status === 'in_progress' ? '#fffbeb' : '#f3f4f6'
               }}>
                 {call.status === 'completed' ? (
-                  <CheckCircle2 style={{ width: '24px', height: '24px', color: '#059669' }} />
+                  <CheckCircle2 style={{ width: '20px', height: '20px', color: '#059669' }} />
                 ) : call.status === 'in_progress' ? (
-                  <PhoneCall style={{ width: '24px', height: '24px', color: '#deb040' }} />
+                  <PhoneCall style={{ width: '20px', height: '20px', color: '#d97706' }} />
                 ) : (
-                  <Clock style={{ width: '24px', height: '24px', color: '#99826a' }} />
+                  <Clock style={{ width: '20px', height: '20px', color: '#9ca3af' }} />
                 )}
               </div>
 
               <div style={{ flex: 1, minWidth: 0 }}>
-                <p style={{ fontWeight: '500', color: '#1e2a45' }}>{call.first_name} {call.last_name}</p>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginTop: '4px' }}>
-                  <span style={{ fontSize: '14px', color: '#99826a' }}>{call.phone}</span>
-                  <span style={{ color: '#c4b9a7' }}>•</span>
-                  <span style={{ fontSize: '14px', color: '#99826a' }}>{call.campaign_name}</span>
+                <p style={{ fontWeight: '600', color: '#111827', fontSize: '14px' }}>{call.first_name} {call.last_name}</p>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '3px' }}>
+                  <span style={{ fontSize: '13px', color: '#6b7280' }}>{call.phone}</span>
+                  <span style={{ color: '#e5e7eb', fontSize: '10px' }}>|</span>
+                  <span style={{ fontSize: '13px', color: '#6b7280' }}>{call.campaign_name}</span>
                 </div>
               </div>
 
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
                 {call.recording_url && (
-                  <div title="Has recording" style={{ width: '28px', height: '28px', backgroundColor: '#dbeafe', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <PlayCircle style={{ width: '16px', height: '16px', color: '#2563eb' }} />
+                  <div title="Has recording" style={{
+                    width: '26px', height: '26px', background: '#eef2ff',
+                    borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center'
+                  }}>
+                    <PlayCircle style={{ width: '14px', height: '14px', color: '#4f46e5' }} />
                   </div>
                 )}
                 {call.transcript && (
-                  <div title="Has transcript" style={{ width: '28px', height: '28px', backgroundColor: '#f3e8ff', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <FileText style={{ width: '16px', height: '16px', color: '#9333ea' }} />
+                  <div title="Has transcript" style={{
+                    width: '26px', height: '26px', background: '#f5f3ff',
+                    borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center'
+                  }}>
+                    <FileText style={{ width: '14px', height: '14px', color: '#7c3aed' }} />
                   </div>
                 )}
               </div>
 
-              <div style={{ textAlign: 'right', flexShrink: 0, minWidth: '140px' }}>
-                <div style={{ fontSize: '13px', color: '#99826a', marginBottom: '4px' }}>
+              <div style={{ textAlign: 'right', flexShrink: 0, minWidth: '130px' }}>
+                <div style={{ fontSize: '12px', color: '#9ca3af', marginBottom: '4px' }}>
                   {formatCallTime(call.started_at || call.created_at)}
                 </div>
                 <span className={`status-badge status-${call.status}`}>
                   {call.status?.replace('_', ' ')}
                 </span>
-                <div style={{ marginTop: '4px', minHeight: '20px', fontSize: '13px' }} onClick={e => e.stopPropagation()}>
+                <div style={{ marginTop: '4px', minHeight: '18px', fontSize: '12px' }} onClick={e => e.stopPropagation()}>
                   {call.outcome ? (
-                    <span style={{ fontWeight: '500', color: '#059669', textTransform: 'capitalize' }}>
+                    <span style={{ fontWeight: '600', color: '#059669', textTransform: 'capitalize' }}>
                       {call.outcome.replace(/_/g, ' ')}
                     </span>
                   ) : call.status === 'completed' ? (
@@ -293,7 +329,11 @@ export default function Calls() {
                       onChange={(e) => { const v = e.target.value; if (v) setOutcomeQuick(call.id, v, e); e.target.value = ''; }}
                       onClick={(e) => e.stopPropagation()}
                       onMouseDown={(e) => e.stopPropagation()}
-                      style={{ fontSize: '12px', padding: '2px 6px', borderRadius: '4px', border: '1px solid #dbd5ca', backgroundColor: 'white', color: '#755f4e' }}
+                      style={{
+                        fontSize: '11px', padding: '2px 6px', borderRadius: '4px',
+                        border: '1px solid #e5e7eb',
+                        backgroundColor: '#f9fafb', color: '#6b7280'
+                      }}
                     >
                       <option value="">Set outcome...</option>
                       {outcomeOptions.map(o => (
@@ -301,20 +341,20 @@ export default function Calls() {
                       ))}
                     </select>
                   ) : (
-                    <span style={{ color: '#99826a', fontStyle: 'italic' }}>No outcome</span>
+                    <span style={{ color: '#d1d5db', fontStyle: 'italic' }}>No outcome</span>
                   )}
                 </div>
-                <div style={{ marginTop: '2px', fontSize: '13px', color: '#99826a' }}>
+                <div style={{ marginTop: '2px', fontSize: '12px', color: '#9ca3af' }}>
                   {formatDuration(call.duration_seconds)}
                 </div>
               </div>
 
-              <ArrowUpRight style={{ width: '20px', height: '20px', color: '#c4b9a7', flexShrink: 0 }} />
+              <ArrowUpRight style={{ width: '16px', height: '16px', color: '#d1d5db', flexShrink: 0 }} />
             </Link>
           ))}
 
-          <div style={{ padding: '16px 24px', borderTop: '1px solid #edeae5', backgroundColor: '#f7f6f4' }}>
-            <p style={{ fontSize: '14px', color: '#99826a' }}>
+          <div style={{ padding: '12px 20px', borderTop: '1px solid #f3f4f6', background: '#f9fafb' }}>
+            <p style={{ fontSize: '13px', color: '#6b7280' }}>
               Showing {filteredCalls.length} of {calls.length} calls
             </p>
           </div>
