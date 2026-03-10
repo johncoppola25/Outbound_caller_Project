@@ -282,7 +282,7 @@ export async function createAIAssistant(campaign) {
       interruption_settings: {
         enable: true,
         start_speaking_plan: {
-          wait_seconds: 1.5
+          wait_seconds: 0.6
         }
       },
 
@@ -366,7 +366,7 @@ export async function updateAIAssistant(assistantId, campaign) {
       interruption_settings: {
         enable: true,
         start_speaking_plan: {
-          wait_seconds: 1.5
+          wait_seconds: 0.6
         }
       }
     };
@@ -516,8 +516,9 @@ export async function initiateOutboundCall(callData) {
       if (contactFullName) {
         nameContext = `## YOUR IDENTITY & THIS CALL
 Your name is ${botName}. Always refer to yourself as ${botName}.
-The person you are calling is: "${contactFullName}" (first name: "${firstName}", last name: "${lastName}")
-You are ${botName} - you are NOT ${contactFullName}.
+The person you are calling is: "${firstName}" (full name: "${contactFullName}")
+IMPORTANT: Only use their FIRST NAME "${firstName}" when addressing them. Never use their full name or last name.
+You are ${botName} - you are NOT ${firstName}.
 
 `;
       }
@@ -569,7 +570,7 @@ You are ${botName} - you are NOT ${contactFullName}.
             interruption_settings: {
               enable: true,
               start_speaking_plan: {
-                wait_seconds: 1.5
+                wait_seconds: 0.6
               }
             }
           });
