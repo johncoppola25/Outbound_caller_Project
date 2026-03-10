@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Outlet, NavLink, useLocation } from 'react-router-dom';
 import {
   LayoutDashboard,
@@ -15,22 +15,47 @@ import {
 } from 'lucide-react';
 import { useWebSocket } from '../context/WebSocketContext';
 
+const API_BASE = '';
+
 const navigation = [
   { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
   { name: 'Campaigns', href: '/campaigns', icon: Megaphone },
   { name: 'Contacts', href: '/contacts', icon: Users },
   { name: 'Calls', href: '/calls', icon: Phone },
   { name: 'Callbacks', href: '/callbacks', icon: PhoneCall },
-  { name: 'Appointments', href: '/appointments', icon: Calendar },
+  { name: 'Appointments', href: '/appointments', icon: Calendar, badge: true },
   { name: 'Analytics', href: '/analytics', icon: BarChart3 },
   { name: 'Settings', href: '/settings', icon: Settings },
 ];
 
 export default function Layout() {
   const location = useLocation();
-  const { isConnected } = useWebSocket();
+  const { isConnected, subscribe } = useWebSocket();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+  const [appointmentCount, setAppointmentCount] = useState(0);
+
+  const fetchAppointmentCount = useCallback(async () => {
+    try {
+      const res = await fetch(`${API_BASE}/api/calls/appointments`);
+      if (res.ok) {
+        const data = await res.json();
+        setAppointmentCount(Array.isArray(data) ? data.length : 0);
+      }
+    } catch (e) { /* ignore */ }
+  }, []);
+
+  useEffect(() => {
+    fetchAppointmentCount();
+  }, [fetchAppointmentCount, location.pathname]);
+
+  useEffect(() => {
+    return subscribe((msg) => {
+      if (msg.type === 'call_update' || msg.type === 'call_ended') {
+        fetchAppointmentCount();
+      }
+    });
+  }, [subscribe, fetchAppointmentCount]);
 
   useEffect(() => {
     const handleResize = () => {
@@ -110,7 +135,22 @@ export default function Layout() {
                 }}
               >
                 <item.icon style={{ width: '17px', height: '17px', opacity: isActive ? 1 : 0.6 }} />
-                <span>{item.name}</span>
+                <span style={{ flex: 1 }}>{item.name}</span>
+                {item.badge && appointmentCount > 0 && (
+                  <span style={{
+                    background: '#ef4444',
+                    color: 'white',
+                    fontSize: '10px',
+                    fontWeight: '700',
+                    minWidth: '18px',
+                    height: '18px',
+                    borderRadius: '9px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    padding: '0 5px'
+                  }}>{appointmentCount}</span>
+                )}
               </NavLink>
             );
           })}
