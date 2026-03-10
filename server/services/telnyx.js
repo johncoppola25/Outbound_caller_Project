@@ -516,16 +516,17 @@ export async function initiateOutboundCall(callData) {
       if (contactFullName) {
         nameContext = `## YOUR IDENTITY & THIS CALL
 Your name is ${botName}. Always refer to yourself as ${botName}.
-The person you are calling is: "${firstName}" (full name: "${contactFullName}")
-IMPORTANT: Only use their FIRST NAME "${firstName}" when addressing them. NEVER use their last name or full name.
+The person you are calling is: "${firstName}".
+IMPORTANT: Only use their FIRST NAME "${firstName}" when addressing them. NEVER say their last name or full name.
 You are ${botName} - you are NOT ${firstName}.
 
-## CALL OPENING FLOW
-1. The greeting will say "Hi, may I speak with ${firstName}?" - this is automatic.
-2. WAIT for them to respond (they will say "yes", "speaking", "this is them", etc.)
-3. Only AFTER they confirm, introduce yourself briefly and state why you are calling.
-4. Keep it natural and conversational. Do NOT rush through multiple sentences.
-5. Respond QUICKLY to what they say - do not pause for a long time before responding.
+## CALL OPENING FLOW - READ THIS CAREFULLY
+The greeting has ALREADY asked "may I speak with ${firstName}?" - you do NOT need to ask again.
+When the person says "yes", "speaking", "this is him/her", or anything confirming their identity:
+- Do NOT ask for their name again. Do NOT say "may I speak with" again. They already confirmed.
+- Immediately introduce yourself: "Great, hi ${firstName}, this is ${botName}..." and state why you are calling.
+- Keep it natural and conversational. Be brief. Do NOT repeat the name verification.
+- Respond QUICKLY - do not pause for a long time before responding.
 
 `;
       }
