@@ -227,14 +227,14 @@ export async function createAIAssistant(campaign) {
     const callFlowInstructions = `
 
 ## CRITICAL CALL BEHAVIOR RULES
-- When the conversation is naturally complete (you have said goodbye or the contact has ended the conversation), you MUST use the hangup tool IMMEDIATELY. Do not keep talking or wait in silence.
-- If the contact says goodbye, thanks bye, have a good day, or any farewell, say a brief goodbye and then use the hangup tool RIGHT AWAY.
-- If the contact says they are not interested, say a polite goodbye and use the hangup tool.
-- If the contact asks you to stop calling, apologize and use the hangup tool immediately.
-- If you reach voicemail, leave a brief message and use the hangup tool.
-- NEVER stay on the line in silence. If no response after your greeting, try once more then use the hangup tool.
-- After confirming an appointment, repeat the details, say thank you and goodbye, then use the hangup tool.
-- IMPORTANT: Always use the hangup tool to end calls. Do not just stop talking.
+- When the conversation is done, say a brief goodbye like "Have a great day, bye!" and then IMMEDIATELY end the call. Do NOT say the word "hangup" or any tool name out loud.
+- If the contact says goodbye or any farewell, say a quick goodbye and end the call instantly.
+- If the contact is not interested, say "No problem, have a great day!" and end the call.
+- If the contact asks you to stop calling, apologize briefly and end the call.
+- If you reach voicemail, leave a brief message and end the call.
+- NEVER stay on the line in silence. If no response after your greeting, try once more then end the call.
+- After confirming an appointment, repeat the details, say thank you and goodbye, then end the call.
+- NEVER say words like "hangup", "end call", "disconnect", or any technical terms out loud. Just say goodbye naturally and the call will end automatically.
 
 ## CONVERSATION PACING RULES
 - Ask only ONE question at a time, then STOP and WAIT for the person to respond.
@@ -336,14 +336,14 @@ export async function updateAIAssistant(assistantId, campaign) {
     const callFlowInstructions = `
 
 ## CRITICAL CALL BEHAVIOR RULES
-- When the conversation is naturally complete (you have said goodbye or the contact has ended the conversation), you MUST use the hangup tool IMMEDIATELY. Do not keep talking or wait in silence.
-- If the contact says goodbye, thanks bye, have a good day, or any farewell, say a brief goodbye and then use the hangup tool RIGHT AWAY.
-- If the contact says they are not interested, say a polite goodbye and use the hangup tool.
-- If the contact asks you to stop calling, apologize and use the hangup tool immediately.
-- If you reach voicemail, leave a brief message and use the hangup tool.
-- NEVER stay on the line in silence. If no response after your greeting, try once more then use the hangup tool.
-- After confirming an appointment, repeat the details, say thank you and goodbye, then use the hangup tool.
-- IMPORTANT: Always use the hangup tool to end calls. Do not just stop talking.
+- When the conversation is done, say a brief goodbye like "Have a great day, bye!" and then IMMEDIATELY end the call. Do NOT say the word "hangup" or any tool name out loud.
+- If the contact says goodbye or any farewell, say a quick goodbye and end the call instantly.
+- If the contact is not interested, say "No problem, have a great day!" and end the call.
+- If the contact asks you to stop calling, apologize briefly and end the call.
+- If you reach voicemail, leave a brief message and end the call.
+- NEVER stay on the line in silence. If no response after your greeting, try once more then end the call.
+- After confirming an appointment, repeat the details, say thank you and goodbye, then end the call.
+- NEVER say words like "hangup", "end call", "disconnect", or any technical terms out loud. Just say goodbye naturally and the call will end automatically.
 
 ## CONVERSATION PACING RULES
 - Ask only ONE question at a time, then STOP and WAIT for the person to respond.
@@ -555,14 +555,14 @@ When the person says "yes", "speaking", "this is him/her", or anything confirmin
           const callFlowRules = `
 
 ## CRITICAL CALL BEHAVIOR RULES
-- When the conversation is naturally complete (you have said goodbye or the contact has ended the conversation), you MUST use the hangup tool IMMEDIATELY. Do not keep talking or wait in silence.
-- If the contact says goodbye, thanks bye, have a good day, or any farewell, say a brief goodbye and then use the hangup tool RIGHT AWAY.
-- If the contact says they are not interested, say a polite goodbye and use the hangup tool.
-- If the contact asks you to stop calling, apologize and use the hangup tool immediately.
-- If you reach voicemail, leave a brief message and use the hangup tool.
-- NEVER stay on the line in silence. If no response after your greeting, try once more then use the hangup tool.
-- After confirming an appointment, repeat the details, say thank you and goodbye, then use the hangup tool.
-- IMPORTANT: Always use the hangup tool to end calls. Do not just stop talking.
+- When the conversation is done, say a brief goodbye like "Have a great day, bye!" and then IMMEDIATELY end the call. Do NOT say the word "hangup" or any tool name out loud.
+- If the contact says goodbye or any farewell, say a quick goodbye and end the call instantly.
+- If the contact is not interested, say "No problem, have a great day!" and end the call.
+- If the contact asks you to stop calling, apologize briefly and end the call.
+- If you reach voicemail, leave a brief message and end the call.
+- NEVER stay on the line in silence. If no response after your greeting, try once more then end the call.
+- After confirming an appointment, repeat the details, say thank you and goodbye, then end the call.
+- NEVER say words like "hangup", "end call", "disconnect", or any technical terms out loud. Just say goodbye naturally and the call will end automatically.
 
 ## CONVERSATION PACING RULES
 - Ask only ONE question at a time, then STOP and WAIT for the person to respond.
