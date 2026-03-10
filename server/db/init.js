@@ -77,13 +77,21 @@ export async function initDatabase() {
     fs.mkdirSync(dataDir, { recursive: true });
   }
   
-  // Load existing database or create new
+  // Load existing database, seed from local copy, or create new
   let database;
   if (fs.existsSync(dbPath)) {
     const fileBuffer = fs.readFileSync(dbPath);
     database = new SQL.Database(fileBuffer);
   } else {
-    database = new SQL.Database();
+    // On first deploy, copy seed database if available
+    const seedPath = path.join(__dirname, 'seed.db');
+    if (fs.existsSync(seedPath)) {
+      console.log('Seeding database from local copy...');
+      const seedBuffer = fs.readFileSync(seedPath);
+      database = new SQL.Database(seedBuffer);
+    } else {
+      database = new SQL.Database();
+    }
   }
   
   // Create wrapper with better-sqlite3-like API
