@@ -85,11 +85,18 @@ export async function initDatabase() {
     database = new SQL.Database(fileBuffer);
     // If existing db is empty but seed has data, use seed instead
     if (fs.existsSync(seedPath)) {
-      const countStmt = database.prepare('SELECT COUNT(*) as cnt FROM campaigns');
-      countStmt.step();
-      const count = countStmt.getAsObject().cnt;
-      countStmt.free();
-      if (count === 0) {
+      let isEmpty = false;
+      try {
+        const countStmt = database.prepare('SELECT COUNT(*) as cnt FROM campaigns');
+        countStmt.step();
+        const count = countStmt.getAsObject().cnt;
+        countStmt.free();
+        isEmpty = count === 0;
+      } catch (e) {
+        // Table doesn't exist yet = empty database
+        isEmpty = true;
+      }
+      if (isEmpty) {
         console.log('Existing database is empty, replacing with seed data...');
         database.close();
         const seedBuffer = fs.readFileSync(seedPath);
