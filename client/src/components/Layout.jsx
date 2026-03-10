@@ -11,8 +11,12 @@ import {
   Menu,
   X,
   PhoneCall,
-  Calendar
+  Calendar,
+  Bell,
+  Check,
+  CheckCheck
 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { useWebSocket } from '../context/WebSocketContext';
 
 const API_BASE = '';
@@ -34,28 +38,89 @@ export default function Layout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
   const [appointmentCount, setAppointmentCount] = useState(0);
+  const [notifications, setNotifications] = useState([]);
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [readIds, setReadIds] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('readNotifications') || '[]'); }
+    catch { return []; }
+  });
+  const navigate = useNavigate();
 
-  const fetchAppointmentCount = useCallback(async () => {
+  const fetchNotifications = useCallback(async () => {
     try {
-      const res = await fetch(`${API_BASE}/api/calls/appointments`);
-      if (res.ok) {
-        const data = await res.json();
-        setAppointmentCount(Array.isArray(data) ? data.length : 0);
+      const [apptRes, callbackRes, callsRes] = await Promise.all([
+        fetch(`${API_BASE}/api/calls/appointments`),
+        fetch(`${API_BASE}/api/calls/callbacks`),
+        fetch(`${API_BASE}/api/calls?limit=20`)
+      ]);
+      const notifs = [];
+      if (apptRes.ok) {
+        const appts = await apptRes.json();
+        setAppointmentCount(Array.isArray(appts) ? appts.length : 0);
+        (Array.isArray(appts) ? appts : []).forEach(a => {
+          notifs.push({
+            id: `appt-${a.id}`,
+            type: 'appointment',
+            title: 'New Appointment',
+            message: `${a.contact_first_name || ''} ${a.contact_last_name || ''} - ${a.appointment_at || 'Time TBD'}`.trim(),
+            time: a.ended_at || a.created_at,
+            link: `/calls/${a.id}`
+          });
+        });
       }
+      if (callbackRes.ok) {
+        const callbacks = await callbackRes.json();
+        (Array.isArray(callbacks) ? callbacks : []).forEach(c => {
+          notifs.push({
+            id: `callback-${c.id}`,
+            type: 'callback',
+            title: 'Callback Requested',
+            message: `${c.contact_first_name || ''} ${c.contact_last_name || ''} - ${c.callback_preferred_at || 'Time TBD'}`.trim(),
+            time: c.ended_at || c.created_at,
+            link: `/calls/${c.id}`
+          });
+        });
+      }
+      if (callsRes.ok) {
+        const callsData = await callsRes.json();
+        const calls = Array.isArray(callsData) ? callsData : callsData.calls || [];
+        calls.filter(c => c.status === 'completed' && c.outcome).forEach(c => {
+          if (c.outcome !== 'appointment_scheduled' && c.outcome !== 'callback_requested') {
+            notifs.push({
+              id: `call-${c.id}`,
+              type: 'call',
+              title: 'Call Completed',
+              message: `${c.contact_first_name || ''} ${c.contact_last_name || ''} - ${(c.outcome || '').replace(/_/g, ' ')}`.trim(),
+              time: c.ended_at || c.created_at,
+              link: `/calls/${c.id}`
+            });
+          }
+        });
+      }
+      notifs.sort((a, b) => new Date(b.time || 0) - new Date(a.time || 0));
+      setNotifications(notifs.slice(0, 30));
     } catch (e) { /* ignore */ }
   }, []);
 
   useEffect(() => {
-    fetchAppointmentCount();
-  }, [fetchAppointmentCount, location.pathname]);
+    fetchNotifications();
+  }, [fetchNotifications, location.pathname]);
 
   useEffect(() => {
     return subscribe((msg) => {
       if (msg.type === 'call_update' || msg.type === 'call_ended') {
-        fetchAppointmentCount();
+        fetchNotifications();
       }
     });
-  }, [subscribe, fetchAppointmentCount]);
+  }, [subscribe, fetchNotifications]);
+
+  const unreadCount = notifications.filter(n => !readIds.includes(n.id)).length;
+
+  const markAllRead = () => {
+    const allIds = notifications.map(n => n.id);
+    setReadIds(allIds);
+    localStorage.setItem('readNotifications', JSON.stringify(allIds));
+  };
 
   useEffect(() => {
     const handleResize = () => {
@@ -192,10 +257,136 @@ export default function Layout() {
 
       {/* Main */}
       <main style={{ flex: 1, marginLeft: isMobile ? '0' : '240px', width: isMobile ? '100%' : 'calc(100% - 240px)' }}>
+        {/* Top bar with bell */}
+        <div style={{
+          display: 'flex', justifyContent: 'flex-end', alignItems: 'center',
+          padding: isMobile ? '14px 16px 0' : '16px 28px 0',
+          paddingTop: isMobile ? '68px' : '16px',
+          position: 'relative'
+        }}>
+          <div style={{ position: 'relative' }}>
+            <button
+              onClick={() => setShowNotifications(!showNotifications)}
+              style={{
+                position: 'relative', background: 'white', border: '1px solid #e5e7eb',
+                borderRadius: '10px', padding: '8px', cursor: 'pointer',
+                boxShadow: '0 1px 3px rgba(0,0,0,0.06)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center'
+              }}
+            >
+              <Bell size={18} color="#6b7280" />
+              {unreadCount > 0 && (
+                <span style={{
+                  position: 'absolute', top: '-4px', right: '-4px',
+                  background: '#ef4444', color: 'white',
+                  fontSize: '9px', fontWeight: '700',
+                  minWidth: '16px', height: '16px', borderRadius: '8px',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  padding: '0 4px', border: '2px solid white'
+                }}>{unreadCount}</span>
+              )}
+            </button>
+
+            {/* Notification dropdown */}
+            {showNotifications && (
+              <>
+                <div onClick={() => setShowNotifications(false)}
+                  style={{ position: 'fixed', inset: 0, zIndex: 1001 }} />
+                <div style={{
+                  position: 'absolute', top: '44px', right: 0, zIndex: 1002,
+                  width: '360px', maxHeight: '480px',
+                  background: 'white', borderRadius: '12px',
+                  boxShadow: '0 10px 40px rgba(0,0,0,0.15)', border: '1px solid #e5e7eb',
+                  overflow: 'hidden', display: 'flex', flexDirection: 'column'
+                }}>
+                  {/* Header */}
+                  <div style={{
+                    display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                    padding: '14px 16px', borderBottom: '1px solid #f3f4f6'
+                  }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <span style={{ fontSize: '14px', fontWeight: '700', color: '#111827' }}>Notifications</span>
+                      {unreadCount > 0 && (
+                        <span style={{
+                          background: '#ef4444', color: 'white', fontSize: '10px', fontWeight: '700',
+                          padding: '1px 7px', borderRadius: '10px'
+                        }}>{unreadCount}</span>
+                      )}
+                    </div>
+                    {notifications.length > 0 && (
+                      <button onClick={markAllRead} style={{
+                        display: 'flex', alignItems: 'center', gap: '4px',
+                        background: 'none', border: 'none', cursor: 'pointer',
+                        fontSize: '12px', color: '#4f46e5', fontWeight: '600'
+                      }}>
+                        <CheckCheck size={14} />
+                        Mark all read
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Notification list */}
+                  <div style={{ overflowY: 'auto', maxHeight: '400px' }}>
+                    {notifications.length === 0 ? (
+                      <div style={{ padding: '32px 16px', textAlign: 'center', color: '#9ca3af', fontSize: '13px' }}>
+                        No notifications yet
+                      </div>
+                    ) : (
+                      notifications.map(n => {
+                        const isRead = readIds.includes(n.id);
+                        const typeColors = {
+                          appointment: { bg: '#ecfdf5', icon: '#059669', label: 'Appointment' },
+                          callback: { bg: '#fefce8', icon: '#d97706', label: 'Callback' },
+                          call: { bg: '#eff6ff', icon: '#3b82f6', label: 'Call' }
+                        };
+                        const tc = typeColors[n.type] || typeColors.call;
+                        return (
+                          <div
+                            key={n.id}
+                            onClick={() => { setShowNotifications(false); navigate(n.link); }}
+                            style={{
+                              display: 'flex', gap: '10px', padding: '12px 16px',
+                              cursor: 'pointer', borderBottom: '1px solid #f9fafb',
+                              background: isRead ? 'white' : '#f8faff',
+                              transition: 'background 0.1s'
+                            }}
+                            onMouseEnter={e => e.currentTarget.style.background = '#f3f4f6'}
+                            onMouseLeave={e => e.currentTarget.style.background = isRead ? 'white' : '#f8faff'}
+                          >
+                            <div style={{
+                              width: '32px', height: '32px', borderRadius: '8px',
+                              background: tc.bg, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                              flexShrink: 0
+                            }}>
+                              {n.type === 'appointment' && <Calendar size={14} color={tc.icon} />}
+                              {n.type === 'callback' && <PhoneCall size={14} color={tc.icon} />}
+                              {n.type === 'call' && <Phone size={14} color={tc.icon} />}
+                            </div>
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <span style={{ fontSize: '12px', fontWeight: '600', color: '#111827' }}>{n.title}</span>
+                                {!isRead && <div style={{ width: '6px', height: '6px', borderRadius: '3px', background: '#4f46e5', flexShrink: 0 }} />}
+                              </div>
+                              <p style={{ fontSize: '11px', color: '#6b7280', marginTop: '2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{n.message}</p>
+                              <p style={{ fontSize: '10px', color: '#9ca3af', marginTop: '3px' }}>
+                                {n.time ? new Date(n.time).toLocaleString() : ''}
+                              </p>
+                            </div>
+                          </div>
+                        );
+                      })
+                    )}
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+
         <div style={{
           minHeight: '100vh',
-          padding: isMobile ? '16px' : '24px 28px',
-          paddingTop: isMobile ? '68px' : '24px'
+          padding: isMobile ? '16px' : '0 28px 24px',
+          paddingTop: isMobile ? '8px' : '16px'
         }}>
           <Outlet />
         </div>
