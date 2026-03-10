@@ -248,7 +248,7 @@ export async function createAIAssistant(campaign) {
     const result = await telnyxRequest('/ai/assistants', 'POST', {
       name: campaign.name,
       instructions: fullInstructions,
-      model: 'Qwen/Qwen3-235B-A22B',
+      model: 'meta-llama/Meta-Llama-3.1-70B-Instruct',
       greeting: campaign.greeting || 'Hello,',
 
       // Tools - hangup, transfer, webhooks for scheduling
@@ -517,8 +517,15 @@ export async function initiateOutboundCall(callData) {
         nameContext = `## YOUR IDENTITY & THIS CALL
 Your name is ${botName}. Always refer to yourself as ${botName}.
 The person you are calling is: "${firstName}" (full name: "${contactFullName}")
-IMPORTANT: Only use their FIRST NAME "${firstName}" when addressing them. Never use their full name or last name.
+IMPORTANT: Only use their FIRST NAME "${firstName}" when addressing them. NEVER use their last name or full name.
 You are ${botName} - you are NOT ${firstName}.
+
+## CALL OPENING FLOW
+1. The greeting will say "Hi, may I speak with ${firstName}?" - this is automatic.
+2. WAIT for them to respond (they will say "yes", "speaking", "this is them", etc.)
+3. Only AFTER they confirm, introduce yourself briefly and state why you are calling.
+4. Keep it natural and conversational. Do NOT rush through multiple sentences.
+5. Respond QUICKLY to what they say - do not pause for a long time before responding.
 
 `;
       }
@@ -571,6 +578,15 @@ You are ${botName} - you are NOT ${firstName}.
               enable: true,
               start_speaking_plan: {
                 wait_seconds: 0.6
+              }
+            },
+            transcription: {
+              model: 'deepgram/flux',
+              language: 'en',
+              settings: {
+                eot_threshold: 0.6,
+                eot_timeout_ms: 3000,
+                eager_eot_threshold: 0.3
               }
             }
           });
