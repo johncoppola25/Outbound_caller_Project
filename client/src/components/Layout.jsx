@@ -162,7 +162,7 @@ export default function Layout() {
         transform: isMobile ? (sidebarOpen ? 'translateX(0)' : 'translateX(-100%)') : 'translateX(0)',
         transition: 'transform 0.25s ease'
       }}>
-        {/* Logo */}
+        {/* Logo + Bell */}
         <div style={{ padding: '22px 18px', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '11px' }}>
             <div style={{
@@ -172,9 +172,126 @@ export default function Layout() {
             }}>
               <Zap style={{ width: '18px', height: '18px', color: 'white', strokeWidth: 2.5 }} />
             </div>
-            <div>
+            <div style={{ flex: 1 }}>
               <h1 style={{ fontSize: '16px', fontWeight: '700', color: '#f9fafb', letterSpacing: '-0.01em' }}>EstateReach</h1>
               <p style={{ fontSize: '10px', color: '#6b7280', fontWeight: '500', letterSpacing: '0.08em', textTransform: 'uppercase', marginTop: '1px' }}>AI Outreach</p>
+            </div>
+            {/* Bell icon */}
+            <div style={{ position: 'relative' }}>
+              <button
+                onClick={() => setShowNotifications(!showNotifications)}
+                style={{
+                  position: 'relative', background: 'rgba(255,255,255,0.08)',
+                  border: 'none', borderRadius: '8px', padding: '7px',
+                  cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center'
+                }}
+              >
+                <Bell size={16} color="#9ca3af" />
+                {unreadCount > 0 && (
+                  <span style={{
+                    position: 'absolute', top: '-3px', right: '-3px',
+                    background: '#ef4444', color: 'white',
+                    fontSize: '8px', fontWeight: '700',
+                    minWidth: '14px', height: '14px', borderRadius: '7px',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    padding: '0 3px', border: '2px solid #111827'
+                  }}>{unreadCount}</span>
+                )}
+              </button>
+
+              {/* Notification dropdown */}
+              {showNotifications && (
+                <>
+                  <div onClick={() => setShowNotifications(false)}
+                    style={{ position: 'fixed', inset: 0, zIndex: 1001 }} />
+                  <div style={{
+                    position: 'absolute', top: '40px', left: 0, zIndex: 1002,
+                    width: '320px', maxHeight: '440px',
+                    background: 'white', borderRadius: '12px',
+                    boxShadow: '0 10px 40px rgba(0,0,0,0.25)', border: '1px solid #e5e7eb',
+                    overflow: 'hidden', display: 'flex', flexDirection: 'column'
+                  }}>
+                    {/* Header */}
+                    <div style={{
+                      display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                      padding: '12px 14px', borderBottom: '1px solid #f3f4f6'
+                    }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <span style={{ fontSize: '13px', fontWeight: '700', color: '#111827' }}>Notifications</span>
+                        {unreadCount > 0 && (
+                          <span style={{
+                            background: '#ef4444', color: 'white', fontSize: '9px', fontWeight: '700',
+                            padding: '1px 6px', borderRadius: '10px'
+                          }}>{unreadCount}</span>
+                        )}
+                      </div>
+                      {notifications.length > 0 && (
+                        <button onClick={markAllRead} style={{
+                          display: 'flex', alignItems: 'center', gap: '4px',
+                          background: 'none', border: 'none', cursor: 'pointer',
+                          fontSize: '11px', color: '#4f46e5', fontWeight: '600'
+                        }}>
+                          <CheckCheck size={13} />
+                          Mark all read
+                        </button>
+                      )}
+                    </div>
+
+                    {/* Notification list */}
+                    <div style={{ overflowY: 'auto', maxHeight: '380px' }}>
+                      {notifications.length === 0 ? (
+                        <div style={{ padding: '28px 14px', textAlign: 'center', color: '#9ca3af', fontSize: '12px' }}>
+                          No notifications yet
+                        </div>
+                      ) : (
+                        notifications.map(n => {
+                          const isRead = readIds.includes(n.id);
+                          const typeColors = {
+                            appointment: { bg: '#ecfdf5', icon: '#059669' },
+                            callback: { bg: '#fefce8', icon: '#d97706' },
+                            call: { bg: '#eff6ff', icon: '#3b82f6' }
+                          };
+                          const tc = typeColors[n.type] || typeColors.call;
+                          return (
+                            <div
+                              key={n.id}
+                              onClick={() => { setShowNotifications(false); navigate(n.link); }}
+                              style={{
+                                display: 'flex', gap: '10px', padding: '10px 14px',
+                                cursor: 'pointer', borderBottom: '1px solid #f9fafb',
+                                background: isRead ? 'white' : '#f8faff',
+                                transition: 'background 0.1s'
+                              }}
+                              onMouseEnter={e => e.currentTarget.style.background = '#f3f4f6'}
+                              onMouseLeave={e => e.currentTarget.style.background = isRead ? 'white' : '#f8faff'}
+                            >
+                              <div style={{
+                                width: '28px', height: '28px', borderRadius: '7px',
+                                background: tc.bg, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                flexShrink: 0
+                              }}>
+                                {n.type === 'appointment' && <Calendar size={13} color={tc.icon} />}
+                                {n.type === 'callback' && <PhoneCall size={13} color={tc.icon} />}
+                                {n.type === 'call' && <Phone size={13} color={tc.icon} />}
+                              </div>
+                              <div style={{ flex: 1, minWidth: 0 }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                  <span style={{ fontSize: '11px', fontWeight: '600', color: '#111827' }}>{n.title}</span>
+                                  {!isRead && <div style={{ width: '6px', height: '6px', borderRadius: '3px', background: '#4f46e5', flexShrink: 0 }} />}
+                                </div>
+                                <p style={{ fontSize: '10px', color: '#6b7280', marginTop: '2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{n.message}</p>
+                                <p style={{ fontSize: '9px', color: '#9ca3af', marginTop: '2px' }}>
+                                  {n.time ? new Date(n.time).toLocaleString() : ''}
+                                </p>
+                              </div>
+                            </div>
+                          );
+                        })
+                      )}
+                    </div>
+                  </div>
+                </>
+              )}
             </div>
           </div>
         </div>
@@ -257,136 +374,10 @@ export default function Layout() {
 
       {/* Main */}
       <main style={{ flex: 1, marginLeft: isMobile ? '0' : '240px', width: isMobile ? '100%' : 'calc(100% - 240px)' }}>
-        {/* Top bar with bell */}
-        <div style={{
-          display: 'flex', justifyContent: 'flex-end', alignItems: 'center',
-          padding: isMobile ? '14px 16px 0' : '16px 28px 0',
-          paddingTop: isMobile ? '68px' : '16px',
-          position: 'relative'
-        }}>
-          <div style={{ position: 'relative' }}>
-            <button
-              onClick={() => setShowNotifications(!showNotifications)}
-              style={{
-                position: 'relative', background: 'white', border: '1px solid #e5e7eb',
-                borderRadius: '10px', padding: '8px', cursor: 'pointer',
-                boxShadow: '0 1px 3px rgba(0,0,0,0.06)',
-                display: 'flex', alignItems: 'center', justifyContent: 'center'
-              }}
-            >
-              <Bell size={18} color="#6b7280" />
-              {unreadCount > 0 && (
-                <span style={{
-                  position: 'absolute', top: '-4px', right: '-4px',
-                  background: '#ef4444', color: 'white',
-                  fontSize: '9px', fontWeight: '700',
-                  minWidth: '16px', height: '16px', borderRadius: '8px',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  padding: '0 4px', border: '2px solid white'
-                }}>{unreadCount}</span>
-              )}
-            </button>
-
-            {/* Notification dropdown */}
-            {showNotifications && (
-              <>
-                <div onClick={() => setShowNotifications(false)}
-                  style={{ position: 'fixed', inset: 0, zIndex: 1001 }} />
-                <div style={{
-                  position: 'absolute', top: '44px', right: 0, zIndex: 1002,
-                  width: '360px', maxHeight: '480px',
-                  background: 'white', borderRadius: '12px',
-                  boxShadow: '0 10px 40px rgba(0,0,0,0.15)', border: '1px solid #e5e7eb',
-                  overflow: 'hidden', display: 'flex', flexDirection: 'column'
-                }}>
-                  {/* Header */}
-                  <div style={{
-                    display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                    padding: '14px 16px', borderBottom: '1px solid #f3f4f6'
-                  }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <span style={{ fontSize: '14px', fontWeight: '700', color: '#111827' }}>Notifications</span>
-                      {unreadCount > 0 && (
-                        <span style={{
-                          background: '#ef4444', color: 'white', fontSize: '10px', fontWeight: '700',
-                          padding: '1px 7px', borderRadius: '10px'
-                        }}>{unreadCount}</span>
-                      )}
-                    </div>
-                    {notifications.length > 0 && (
-                      <button onClick={markAllRead} style={{
-                        display: 'flex', alignItems: 'center', gap: '4px',
-                        background: 'none', border: 'none', cursor: 'pointer',
-                        fontSize: '12px', color: '#4f46e5', fontWeight: '600'
-                      }}>
-                        <CheckCheck size={14} />
-                        Mark all read
-                      </button>
-                    )}
-                  </div>
-
-                  {/* Notification list */}
-                  <div style={{ overflowY: 'auto', maxHeight: '400px' }}>
-                    {notifications.length === 0 ? (
-                      <div style={{ padding: '32px 16px', textAlign: 'center', color: '#9ca3af', fontSize: '13px' }}>
-                        No notifications yet
-                      </div>
-                    ) : (
-                      notifications.map(n => {
-                        const isRead = readIds.includes(n.id);
-                        const typeColors = {
-                          appointment: { bg: '#ecfdf5', icon: '#059669', label: 'Appointment' },
-                          callback: { bg: '#fefce8', icon: '#d97706', label: 'Callback' },
-                          call: { bg: '#eff6ff', icon: '#3b82f6', label: 'Call' }
-                        };
-                        const tc = typeColors[n.type] || typeColors.call;
-                        return (
-                          <div
-                            key={n.id}
-                            onClick={() => { setShowNotifications(false); navigate(n.link); }}
-                            style={{
-                              display: 'flex', gap: '10px', padding: '12px 16px',
-                              cursor: 'pointer', borderBottom: '1px solid #f9fafb',
-                              background: isRead ? 'white' : '#f8faff',
-                              transition: 'background 0.1s'
-                            }}
-                            onMouseEnter={e => e.currentTarget.style.background = '#f3f4f6'}
-                            onMouseLeave={e => e.currentTarget.style.background = isRead ? 'white' : '#f8faff'}
-                          >
-                            <div style={{
-                              width: '32px', height: '32px', borderRadius: '8px',
-                              background: tc.bg, display: 'flex', alignItems: 'center', justifyContent: 'center',
-                              flexShrink: 0
-                            }}>
-                              {n.type === 'appointment' && <Calendar size={14} color={tc.icon} />}
-                              {n.type === 'callback' && <PhoneCall size={14} color={tc.icon} />}
-                              {n.type === 'call' && <Phone size={14} color={tc.icon} />}
-                            </div>
-                            <div style={{ flex: 1, minWidth: 0 }}>
-                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                <span style={{ fontSize: '12px', fontWeight: '600', color: '#111827' }}>{n.title}</span>
-                                {!isRead && <div style={{ width: '6px', height: '6px', borderRadius: '3px', background: '#4f46e5', flexShrink: 0 }} />}
-                              </div>
-                              <p style={{ fontSize: '11px', color: '#6b7280', marginTop: '2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{n.message}</p>
-                              <p style={{ fontSize: '10px', color: '#9ca3af', marginTop: '3px' }}>
-                                {n.time ? new Date(n.time).toLocaleString() : ''}
-                              </p>
-                            </div>
-                          </div>
-                        );
-                      })
-                    )}
-                  </div>
-                </div>
-              </>
-            )}
-          </div>
-        </div>
-
         <div style={{
           minHeight: '100vh',
-          padding: isMobile ? '16px' : '0 28px 24px',
-          paddingTop: isMobile ? '8px' : '16px'
+          padding: isMobile ? '16px' : '24px 28px',
+          paddingTop: isMobile ? '68px' : '24px'
         }}>
           <Outlet />
         </div>
