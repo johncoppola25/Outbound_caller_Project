@@ -507,9 +507,10 @@ export async function initiateOutboundCall(callData) {
       let personalizedPrompt = replaceContactVariables(callData.campaign.ai_prompt, callData.contact, botName, callData.campaign);
       let personalizedGreeting = replaceContactVariables(callData.campaign.greeting, callData.contact, botName, callData.campaign);
       
-      // Use the greeting EXACTLY as the user wrote it (with variables replaced)
-      // DO NOT override or append anything to the greeting
-      let updatedGreeting = personalizedGreeting;
+      // Override greeting to use first name only for the "may I speak with" opener
+      let updatedGreeting = firstName
+        ? `Hi, may I speak with ${firstName} please?`
+        : personalizedGreeting;
       
       // Add context so the AI knows who it is and who it's calling
       let nameContext = '';
