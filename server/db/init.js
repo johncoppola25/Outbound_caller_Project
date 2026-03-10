@@ -78,20 +78,30 @@ export async function initDatabase() {
   }
   
   // Load existing database, seed from local copy, or create new
+  const seedPath = path.join(__dirname, 'seed.db');
   let database;
   if (fs.existsSync(dbPath)) {
     const fileBuffer = fs.readFileSync(dbPath);
     database = new SQL.Database(fileBuffer);
-  } else {
-    // On first deploy, copy seed database if available
-    const seedPath = path.join(__dirname, 'seed.db');
+    // If existing db is empty but seed has data, use seed instead
     if (fs.existsSync(seedPath)) {
-      console.log('Seeding database from local copy...');
-      const seedBuffer = fs.readFileSync(seedPath);
-      database = new SQL.Database(seedBuffer);
-    } else {
-      database = new SQL.Database();
+      const countStmt = database.prepare('SELECT COUNT(*) as cnt FROM campaigns');
+      countStmt.step();
+      const count = countStmt.getAsObject().cnt;
+      countStmt.free();
+      if (count === 0) {
+        console.log('Existing database is empty, replacing with seed data...');
+        database.close();
+        const seedBuffer = fs.readFileSync(seedPath);
+        database = new SQL.Database(seedBuffer);
+      }
     }
+  } else if (fs.existsSync(seedPath)) {
+    console.log('Seeding database from local copy...');
+    const seedBuffer = fs.readFileSync(seedPath);
+    database = new SQL.Database(seedBuffer);
+  } else {
+    database = new SQL.Database();
   }
   
   // Create wrapper with better-sqlite3-like API
