@@ -14,7 +14,8 @@ import {
   Calendar,
   Bell,
   Check,
-  CheckCheck
+  CheckCheck,
+  ClipboardCheck
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useWebSocket } from '../context/WebSocketContext';
@@ -29,6 +30,7 @@ const navigation = [
   { name: 'Callbacks', href: '/callbacks', icon: PhoneCall },
   { name: 'Appointments', href: '/appointments', icon: Calendar, badge: true },
   { name: 'Analytics', href: '/analytics', icon: BarChart3 },
+  { name: 'Meeting History', href: '/meeting-history', icon: ClipboardCheck },
   { name: 'Settings', href: '/settings', icon: Settings },
 ];
 

@@ -10,6 +10,7 @@ import Callbacks from './pages/Callbacks';
 import Appointments from './pages/Appointments';
 import Analytics from './pages/Analytics';
 import Settings from './pages/Settings';
+import MeetingHistory from './pages/MeetingHistory';
 import Login from './pages/Login';
 import { WebSocketProvider } from './context/WebSocketContext';
 import { AuthProvider } from './context/AuthContext';
@@ -32,6 +33,7 @@ function App() {
               <Route path="callbacks" element={<Callbacks />} />
               <Route path="appointments" element={<Appointments />} />
               <Route path="analytics" element={<Analytics />} />
+              <Route path="meeting-history" element={<MeetingHistory />} />
               <Route path="settings" element={<Settings />} />
             </Route>
           </Routes>

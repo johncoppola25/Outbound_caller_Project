@@ -275,6 +275,24 @@ export async function initDatabase() {
     )
   `);
 
+  // Meeting history table - completed meetings
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS meeting_history (
+      id TEXT PRIMARY KEY,
+      call_id TEXT,
+      contact_name TEXT,
+      phone TEXT,
+      email TEXT,
+      property_address TEXT,
+      campaign_name TEXT,
+      appointment_at TEXT,
+      outcome TEXT,
+      notes TEXT,
+      completed_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (call_id) REFERENCES calls(id)
+    )
+  `);
+
   saveDatabase();
   console.log('✅ Database initialized successfully');
   

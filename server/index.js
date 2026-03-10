@@ -18,6 +18,7 @@ import statsRouter from './routes/stats.js';
 import webhooksRouter from './routes/webhooks.js';
 import dncRouter from './routes/dnc.js';
 import authRouter from './routes/auth.js';
+import meetingsRouter from './routes/meetings.js';
 import { initDatabase } from './db/init.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -71,6 +72,7 @@ app.use('/api/calls', callsRouter);
 app.use('/api/stats', statsRouter);
 app.use('/api/webhooks', webhooksRouter);
 app.use('/api/dnc', dncRouter);
+app.use('/api/meetings', meetingsRouter);
 
 // Health check
 app.get('/api/health', (req, res) => {
