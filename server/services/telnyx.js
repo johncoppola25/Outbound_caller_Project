@@ -223,17 +223,25 @@ export async function createAIAssistant(campaign) {
     const tools = buildAssistantTools(webhookBaseUrl, phoneNumber);
     console.log('   Tools configured:', tools.map(t => t.type).join(', '));
 
-    // Append call flow instructions to ensure proper hangup behavior
+    // Append call flow instructions to ensure proper hangup and pacing behavior
     const callFlowInstructions = `
 
 ## CRITICAL CALL BEHAVIOR RULES
-- When the conversation is naturally complete (you've said goodbye, confirmed the appointment, or the contact has clearly ended the conversation), you MUST hang up the call. Do not keep talking or wait in silence.
-- If the contact says "goodbye", "thanks bye", "have a good day", or any farewell, say a brief goodbye and then hang up immediately.
-- If the contact says they are not interested, respect their decision, say a polite goodbye, and hang up.
-- If the contact asks you to stop calling or says "do not call", apologize, say you will remove them, and hang up immediately.
-- If you reach voicemail, leave a brief message and hang up.
-- NEVER stay on the line in silence. If there is no response after your greeting, try once more, then hang up.
-- After confirming an appointment time, repeat the date and time back, say thank you and goodbye, then hang up.`;
+- When the conversation is naturally complete (you have said goodbye or the contact has ended the conversation), you MUST use the hangup tool IMMEDIATELY. Do not keep talking or wait in silence.
+- If the contact says goodbye, thanks bye, have a good day, or any farewell, say a brief goodbye and then use the hangup tool RIGHT AWAY.
+- If the contact says they are not interested, say a polite goodbye and use the hangup tool.
+- If the contact asks you to stop calling, apologize and use the hangup tool immediately.
+- If you reach voicemail, leave a brief message and use the hangup tool.
+- NEVER stay on the line in silence. If no response after your greeting, try once more then use the hangup tool.
+- After confirming an appointment, repeat the details, say thank you and goodbye, then use the hangup tool.
+- IMPORTANT: Always use the hangup tool to end calls. Do not just stop talking.
+
+## CONVERSATION PACING RULES
+- Ask only ONE question at a time, then STOP and WAIT for the person to respond.
+- Never ask multiple questions in a single turn.
+- After asking a question, be silent and let the person answer fully before speaking again.
+- Keep your responses short and conversational, not scripted.
+- Listen carefully to what they say before moving to the next topic.`;
 
     const fullInstructions = instructionsToSend + callFlowInstructions;
 
@@ -274,7 +282,7 @@ export async function createAIAssistant(campaign) {
       interruption_settings: {
         enable: true,
         start_speaking_plan: {
-          wait_seconds: 0.8
+          wait_seconds: 1.5
         }
       },
 
@@ -328,13 +336,21 @@ export async function updateAIAssistant(assistantId, campaign) {
     const callFlowInstructions = `
 
 ## CRITICAL CALL BEHAVIOR RULES
-- When the conversation is naturally complete (you've said goodbye, confirmed the appointment, or the contact has clearly ended the conversation), you MUST hang up the call. Do not keep talking or wait in silence.
-- If the contact says "goodbye", "thanks bye", "have a good day", or any farewell, say a brief goodbye and then hang up immediately.
-- If the contact says they are not interested, respect their decision, say a polite goodbye, and hang up.
-- If the contact asks you to stop calling or says "do not call", apologize, say you will remove them, and hang up immediately.
-- If you reach voicemail, leave a brief message and hang up.
-- NEVER stay on the line in silence. If there is no response after your greeting, try once more, then hang up.
-- After confirming an appointment time, repeat the date and time back, say thank you and goodbye, then hang up.`;
+- When the conversation is naturally complete (you have said goodbye or the contact has ended the conversation), you MUST use the hangup tool IMMEDIATELY. Do not keep talking or wait in silence.
+- If the contact says goodbye, thanks bye, have a good day, or any farewell, say a brief goodbye and then use the hangup tool RIGHT AWAY.
+- If the contact says they are not interested, say a polite goodbye and use the hangup tool.
+- If the contact asks you to stop calling, apologize and use the hangup tool immediately.
+- If you reach voicemail, leave a brief message and use the hangup tool.
+- NEVER stay on the line in silence. If no response after your greeting, try once more then use the hangup tool.
+- After confirming an appointment, repeat the details, say thank you and goodbye, then use the hangup tool.
+- IMPORTANT: Always use the hangup tool to end calls. Do not just stop talking.
+
+## CONVERSATION PACING RULES
+- Ask only ONE question at a time, then STOP and WAIT for the person to respond.
+- Never ask multiple questions in a single turn.
+- After asking a question, be silent and let the person answer fully before speaking again.
+- Keep your responses short and conversational, not scripted.
+- Listen carefully to what they say before moving to the next topic.`;
 
     const patchBody = {
       instructions: (campaign.ai_prompt || 'You are a helpful AI assistant.') + callFlowInstructions,
@@ -350,7 +366,7 @@ export async function updateAIAssistant(assistantId, campaign) {
       interruption_settings: {
         enable: true,
         start_speaking_plan: {
-          wait_seconds: 0.8
+          wait_seconds: 1.5
         }
       }
     };
@@ -529,13 +545,21 @@ You are ${botName} - you are NOT ${contactFullName}.
           const callFlowRules = `
 
 ## CRITICAL CALL BEHAVIOR RULES
-- When the conversation is naturally complete (you've said goodbye, confirmed the appointment, or the contact has clearly ended the conversation), you MUST hang up the call. Do not keep talking or wait in silence.
-- If the contact says "goodbye", "thanks bye", "have a good day", or any farewell, say a brief goodbye and then hang up immediately.
-- If the contact says they are not interested, respect their decision, say a polite goodbye, and hang up.
-- If the contact asks you to stop calling or says "do not call", apologize, say you will remove them, and hang up immediately.
-- If you reach voicemail, leave a brief message and hang up.
-- NEVER stay on the line in silence. If there is no response after your greeting, try once more, then hang up.
-- After confirming an appointment time, repeat the date and time back, say thank you and goodbye, then hang up.`;
+- When the conversation is naturally complete (you have said goodbye or the contact has ended the conversation), you MUST use the hangup tool IMMEDIATELY. Do not keep talking or wait in silence.
+- If the contact says goodbye, thanks bye, have a good day, or any farewell, say a brief goodbye and then use the hangup tool RIGHT AWAY.
+- If the contact says they are not interested, say a polite goodbye and use the hangup tool.
+- If the contact asks you to stop calling, apologize and use the hangup tool immediately.
+- If you reach voicemail, leave a brief message and use the hangup tool.
+- NEVER stay on the line in silence. If no response after your greeting, try once more then use the hangup tool.
+- After confirming an appointment, repeat the details, say thank you and goodbye, then use the hangup tool.
+- IMPORTANT: Always use the hangup tool to end calls. Do not just stop talking.
+
+## CONVERSATION PACING RULES
+- Ask only ONE question at a time, then STOP and WAIT for the person to respond.
+- Never ask multiple questions in a single turn.
+- After asking a question, be silent and let the person answer fully before speaking again.
+- Keep your responses short and conversational, not scripted.
+- Listen carefully to what they say before moving to the next topic.`;
 
           // Try to update the existing assistant with PATCH
           const updateResult = await telnyxRequest(`/ai/assistants/${assistantIdToUse}`, 'PATCH', {
@@ -545,7 +569,7 @@ You are ${botName} - you are NOT ${contactFullName}.
             interruption_settings: {
               enable: true,
               start_speaking_plan: {
-                wait_seconds: 0.8
+                wait_seconds: 1.5
               }
             }
           });
