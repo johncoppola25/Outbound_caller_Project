@@ -291,4 +291,117 @@ router.get('/test', (req, res) => {
   res.json({ success: true, message: 'Webhook URL is reachable', timestamp: new Date().toISOString() });
 });
 
+// ── AI Tool Webhook Endpoints ──────────────────────────────
+// These are called directly by Telnyx AI Assistant during a live call
+// when the AI decides to invoke a tool (schedule_appointment, etc.)
+
+// Schedule appointment - AI collected date/time from the contact
+router.post('/ai-tool/schedule_appointment', async (req, res) => {
+  try {
+    const db = await getDb();
+    const { date, time, contact_name, notes } = req.body;
+    console.log('📅 AI Tool: schedule_appointment', { date, time, contact_name, notes });
+
+    // Find the most recent active call for this contact name
+    const call = db.prepare(`
+      SELECT cl.id, cl.contact_id, cl.campaign_id
+      FROM calls cl
+      JOIN contacts ct ON cl.contact_id = ct.id
+      WHERE cl.status IN ('in_progress', 'ringing')
+      AND (ct.first_name || ' ' || ct.last_name) LIKE ?
+      ORDER BY cl.created_at DESC LIMIT 1
+    `).get(`%${contact_name}%`);
+
+    const appointmentStr = `${date} ${time}`;
+
+    if (call) {
+      db.prepare(`
+        UPDATE calls SET outcome = 'appointment_scheduled', appointment_at = ?, summary = ?
+        WHERE id = ?
+      `).run(appointmentStr, `Appointment: ${date} at ${time}. ${notes || ''}`.trim(), call.id);
+
+      db.prepare(`UPDATE contacts SET status = 'converted' WHERE id = ?`).run(call.contact_id);
+
+      // Recalculate lead score
+      const contactCalls = db.prepare('SELECT * FROM calls WHERE contact_id = ? ORDER BY created_at DESC').all(call.contact_id);
+      const contact = db.prepare('SELECT * FROM contacts WHERE id = ?').get(call.contact_id);
+      const newScore = calculateLeadScore(contact, contactCalls);
+      db.prepare('UPDATE contacts SET lead_score = ? WHERE id = ?').run(newScore, call.contact_id);
+
+      broadcast({ type: 'call_update', call: db.prepare('SELECT * FROM calls WHERE id = ?').get(call.id) });
+      console.log('✅ Appointment saved for call:', call.id);
+    }
+
+    // Return success to AI so it can confirm to the contact
+    res.json({ success: true, message: `Appointment confirmed for ${date} at ${time} with Kenny.` });
+  } catch (error) {
+    console.error('AI tool schedule_appointment error:', error);
+    res.json({ success: true, message: 'Appointment noted. Kenny will follow up to confirm.' });
+  }
+});
+
+// Mark not interested
+router.post('/ai-tool/mark_not_interested', async (req, res) => {
+  try {
+    const db = await getDb();
+    const { reason, add_to_dnc } = req.body;
+    console.log('🚫 AI Tool: mark_not_interested', { reason, add_to_dnc });
+
+    // Find most recent active call
+    const call = db.prepare(`
+      SELECT cl.id, cl.contact_id FROM calls cl
+      WHERE cl.status IN ('in_progress', 'ringing')
+      ORDER BY cl.created_at DESC LIMIT 1
+    `).get();
+
+    if (call) {
+      db.prepare(`UPDATE calls SET outcome = 'not_interested', summary = ? WHERE id = ?`)
+        .run(reason || 'Not interested', call.id);
+      db.prepare(`UPDATE contacts SET status = 'not_interested' WHERE id = ?`).run(call.contact_id);
+
+      if (add_to_dnc) {
+        const contact = db.prepare('SELECT phone FROM contacts WHERE id = ?').get(call.contact_id);
+        if (contact?.phone) {
+          db.prepare('INSERT OR IGNORE INTO do_not_call (phone, reason) VALUES (?, ?)').run(contact.phone, reason || 'Not interested');
+        }
+      }
+
+      broadcast({ type: 'call_update', call: db.prepare('SELECT * FROM calls WHERE id = ?').get(call.id) });
+    }
+
+    res.json({ success: true, message: 'Noted. Thank them and say goodbye.' });
+  } catch (error) {
+    console.error('AI tool mark_not_interested error:', error);
+    res.json({ success: true, message: 'Noted.' });
+  }
+});
+
+// Request callback
+router.post('/ai-tool/request_callback', async (req, res) => {
+  try {
+    const db = await getDb();
+    const { preferred_time, contact_name } = req.body;
+    console.log('📞 AI Tool: request_callback', { preferred_time, contact_name });
+
+    const call = db.prepare(`
+      SELECT cl.id, cl.contact_id FROM calls cl
+      WHERE cl.status IN ('in_progress', 'ringing')
+      ORDER BY cl.created_at DESC LIMIT 1
+    `).get();
+
+    if (call) {
+      db.prepare(`UPDATE calls SET outcome = 'callback_requested', callback_preferred_at = ?, summary = ? WHERE id = ?`)
+        .run(preferred_time, `Callback requested: ${preferred_time}`, call.id);
+      db.prepare(`UPDATE contacts SET status = 'callback' WHERE id = ?`).run(call.contact_id);
+
+      broadcast({ type: 'call_update', call: db.prepare('SELECT * FROM calls WHERE id = ?').get(call.id) });
+    }
+
+    res.json({ success: true, message: `Callback noted for ${preferred_time}. Confirm with the contact and say goodbye.` });
+  } catch (error) {
+    console.error('AI tool request_callback error:', error);
+    res.json({ success: true, message: 'Callback noted.' });
+  }
+});
+
 export default router;

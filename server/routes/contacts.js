@@ -205,11 +205,11 @@ router.post('/', async (req, res) => {
     
     const formattedPhone = cleanPhone.length === 10 ? `+1${cleanPhone}` : `+${cleanPhone}`;
     const id = uuidv4();
-    
+
     db.prepare(`
       INSERT INTO contacts (id, campaign_id, first_name, last_name, phone, email, property_address, notes)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-    `).run(id, campaign_id, first_name, last_name, formattedPhone, email, property_address, notes);
+    `).run(id, campaign_id, first_name || '', last_name || '', formattedPhone, email || '', property_address || '', notes || '');
     
     const contact = db.prepare('SELECT * FROM contacts WHERE id = ?').get(id);
     

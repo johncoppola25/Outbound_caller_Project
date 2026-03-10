@@ -6,7 +6,10 @@ import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const dbPath = path.join(__dirname, '../../data/outbound_caller.db');
+// Use Render persistent disk if available, otherwise local data folder
+const dbPath = process.env.RENDER
+  ? '/data/outbound_caller.db'
+  : path.join(__dirname, '../../data/outbound_caller.db');
 
 let db = null;
 

@@ -10,29 +10,34 @@ import Callbacks from './pages/Callbacks';
 import Appointments from './pages/Appointments';
 import Analytics from './pages/Analytics';
 import Settings from './pages/Settings';
+import Login from './pages/Login';
 import { WebSocketProvider } from './context/WebSocketContext';
+import { AuthProvider } from './context/AuthContext';
 
 function App() {
   return (
-    <WebSocketProvider>
-      <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Layout />}>
-            <Route index element={<Navigate to="/dashboard" replace />} />
-            <Route path="dashboard" element={<Dashboard />} />
-            <Route path="campaigns" element={<Campaigns />} />
-            <Route path="campaigns/:id" element={<CampaignDetail />} />
-            <Route path="contacts" element={<Contacts />} />
-            <Route path="calls" element={<Calls />} />
-            <Route path="calls/:id" element={<CallDetail />} />
-            <Route path="callbacks" element={<Callbacks />} />
-            <Route path="appointments" element={<Appointments />} />
-            <Route path="analytics" element={<Analytics />} />
-            <Route path="settings" element={<Settings />} />
-          </Route>
-        </Routes>
-      </BrowserRouter>
-    </WebSocketProvider>
+    <AuthProvider>
+      <WebSocketProvider>
+        <BrowserRouter>
+          <Routes>
+            <Route path="/login" element={<Login />} />
+            <Route path="/" element={<Layout />}>
+              <Route index element={<Navigate to="/dashboard" replace />} />
+              <Route path="dashboard" element={<Dashboard />} />
+              <Route path="campaigns" element={<Campaigns />} />
+              <Route path="campaigns/:id" element={<CampaignDetail />} />
+              <Route path="contacts" element={<Contacts />} />
+              <Route path="calls" element={<Calls />} />
+              <Route path="calls/:id" element={<CallDetail />} />
+              <Route path="callbacks" element={<Callbacks />} />
+              <Route path="appointments" element={<Appointments />} />
+              <Route path="analytics" element={<Analytics />} />
+              <Route path="settings" element={<Settings />} />
+            </Route>
+          </Routes>
+        </BrowserRouter>
+      </WebSocketProvider>
+    </AuthProvider>
   );
 }
 

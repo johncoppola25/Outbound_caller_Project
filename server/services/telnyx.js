@@ -77,6 +77,108 @@ function getVoiceName(voiceOption) {
   return voiceMap[voiceOption] || 'Telnyx.NaturalHD.astra';
 }
 
+// Build the tools array for an AI assistant
+function buildAssistantTools(webhookBaseUrl, phoneNumber) {
+  const tools = [
+    // Hangup tool - lets the AI end the call gracefully
+    {
+      type: 'hangup',
+      hangup: {
+        description: 'End and hang up the call. Use this when: (1) the conversation is complete and you have said goodbye, (2) the contact is not interested and you have acknowledged it, (3) the contact asks you to stop calling, (4) you have confirmed an appointment and said goodbye, (5) you reached voicemail and left a message, (6) there is no response after two attempts to greet the caller.'
+      }
+    }
+  ];
+
+  // Add webhook tools only if we have a public URL for callbacks
+  if (webhookBaseUrl) {
+    tools.push({
+      type: 'webhook',
+      webhook: {
+        name: 'schedule_appointment',
+        description: 'Schedule a 15-minute appointment/consultation with Kenny. Call this when the contact agrees to a meeting time. You MUST collect a preferred date and time before calling this.',
+        url: `${webhookBaseUrl}/api/webhooks/ai-tool/schedule_appointment`,
+        method: 'POST',
+        headers: [
+          { name: 'Content-Type', value: 'application/json' }
+        ],
+        body_parameters: {
+          type: 'object',
+          properties: {
+            date: { type: 'string', description: 'The appointment date, e.g. "2026-03-15" or "tomorrow" or "next Tuesday"' },
+            time: { type: 'string', description: 'The appointment time, e.g. "2:00 PM" or "morning"' },
+            contact_name: { type: 'string', description: 'The name of the person on the call' },
+            notes: { type: 'string', description: 'Any relevant notes about the appointment' }
+          },
+          required: ['date', 'time', 'contact_name']
+        },
+        async: false,
+        timeout_ms: 5000
+      }
+    });
+
+    tools.push({
+      type: 'webhook',
+      webhook: {
+        name: 'mark_not_interested',
+        description: 'Mark this contact as not interested. Call this when the contact clearly states they are not interested, before hanging up.',
+        url: `${webhookBaseUrl}/api/webhooks/ai-tool/mark_not_interested`,
+        method: 'POST',
+        headers: [
+          { name: 'Content-Type', value: 'application/json' }
+        ],
+        body_parameters: {
+          type: 'object',
+          properties: {
+            reason: { type: 'string', description: 'Why they are not interested' },
+            add_to_dnc: { type: 'boolean', description: 'True if they asked to never be called again' }
+          },
+          required: ['reason']
+        },
+        async: false,
+        timeout_ms: 5000
+      }
+    });
+
+    tools.push({
+      type: 'webhook',
+      webhook: {
+        name: 'request_callback',
+        description: 'The contact wants to be called back at a different time. Call this when they say "call me later" or give a preferred callback time.',
+        url: `${webhookBaseUrl}/api/webhooks/ai-tool/request_callback`,
+        method: 'POST',
+        headers: [
+          { name: 'Content-Type', value: 'application/json' }
+        ],
+        body_parameters: {
+          type: 'object',
+          properties: {
+            preferred_time: { type: 'string', description: 'When they want to be called back' },
+            contact_name: { type: 'string', description: 'The name of the person' }
+          },
+          required: ['preferred_time']
+        },
+        async: false,
+        timeout_ms: 5000
+      }
+    });
+  }
+
+  // Transfer to live agent (Kenny)
+  if (phoneNumber) {
+    tools.push({
+      type: 'transfer',
+      transfer: {
+        targets: [
+          { name: 'Kenny - Live Agent', to: phoneNumber }
+        ],
+        from: phoneNumber
+      }
+    });
+  }
+
+  return tools;
+}
+
 // Create an AI Assistant for a campaign with full settings
 export async function createAIAssistant(campaign) {
   console.log('🤖 Creating AI Assistant for campaign:', campaign.name);
@@ -115,45 +217,67 @@ export async function createAIAssistant(campaign) {
     // Telnyx AI Assistant API with full configuration
     const instructionsToSend = campaign.ai_prompt || 'You are a helpful AI assistant.';
     console.log('📤 Sending instructions to Telnyx (first 300 chars):', instructionsToSend.substring(0, 300));
-    
+
+    // Build tools array
+    const webhookBaseUrl = process.env.WEBHOOK_BASE_URL || process.env.NGROK_URL || process.env.RENDER_EXTERNAL_URL || '';
+    const tools = buildAssistantTools(webhookBaseUrl, phoneNumber);
+    console.log('   Tools configured:', tools.map(t => t.type).join(', '));
+
+    // Append call flow instructions to ensure proper hangup behavior
+    const callFlowInstructions = `
+
+## CRITICAL CALL BEHAVIOR RULES
+- When the conversation is naturally complete (you've said goodbye, confirmed the appointment, or the contact has clearly ended the conversation), you MUST hang up the call. Do not keep talking or wait in silence.
+- If the contact says "goodbye", "thanks bye", "have a good day", or any farewell, say a brief goodbye and then hang up immediately.
+- If the contact says they are not interested, respect their decision, say a polite goodbye, and hang up.
+- If the contact asks you to stop calling or says "do not call", apologize, say you will remove them, and hang up immediately.
+- If you reach voicemail, leave a brief message and hang up.
+- NEVER stay on the line in silence. If there is no response after your greeting, try once more, then hang up.
+- After confirming an appointment time, repeat the date and time back, say thank you and goodbye, then hang up.`;
+
+    const fullInstructions = instructionsToSend + callFlowInstructions;
+
     const result = await telnyxRequest('/ai/assistants', 'POST', {
       name: campaign.name,
-      instructions: instructionsToSend, // This should be the personalized prompt with name verification
+      instructions: fullInstructions,
       model: 'Qwen/Qwen3-235B-A22B',
       greeting: campaign.greeting || 'Hello,',
-      
+
+      // Tools - hangup, transfer, webhooks for scheduling
+      tools,
+
       // Voice settings - Telnyx NaturalHD
       voice_settings: voiceSettings,
-      
+
       // Transcription - Deepgram Flux (requires 'en' not 'en-US')
       transcription: {
         model: 'deepgram/flux',
         language: 'en',
         settings: {
-          eot_threshold: 0.7,
-          eot_timeout_ms: 5000,
-          eager_eot_threshold: 0.3
+          eot_threshold: 0.8,
+          eot_timeout_ms: 4000,
+          eager_eot_threshold: 0.4
         }
       },
-      
+
       // Telephony settings - link to TeXML app
       telephony_settings: {
         default_texml_app_id: texmlAppId,
         noise_suppression: 'deepfilternet',
         time_limit_secs: campaign.time_limit_secs || 1800
       },
-      
+
       // Enable telephony feature
       enabled_features: ['telephony'],
-      
-      // Interruption settings
+
+      // Interruption settings - slightly longer wait to reduce talking over people
       interruption_settings: {
         enable: true,
         start_speaking_plan: {
-          wait_seconds: 0.4
+          wait_seconds: 0.8
         }
       },
-      
+
       // Voicemail detection (if enabled)
       ...(campaign.voicemail_detection ? {
         voicemail_detection: {
@@ -194,45 +318,63 @@ export async function deleteAIAssistant(assistantId) {
 export async function updateAIAssistant(assistantId, campaign) {
   console.log('🔄 Updating AI Assistant:', assistantId);
   console.log('   Strategy: PATCH existing (safe for active calls)');
-  
+
   try {
-    // Try PATCH first - this is safe and won't disrupt active calls
     const voiceName = getVoiceName(campaign.voice);
+    const webhookBaseUrl = process.env.WEBHOOK_BASE_URL || process.env.NGROK_URL || process.env.RENDER_EXTERNAL_URL || '';
+    const phoneNumber = campaign.caller_id || process.env.TELNYX_PHONE_NUMBER || '+17324028535';
+    const tools = buildAssistantTools(webhookBaseUrl, phoneNumber);
+
+    const callFlowInstructions = `
+
+## CRITICAL CALL BEHAVIOR RULES
+- When the conversation is naturally complete (you've said goodbye, confirmed the appointment, or the contact has clearly ended the conversation), you MUST hang up the call. Do not keep talking or wait in silence.
+- If the contact says "goodbye", "thanks bye", "have a good day", or any farewell, say a brief goodbye and then hang up immediately.
+- If the contact says they are not interested, respect their decision, say a polite goodbye, and hang up.
+- If the contact asks you to stop calling or says "do not call", apologize, say you will remove them, and hang up immediately.
+- If you reach voicemail, leave a brief message and hang up.
+- NEVER stay on the line in silence. If there is no response after your greeting, try once more, then hang up.
+- After confirming an appointment time, repeat the date and time back, say thank you and goodbye, then hang up.`;
+
     const patchBody = {
-      instructions: campaign.ai_prompt || 'You are a helpful AI assistant.',
+      instructions: (campaign.ai_prompt || 'You are a helpful AI assistant.') + callFlowInstructions,
       greeting: campaign.greeting || 'Hello,',
+      tools,
       voice_settings: {
         voice: voiceName,
         voice_speed: parseFloat(campaign.voice_speed) || 1.0,
         similarity_boost: 0.5,
         style: 0.0,
         use_speaker_boost: true
+      },
+      interruption_settings: {
+        enable: true,
+        start_speaking_plan: {
+          wait_seconds: 0.8
+        }
       }
     };
-    
-    // Only include name if provided
+
     if (campaign.name) patchBody.name = campaign.name;
-    
+
     console.log('   PATCH body keys:', Object.keys(patchBody));
     console.log('   Voice:', voiceName);
-    
+    console.log('   Tools:', tools.map(t => t.type).join(', '));
+
     const result = await telnyxRequest(`/ai/assistants/${assistantId}`, 'PATCH', patchBody);
     console.log('✅ AI Assistant updated via PATCH (no disruption to active calls)');
-    
-    // Return with the same assistant ID (it didn't change)
-    return { 
-      extractedId: assistantId, 
-      data: result.data || result 
+
+    return {
+      extractedId: assistantId,
+      data: result.data || result
     };
   } catch (patchError) {
     console.log('⚠️ PATCH failed:', patchError.message);
-    console.log('   ⚠️ NOT deleting assistant to protect any active calls.');
     console.log('   Returning existing assistant ID - it will still work for calls.');
-    
-    // Return the existing assistant ID so calls can still proceed
-    return { 
-      extractedId: assistantId, 
-      data: { id: assistantId } 
+
+    return {
+      extractedId: assistantId,
+      data: { id: assistantId }
     };
   }
 }
@@ -380,10 +522,32 @@ You are ${botName} - you are NOT ${contactFullName}.
           console.log('   Contact Name:', contactFullName);
           console.log('   Updated Greeting:', updatedGreeting);
           
+          // Build tools and call flow instructions for this call
+          const webhookBaseUrl = process.env.WEBHOOK_BASE_URL || process.env.NGROK_URL || process.env.RENDER_EXTERNAL_URL || '';
+          const callTools = buildAssistantTools(webhookBaseUrl, fromNumber);
+
+          const callFlowRules = `
+
+## CRITICAL CALL BEHAVIOR RULES
+- When the conversation is naturally complete (you've said goodbye, confirmed the appointment, or the contact has clearly ended the conversation), you MUST hang up the call. Do not keep talking or wait in silence.
+- If the contact says "goodbye", "thanks bye", "have a good day", or any farewell, say a brief goodbye and then hang up immediately.
+- If the contact says they are not interested, respect their decision, say a polite goodbye, and hang up.
+- If the contact asks you to stop calling or says "do not call", apologize, say you will remove them, and hang up immediately.
+- If you reach voicemail, leave a brief message and hang up.
+- NEVER stay on the line in silence. If there is no response after your greeting, try once more, then hang up.
+- After confirming an appointment time, repeat the date and time back, say thank you and goodbye, then hang up.`;
+
           // Try to update the existing assistant with PATCH
           const updateResult = await telnyxRequest(`/ai/assistants/${assistantIdToUse}`, 'PATCH', {
-            instructions: promptWithNameVerification, // Personalized prompt with name verification
-            greeting: updatedGreeting // Personalized greeting with contact name
+            instructions: promptWithNameVerification + callFlowRules,
+            greeting: updatedGreeting,
+            tools: callTools,
+            interruption_settings: {
+              enable: true,
+              start_speaking_plan: {
+                wait_seconds: 0.8
+              }
+            }
           });
           
           console.log('✅ Successfully updated existing assistant with personalized prompt');
@@ -592,6 +756,150 @@ export async function getAssistantConversations(assistantId) {
   }
 }
 
+// Fetch full conversation transcript for a call
+// Tries multiple strategies: call_control_id, phone number, assistant_id + time match
+export async function getConversationTranscript(callControlId, contactPhone, assistantId, callCreatedAt) {
+  console.log('📝 Fetching AI conversation transcript...');
+  console.log('   call_control_id:', callControlId);
+  console.log('   contactPhone:', contactPhone);
+  console.log('   assistantId:', assistantId);
+
+  try {
+    let conversationId = null;
+
+    // Strategy 1: Find by call_control_id in metadata
+    if (callControlId) {
+      try {
+        const byCallId = await telnyxRequest(
+          `/ai/conversations?metadata->call_control_id=eq.${encodeURIComponent(callControlId)}&limit=1`, 'GET'
+        );
+        if (byCallId?.data?.length > 0) {
+          conversationId = byCallId.data[0].id;
+          console.log('   Found conversation by call_control_id:', conversationId);
+        }
+      } catch (e) {
+        console.log('   call_control_id lookup failed:', e.message);
+      }
+    }
+
+    // Strategy 2: Find by contact phone number (most recent)
+    if (!conversationId && contactPhone) {
+      try {
+        const byPhone = await telnyxRequest(
+          `/ai/conversations?metadata->telnyx_end_user_target=eq.${encodeURIComponent(contactPhone)}&order=last_message_at.desc&limit=5`, 'GET'
+        );
+        if (byPhone?.data?.length > 0) {
+          // If we have a call created_at, find the conversation closest in time
+          if (callCreatedAt) {
+            let callTime = new Date(String(callCreatedAt).replace(' ', 'T')).getTime();
+            if (isNaN(callTime)) callTime = 0;
+
+            let bestMatch = byPhone.data[0];
+            let bestDiff = Infinity;
+            for (const conv of byPhone.data) {
+              const convTime = new Date(conv.created_at).getTime();
+              const diff = Math.abs(convTime - callTime);
+              if (diff < bestDiff) {
+                bestDiff = diff;
+                bestMatch = conv;
+              }
+            }
+            conversationId = bestMatch.id;
+            console.log('   Found conversation by phone + time match:', conversationId);
+          } else {
+            conversationId = byPhone.data[0].id;
+            console.log('   Found conversation by phone (most recent):', conversationId);
+          }
+        }
+      } catch (e) {
+        console.log('   Phone lookup failed:', e.message);
+      }
+    }
+
+    // Strategy 3: Find by assistant_id + recent time
+    if (!conversationId && assistantId) {
+      try {
+        const byAssistant = await telnyxRequest(
+          `/ai/conversations?metadata->assistant_id=eq.${encodeURIComponent(assistantId)}&order=last_message_at.desc&limit=10`, 'GET'
+        );
+        if (byAssistant?.data?.length > 0) {
+          if (callCreatedAt) {
+            let callTime = new Date(String(callCreatedAt).replace(' ', 'T')).getTime();
+            if (isNaN(callTime)) callTime = 0;
+
+            let bestMatch = null;
+            let bestDiff = Infinity;
+            for (const conv of byAssistant.data) {
+              const convTime = new Date(conv.created_at).getTime();
+              const diff = Math.abs(convTime - callTime);
+              // Only match if within 30 minutes of the call
+              if (diff < 1800000 && diff < bestDiff) {
+                bestDiff = diff;
+                bestMatch = conv;
+              }
+            }
+            if (bestMatch) {
+              conversationId = bestMatch.id;
+              console.log('   Found conversation by assistant + time match:', conversationId);
+            }
+          } else {
+            conversationId = byAssistant.data[0].id;
+            console.log('   Found conversation by assistant (most recent):', conversationId);
+          }
+        }
+      } catch (e) {
+        console.log('   Assistant lookup failed:', e.message);
+      }
+    }
+
+    if (!conversationId) {
+      console.log('   No conversation found for this call');
+      return null;
+    }
+
+    // Fetch the full message transcript
+    console.log('   Fetching messages for conversation:', conversationId);
+    const messages = await telnyxRequest(
+      `/ai/conversations/${conversationId}/messages?order=created_at.asc&limit=200`, 'GET'
+    );
+
+    if (!messages?.data?.length) {
+      console.log('   Conversation found but no messages');
+      return null;
+    }
+
+    console.log(`   Found ${messages.data.length} messages`);
+
+    // Format messages into a readable transcript with speaker labels
+    const transcriptLines = [];
+    for (const msg of messages.data) {
+      if (!msg.text && !msg.tool_calls) continue;
+
+      if (msg.role === 'assistant') {
+        if (msg.text) transcriptLines.push(`AI: ${msg.text}`);
+      } else if (msg.role === 'user') {
+        if (msg.text) transcriptLines.push(`Contact: ${msg.text}`);
+      }
+      // Skip tool messages - they're internal function calls
+    }
+
+    if (transcriptLines.length === 0) {
+      console.log('   Messages found but no text content');
+      return null;
+    }
+
+    console.log(`   Formatted ${transcriptLines.length} transcript lines`);
+    return {
+      conversationId,
+      transcript: transcriptLines.join('\n'),
+      messageCount: messages.data.length
+    };
+  } catch (error) {
+    console.error('   Transcript fetch error:', error.message);
+    return null;
+  }
+}
+
 // Fetch call recordings from Telnyx
 export async function getCallRecordings(callControlId) {
   console.log('🎙️ Fetching recordings for call:', callControlId);
@@ -614,6 +922,7 @@ export default {
   getCallDetails,
   getAssistantConversations,
   getCallRecordings,
+  getConversationTranscript,
   listPhoneNumbers,
   testConnection,
   createCallControlApp,

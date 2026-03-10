@@ -1,0 +1,26 @@
+services:
+  - type: web
+    name: estatereach
+    runtime: node
+    plan: free
+    buildCommand: npm run render-build
+    startCommand: npm start
+    envVars:
+      - key: NODE_VERSION
+        value: 20
+      - key: TELNYX_API_KEY
+        sync: false
+      - key: TELNYX_PHONE_NUMBER
+        sync: false
+      - key: DEFAULT_CALLER_ID
+        sync: false
+      - key: TELNYX_TEXML_APP_ID
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: WEBHOOK_BASE_URL
+        sync: false
+    disk:
+      name: estatereach-data
+      mountPath: /data
+      sizeGB: 1

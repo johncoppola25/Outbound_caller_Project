@@ -13,7 +13,10 @@ export function WebSocketProvider({ children }) {
     const connect = () => {
       try {
         const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-        const wsUrl = `${protocol}//${window.location.hostname}:3001`;
+        // In production (same origin), use the page's host. In dev, use port 3001.
+        const isDev = window.location.port === '5173' || window.location.port === '5174';
+        const wsHost = isDev ? `${window.location.hostname}:3001` : window.location.host;
+        const wsUrl = `${protocol}//${wsHost}`;
         
         socket = new WebSocket(wsUrl);
         

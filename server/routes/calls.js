@@ -1,7 +1,7 @@
 import express from 'express';
 import { v4 as uuidv4 } from 'uuid';
 import { getDb } from '../db/init.js';
-import { initiateOutboundCall, startAIConversation, getCallDetails, getAssistantConversations, getCallRecordings, telnyxRequest } from '../services/telnyx.js';
+import { initiateOutboundCall, startAIConversation, getCallDetails, getAssistantConversations, getCallRecordings, getConversationTranscript, telnyxRequest } from '../services/telnyx.js';
 import { broadcast } from '../index.js';
 import { calculateLeadScore } from '../services/leadScoring.js';
 
@@ -27,6 +27,78 @@ function isWithinCallingHours(campaign) {
 
   return currentTime >= start && currentTime <= end;
 }
+
+// Export calls to CSV - MUST be before /:id route
+router.get('/export', async (req, res) => {
+  try {
+    const db = await getDb();
+    const { status, outcome } = req.query;
+    let query = `
+      SELECT cl.id, cl.status, cl.outcome, cl.duration_seconds, cl.started_at, cl.ended_at, cl.created_at,
+        ct.first_name, ct.last_name, ct.phone, ct.email, ct.property_address,
+        cp.name as campaign_name
+      FROM calls cl
+      JOIN contacts ct ON cl.contact_id = ct.id
+      JOIN campaigns cp ON cl.campaign_id = cp.id
+    `;
+    const params = [];
+    if (status) { query += ' WHERE cl.status = ?'; params.push(status); }
+    if (outcome) { query += (params.length ? ' AND' : ' WHERE') + ' cl.outcome = ?'; params.push(outcome); }
+    query += ' ORDER BY cl.created_at DESC LIMIT 5000';
+    const calls = db.prepare(query).all(...params);
+    const headers = ['id', 'first_name', 'last_name', 'phone', 'email', 'property_address', 'campaign_name', 'status', 'outcome', 'duration_seconds', 'started_at', 'ended_at', 'created_at'];
+    const csv = [headers.join(',')].concat(calls.map(c =>
+      headers.map(h => {
+        const val = c[h] ?? '';
+        return `"${String(val).replace(/"/g, '""')}"`;
+      }).join(',')
+    )).join('\n');
+    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader('Content-Disposition', `attachment; filename=calls-${new Date().toISOString().slice(0,10)}.csv`);
+    res.send('\uFEFF' + csv);
+  } catch (error) {
+    console.error('Error exporting calls:', error);
+    res.status(500).json({ error: 'Failed to export calls' });
+  }
+});
+
+// Get callbacks - MUST be before /:id route
+router.get('/callbacks', async (req, res) => {
+  try {
+    const db = await getDb();
+    const callbacks = db.prepare(`
+      SELECT cl.*, ct.first_name, ct.last_name, ct.phone, ct.email, cp.name as campaign_name
+      FROM calls cl
+      JOIN contacts ct ON cl.contact_id = ct.id
+      JOIN campaigns cp ON cl.campaign_id = cp.id
+      WHERE cl.outcome = 'callback_requested'
+      ORDER BY cl.callback_preferred_at ASC, cl.created_at DESC
+    `).all();
+    res.json(callbacks);
+  } catch (error) {
+    console.error('Error fetching callbacks:', error);
+    res.status(500).json({ error: 'Failed to fetch callbacks' });
+  }
+});
+
+// Get appointments - MUST be before /:id route
+router.get('/appointments', async (req, res) => {
+  try {
+    const db = await getDb();
+    const appointments = db.prepare(`
+      SELECT cl.*, ct.first_name, ct.last_name, ct.phone, ct.email, ct.property_address, cp.name as campaign_name
+      FROM calls cl
+      JOIN contacts ct ON cl.contact_id = ct.id
+      JOIN campaigns cp ON cl.campaign_id = cp.id
+      WHERE cl.outcome = 'appointment_scheduled'
+      ORDER BY cl.appointment_at ASC, cl.created_at DESC
+    `).all();
+    res.json(appointments);
+  } catch (error) {
+    console.error('Error fetching appointments:', error);
+    res.status(500).json({ error: 'Failed to fetch appointments' });
+  }
+});
 
 // Get calls for a campaign
 router.get('/campaign/:campaignId', async (req, res) => {
@@ -430,78 +502,6 @@ router.put('/:id/outcome', async (req, res) => {
   }
 });
 
-// Export calls to CSV
-router.get('/export', async (req, res) => {
-  try {
-    const db = await getDb();
-    const { status, outcome } = req.query;
-    let query = `
-      SELECT cl.id, cl.status, cl.outcome, cl.duration_seconds, cl.started_at, cl.ended_at, cl.created_at,
-        ct.first_name, ct.last_name, ct.phone, ct.email, ct.property_address,
-        cp.name as campaign_name
-      FROM calls cl
-      JOIN contacts ct ON cl.contact_id = ct.id
-      JOIN campaigns cp ON cl.campaign_id = cp.id
-    `;
-    const params = [];
-    if (status) { query += ' WHERE cl.status = ?'; params.push(status); }
-    if (outcome) { query += (params.length ? ' AND' : ' WHERE') + ' cl.outcome = ?'; params.push(outcome); }
-    query += ' ORDER BY cl.created_at DESC LIMIT 5000';
-    const calls = db.prepare(query).all(...params);
-    const headers = ['id', 'first_name', 'last_name', 'phone', 'email', 'property_address', 'campaign_name', 'status', 'outcome', 'duration_seconds', 'started_at', 'ended_at', 'created_at'];
-    const csv = [headers.join(',')].concat(calls.map(c => 
-      headers.map(h => {
-        const val = c[h] ?? '';
-        return `"${String(val).replace(/"/g, '""')}"`;
-      }).join(',')
-    )).join('\n');
-    res.setHeader('Content-Type', 'text/csv');
-    res.setHeader('Content-Disposition', `attachment; filename=calls-${new Date().toISOString().slice(0,10)}.csv`);
-    res.send('\uFEFF' + csv);
-  } catch (error) {
-    console.error('Error exporting calls:', error);
-    res.status(500).json({ error: 'Failed to export calls' });
-  }
-});
-
-// Get callbacks (callback_requested) - for follow-up list
-router.get('/callbacks', async (req, res) => {
-  try {
-    const db = await getDb();
-    const callbacks = db.prepare(`
-      SELECT cl.*, ct.first_name, ct.last_name, ct.phone, ct.email, cp.name as campaign_name
-      FROM calls cl
-      JOIN contacts ct ON cl.contact_id = ct.id
-      JOIN campaigns cp ON cl.campaign_id = cp.id
-      WHERE cl.outcome = 'callback_requested'
-      ORDER BY cl.callback_preferred_at ASC, cl.created_at DESC
-    `).all();
-    res.json(callbacks);
-  } catch (error) {
-    console.error('Error fetching callbacks:', error);
-    res.status(500).json({ error: 'Failed to fetch callbacks' });
-  }
-});
-
-// Get appointments (appointment_scheduled)
-router.get('/appointments', async (req, res) => {
-  try {
-    const db = await getDb();
-    const appointments = db.prepare(`
-      SELECT cl.*, ct.first_name, ct.last_name, ct.phone, ct.email, ct.property_address, cp.name as campaign_name
-      FROM calls cl
-      JOIN contacts ct ON cl.contact_id = ct.id
-      JOIN campaigns cp ON cl.campaign_id = cp.id
-      WHERE cl.outcome = 'appointment_scheduled'
-      ORDER BY cl.appointment_at ASC, cl.created_at DESC
-    `).all();
-    res.json(appointments);
-  } catch (error) {
-    console.error('Error fetching appointments:', error);
-    res.status(500).json({ error: 'Failed to fetch appointments' });
-  }
-});
-
 // Get all calls (across campaigns)
 router.get('/', async (req, res) => {
   try {
@@ -879,7 +879,31 @@ router.post('/:id/sync', async (req, res) => {
       }
     }
 
-    // 5) Try to get call recording directly - call_control_id, then call_sid (TeXML AI uses call_sid)
+    // 5) Fetch AI conversation transcript (who said what)
+    if (!call.transcript && !updates.transcript) {
+      try {
+        const campaign = db.prepare('SELECT telnyx_assistant_id FROM campaigns WHERE id = ?').get(call.campaign_id);
+        const contact = db.prepare('SELECT phone FROM contacts WHERE id = ?').get(call.contact_id);
+
+        const result = await getConversationTranscript(
+          call.telnyx_call_id,
+          contact?.phone,
+          campaign?.telnyx_assistant_id,
+          call.started_at || call.created_at
+        );
+
+        if (result?.transcript) {
+          updates.transcript = result.transcript;
+          debugInfo.push(`AI conversation transcript: ${result.messageCount} messages`);
+        } else {
+          debugInfo.push('No AI conversation transcript found');
+        }
+      } catch (e) {
+        debugInfo.push(`AI transcript error: ${e.message}`);
+      }
+    }
+
+    // 6) Try to get call recording directly - call_control_id, then call_sid (TeXML AI uses call_sid)
     if (call.telnyx_call_id && !call.recording_url && !updates.recording_url) {
       for (const filter of ['call_control_id', 'call_sid', 'call_leg_id']) {
         try {

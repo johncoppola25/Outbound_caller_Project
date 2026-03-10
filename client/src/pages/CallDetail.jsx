@@ -199,6 +199,81 @@ export default function CallDetail() {
             </div>
           )}
 
+          {/* Appointment Info - prominent display when scheduled */}
+          {call.outcome === 'appointment_scheduled' && (
+            <div style={{
+              ...cardStyle,
+              background: 'linear-gradient(135deg, #ecfdf5, #f0fdf4)',
+              border: '2px solid #059669',
+              position: 'relative',
+              overflow: 'hidden'
+            }}>
+              <div style={{ position: 'absolute', top: '-20px', right: '-20px', width: '100px', height: '100px', borderRadius: '50%', background: 'rgba(5,150,105,0.08)' }} />
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px' }}>
+                <div style={{ width: '44px', height: '44px', borderRadius: '12px', background: '#059669', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <Calendar style={{ width: '22px', height: '22px', color: '#ffffff' }} />
+                </div>
+                <div>
+                  <h2 style={{ fontSize: '17px', fontWeight: '800', color: '#059669', margin: 0 }}>Meeting Scheduled!</h2>
+                  <p style={{ fontSize: '12px', color: '#065f46', margin: 0 }}>15-minute consultation with Kenny</p>
+                </div>
+              </div>
+              <div style={{ background: '#ffffff', borderRadius: '10px', padding: '16px', border: '1px solid #a7f3d0' }}>
+                <div style={{ display: 'flex', gap: '24px', flexWrap: 'wrap' }}>
+                  {call.appointment_at && (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <Calendar style={{ width: '16px', height: '16px', color: '#059669' }} />
+                      <div>
+                        <p style={{ fontSize: '11px', color: '#6b7280', fontWeight: '500' }}>DATE & TIME</p>
+                        <p style={{ fontSize: '15px', fontWeight: '700', color: '#111827' }}>{call.appointment_at}</p>
+                      </div>
+                    </div>
+                  )}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <User style={{ width: '16px', height: '16px', color: '#059669' }} />
+                    <div>
+                      <p style={{ fontSize: '11px', color: '#6b7280', fontWeight: '500' }}>CONTACT</p>
+                      <p style={{ fontSize: '15px', fontWeight: '700', color: '#111827' }}>{call.first_name} {call.last_name}</p>
+                    </div>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <Phone style={{ width: '16px', height: '16px', color: '#059669' }} />
+                    <div>
+                      <p style={{ fontSize: '11px', color: '#6b7280', fontWeight: '500' }}>PHONE</p>
+                      <p style={{ fontSize: '15px', fontWeight: '700', color: '#111827' }}>{call.phone}</p>
+                    </div>
+                  </div>
+                </div>
+                {call.property_address && (
+                  <div style={{ marginTop: '12px', paddingTop: '12px', borderTop: '1px solid #e5e7eb', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <span style={{ fontSize: '12px', color: '#6b7280' }}>Property:</span>
+                    <span style={{ fontSize: '13px', fontWeight: '600', color: '#111827' }}>{call.property_address}</span>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Callback Info */}
+          {call.outcome === 'callback_requested' && (
+            <div style={{
+              ...cardStyle,
+              background: '#fffbeb',
+              border: '2px solid #d97706'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px' }}>
+                <div style={{ width: '40px', height: '40px', borderRadius: '10px', background: '#d97706', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <Phone style={{ width: '20px', height: '20px', color: '#ffffff' }} />
+                </div>
+                <div>
+                  <h2 style={{ fontSize: '16px', fontWeight: '700', color: '#d97706', margin: 0 }}>Callback Requested</h2>
+                  {call.callback_preferred_at && <p style={{ fontSize: '13px', color: '#92400e', margin: 0, fontWeight: '600' }}>Preferred: {call.callback_preferred_at}</p>}
+                </div>
+              </div>
+              <p style={{ fontSize: '13px', color: '#78350f' }}>{call.first_name} {call.last_name} wants to be called back. {call.summary}</p>
+            </div>
+          )}
+
           {call.recording_url && (
             <div style={cardStyle}>
               <h2 style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '15px', fontWeight: '700', color: '#111827', marginBottom: '14px' }}>

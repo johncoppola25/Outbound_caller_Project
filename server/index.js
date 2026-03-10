@@ -77,9 +77,25 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
+// Serve React frontend in production
+const clientDist = path.join(__dirname, '../client/dist');
+if (fs.existsSync(clientDist)) {
+  app.use(express.static(clientDist));
+  // All non-API routes serve the React app (SPA client-side routing)
+  app.get('*', (req, res) => {
+    if (!req.path.startsWith('/api/')) {
+      res.sendFile(path.join(clientDist, 'index.html'));
+    }
+  });
+  console.log('📦 Serving React frontend from client/dist');
+}
+
 const PORT = process.env.PORT || 3001;
 
 server.listen(PORT, () => {
   console.log(`🏠 Real Estate Outbound Caller Server running on port ${PORT}`);
   console.log(`📞 WebSocket server ready for real-time updates`);
+  if (process.env.RENDER_EXTERNAL_URL) {
+    console.log(`🌐 Public URL: ${process.env.RENDER_EXTERNAL_URL}`);
+  }
 });
