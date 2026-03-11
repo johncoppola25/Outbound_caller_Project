@@ -84,7 +84,7 @@ function buildAssistantTools(webhookBaseUrl, phoneNumber) {
     {
       type: 'hangup',
       hangup: {
-        description: 'End and hang up the call. Use this when: (1) the conversation is complete and you have said goodbye, (2) the contact is not interested and you have acknowledged it, (3) the contact asks you to stop calling, (4) you have confirmed an appointment and said goodbye, (5) you reached voicemail and left a message, (6) there is no response after two attempts to greet the caller.'
+        description: 'IMMEDIATELY disconnect the phone call. You MUST call this tool right after saying any goodbye or farewell message. Call this after: (1) you say "have a great day" or any goodbye, (2) the contact says bye/goodbye, (3) contact is not interested, (4) appointment confirmed and goodbye said, (5) voicemail message left, (6) no response after two greeting attempts. ALWAYS use this tool - never leave the call hanging.'
       }
     }
   ];
@@ -265,9 +265,9 @@ You have a "hangup" tool. You MUST use it to end the call. After you say your go
         model: 'deepgram/flux',
         language: 'en',
         settings: {
-          eot_threshold: 0.5,
-          eot_timeout_ms: 2000,
-          eager_eot_threshold: 0.2
+          eot_threshold: 0.7,
+          eot_timeout_ms: 3000,
+          eager_eot_threshold: 0.4
         }
       },
 

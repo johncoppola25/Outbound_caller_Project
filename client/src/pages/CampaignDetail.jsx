@@ -194,7 +194,7 @@ export default function CampaignDetail() {
 
   useEffect(() => {
     fetchCampaignData();
-    
+
     const unsubscribe = subscribe((message) => {
       if (message.type === 'call_update' && message.call.campaign_id === id) {
         setCalls(prev => {
@@ -204,11 +204,21 @@ export default function CampaignDetail() {
           }
           return [message.call, ...prev];
         });
+        fetchContacts();
         fetchStats();
       }
     });
-    
-    return unsubscribe;
+
+    // Poll for call status updates every 5 seconds (fallback when webhooks don't reach server)
+    const pollInterval = setInterval(() => {
+      fetchCalls();
+      fetchContacts();
+    }, 5000);
+
+    return () => {
+      unsubscribe();
+      clearInterval(pollInterval);
+    };
   }, [id, subscribe]);
 
   useEffect(() => {
@@ -388,8 +398,9 @@ export default function CampaignDetail() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ campaign_id: id, contact_id: contactId })
       });
-      // Refresh contacts after initiating call
+      // Refresh contacts and calls after initiating
       fetchContacts();
+      fetchCalls();
     } catch (err) {
       console.error('Error initiating call:', err);
     } finally {
