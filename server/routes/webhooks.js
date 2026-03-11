@@ -105,16 +105,20 @@ router.post('/telnyx', async (req, res) => {
         const estimatedCost = durationMins * 0.02;
         db.prepare('UPDATE calls SET estimated_cost = ? WHERE id = ?').run(estimatedCost, callId);
 
-        // Update contact status
+        // Update contact status (only if not already a better status from function calls during the call)
         const callRecord = db.prepare('SELECT * FROM calls WHERE id = ?').get(callId);
         if (callRecord) {
           const contactId = callRecord.contact_id;
           const campaignId = callRecord.campaign_id;
 
-          db.prepare(`
-            UPDATE contacts SET status = 'called'
-            WHERE id = ?
-          `).run(contactId);
+          const currentContact = db.prepare('SELECT status FROM contacts WHERE id = ?').get(contactId);
+          const keepStatuses = ['converted', 'not_interested', 'callback'];
+          if (!keepStatuses.includes(currentContact?.status)) {
+            db.prepare(`
+              UPDATE contacts SET status = 'called'
+              WHERE id = ?
+            `).run(contactId);
+          }
 
           // Determine outcome for retry logic
           const outcome = callRecord.outcome;
@@ -191,17 +195,26 @@ router.post('/telnyx', async (req, res) => {
         break;
         
       case 'ai.assistant.function_call':
-        // Handle AI function calls
+        // Handle AI function calls as FALLBACK only
+        // The primary handlers are the /ai-tool/* webhook endpoints which run synchronously.
+        // This event fires separately and should only update if the tool endpoint didn't already.
         const functionName = payload.function_call?.name;
         const functionArgs = payload.function_call?.arguments;
-        
+
+        // Check if the call already has an outcome set by the tool webhook endpoint
+        const existingCallForFn = db.prepare('SELECT outcome FROM calls WHERE id = ?').get(callId);
+        if (existingCallForFn?.outcome) {
+          console.log(`Function call ${functionName} - outcome already set to "${existingCallForFn.outcome}", skipping duplicate`);
+          break;
+        }
+
         if (functionName === 'schedule_appointment') {
           const apptTime = typeof functionArgs === 'object' ? (functionArgs?.date || functionArgs?.time || JSON.stringify(functionArgs)) : functionArgs;
           db.prepare(`
             UPDATE calls SET outcome = 'appointment_scheduled', summary = ?, appointment_at = ?
             WHERE id = ?
           `).run(JSON.stringify(functionArgs), apptTime, callId);
-          
+
           const apptCall = db.prepare('SELECT contact_id FROM calls WHERE id = ?').get(callId);
           if (apptCall) {
             db.prepare(`
@@ -214,7 +227,7 @@ router.post('/telnyx', async (req, res) => {
             UPDATE calls SET outcome = 'not_interested', summary = ?
             WHERE id = ?
           `).run(functionArgs?.reason, callId);
-          
+
           const niCall = db.prepare('SELECT contact_id FROM calls WHERE id = ?').get(callId);
           if (niCall) {
             db.prepare(`
@@ -326,14 +339,26 @@ router.post('/ai-tool/schedule_appointment', async (req, res) => {
     console.log('📅 AI Tool: schedule_appointment', { date, time, contact_name, notes });
 
     // Find the most recent active call for this contact name
-    const call = db.prepare(`
-      SELECT cl.id, cl.contact_id, cl.campaign_id
-      FROM calls cl
-      JOIN contacts ct ON cl.contact_id = ct.id
-      WHERE cl.status IN ('in_progress', 'ringing')
-      AND (ct.first_name || ' ' || ct.last_name) LIKE ?
-      ORDER BY cl.created_at DESC LIMIT 1
-    `).get(`%${contact_name}%`);
+    let call;
+    if (contact_name) {
+      call = db.prepare(`
+        SELECT cl.id, cl.contact_id, cl.campaign_id
+        FROM calls cl
+        JOIN contacts ct ON cl.contact_id = ct.id
+        WHERE cl.status IN ('in_progress', 'ringing')
+        AND (ct.first_name || ' ' || ct.last_name) LIKE ?
+        ORDER BY cl.created_at DESC LIMIT 1
+      `).get(`%${contact_name}%`);
+    }
+    // Fallback: find any active call
+    if (!call) {
+      call = db.prepare(`
+        SELECT cl.id, cl.contact_id, cl.campaign_id
+        FROM calls cl
+        WHERE cl.status IN ('in_progress', 'ringing')
+        ORDER BY cl.created_at DESC LIMIT 1
+      `).get();
+    }
 
     const appointmentStr = `${date} ${time}`;
 
@@ -366,6 +391,8 @@ router.post('/ai-tool/schedule_appointment', async (req, res) => {
 
       broadcast({ type: 'call_update', call: db.prepare('SELECT * FROM calls WHERE id = ?').get(call.id) });
       console.log('✅ Appointment saved for call:', call.id);
+    } else {
+      console.warn('⚠️ schedule_appointment: No active call found to save appointment to');
     }
 
     // Return success to AI so it can confirm to the contact
@@ -380,15 +407,27 @@ router.post('/ai-tool/schedule_appointment', async (req, res) => {
 router.post('/ai-tool/mark_not_interested', async (req, res) => {
   try {
     const db = await getDb();
-    const { reason, add_to_dnc } = req.body;
-    console.log('🚫 AI Tool: mark_not_interested', { reason, add_to_dnc });
+    const { reason, add_to_dnc, contact_name } = req.body;
+    console.log('🚫 AI Tool: mark_not_interested', { reason, add_to_dnc, contact_name });
 
-    // Find most recent active call
-    const call = db.prepare(`
-      SELECT cl.id, cl.contact_id FROM calls cl
-      WHERE cl.status IN ('in_progress', 'ringing')
-      ORDER BY cl.created_at DESC LIMIT 1
-    `).get();
+    // Find most recent active call, matching by contact name if provided
+    let call;
+    if (contact_name) {
+      call = db.prepare(`
+        SELECT cl.id, cl.contact_id FROM calls cl
+        JOIN contacts ct ON cl.contact_id = ct.id
+        WHERE cl.status IN ('in_progress', 'ringing')
+        AND (ct.first_name || ' ' || ct.last_name) LIKE ?
+        ORDER BY cl.created_at DESC LIMIT 1
+      `).get(`%${contact_name}%`);
+    }
+    if (!call) {
+      call = db.prepare(`
+        SELECT cl.id, cl.contact_id FROM calls cl
+        WHERE cl.status IN ('in_progress', 'ringing')
+        ORDER BY cl.created_at DESC LIMIT 1
+      `).get();
+    }
 
     if (call) {
       db.prepare(`UPDATE calls SET outcome = 'not_interested', summary = ? WHERE id = ?`)
@@ -419,11 +458,24 @@ router.post('/ai-tool/request_callback', async (req, res) => {
     const { preferred_time, contact_name } = req.body;
     console.log('📞 AI Tool: request_callback', { preferred_time, contact_name });
 
-    const call = db.prepare(`
-      SELECT cl.id, cl.contact_id FROM calls cl
-      WHERE cl.status IN ('in_progress', 'ringing')
-      ORDER BY cl.created_at DESC LIMIT 1
-    `).get();
+    // Find most recent active call, matching by contact name if provided
+    let call;
+    if (contact_name) {
+      call = db.prepare(`
+        SELECT cl.id, cl.contact_id FROM calls cl
+        JOIN contacts ct ON cl.contact_id = ct.id
+        WHERE cl.status IN ('in_progress', 'ringing')
+        AND (ct.first_name || ' ' || ct.last_name) LIKE ?
+        ORDER BY cl.created_at DESC LIMIT 1
+      `).get(`%${contact_name}%`);
+    }
+    if (!call) {
+      call = db.prepare(`
+        SELECT cl.id, cl.contact_id FROM calls cl
+        WHERE cl.status IN ('in_progress', 'ringing')
+        ORDER BY cl.created_at DESC LIMIT 1
+      `).get();
+    }
 
     if (call) {
       db.prepare(`UPDATE calls SET outcome = 'callback_requested', callback_preferred_at = ?, summary = ? WHERE id = ?`)

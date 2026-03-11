@@ -130,7 +130,8 @@ function buildAssistantTools(webhookBaseUrl, phoneNumber) {
           type: 'object',
           properties: {
             reason: { type: 'string', description: 'Why they are not interested' },
-            add_to_dnc: { type: 'boolean', description: 'True if they asked to never be called again' }
+            add_to_dnc: { type: 'boolean', description: 'True if they asked to never be called again' },
+            contact_name: { type: 'string', description: 'The name of the person on the call' }
           },
           required: ['reason']
         },
@@ -248,7 +249,7 @@ export async function createAIAssistant(campaign) {
     const result = await telnyxRequest('/ai/assistants', 'POST', {
       name: campaign.name,
       instructions: fullInstructions,
-      model: 'meta-llama/Meta-Llama-3.1-70B-Instruct',
+      model: 'meta-llama/Meta-Llama-3.1-8B-Instruct',
       greeting: campaign.greeting || 'Hello,',
 
       // Tools - hangup, transfer, webhooks for scheduling
@@ -262,9 +263,9 @@ export async function createAIAssistant(campaign) {
         model: 'deepgram/flux',
         language: 'en',
         settings: {
-          eot_threshold: 0.8,
-          eot_timeout_ms: 4000,
-          eager_eot_threshold: 0.4
+          eot_threshold: 0.5,
+          eot_timeout_ms: 2000,
+          eager_eot_threshold: 0.2
         }
       },
 
@@ -282,7 +283,7 @@ export async function createAIAssistant(campaign) {
       interruption_settings: {
         enable: true,
         start_speaking_plan: {
-          wait_seconds: 0.6
+          wait_seconds: 0.4
         }
       },
 
@@ -366,7 +367,7 @@ export async function updateAIAssistant(assistantId, campaign) {
       interruption_settings: {
         enable: true,
         start_speaking_plan: {
-          wait_seconds: 0.6
+          wait_seconds: 0.4
         }
       }
     };
@@ -456,7 +457,7 @@ function replaceContactVariables(text, contact, botName, campaign) {
     .replace(/\{Last\s*Name\}/gi, lastName)
     .replace(/\{Owner\s*Name\}/gi, fullName)
     .replace(/\{Full\s*Name\}/gi, fullName)
-    .replace(/\{Property\s*Address\}/gi, contact.property_address || '')
+    .replace(/\{Property\s*Address\}/gi, contact?.property_address || '')
     // AI caller / bot name replacements (uses campaign's bot_name)
     .replace(/\[Your\s*Name\]/gi, aiName)
     .replace(/\[Bot\s*Name\]/gi, aiName)
@@ -579,16 +580,16 @@ When the person says "yes", "speaking", "this is him/her", or anything confirmin
             interruption_settings: {
               enable: true,
               start_speaking_plan: {
-                wait_seconds: 0.6
+                wait_seconds: 0.4
               }
             },
             transcription: {
               model: 'deepgram/flux',
               language: 'en',
               settings: {
-                eot_threshold: 0.6,
-                eot_timeout_ms: 3000,
-                eager_eot_threshold: 0.3
+                eot_threshold: 0.5,
+                eot_timeout_ms: 2000,
+                eager_eot_threshold: 0.2
               }
             }
           });

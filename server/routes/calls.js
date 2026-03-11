@@ -503,9 +503,10 @@ async function processCallQueue(campaignId, maxConcurrent, delayBetweenCalls) {
     } catch (error) {
       console.error('Call failed:', error);
       db.prepare(`UPDATE calls SET status = 'failed' WHERE id = ?`).run(nextCall.id);
-      activeCalls--;
     }
-    
+
+    activeCalls--;
+
     // Schedule next call
     setTimeout(processNext, delayBetweenCalls);
   };
