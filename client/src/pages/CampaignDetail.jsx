@@ -954,7 +954,7 @@ export default function CampaignDetail() {
 
       {/* Tabs */}
       <div style={{ background: '#ffffff', borderRadius: '16px', boxShadow: '0 1px 3px rgba(0,0,0,0.04)', overflow: 'hidden' }}>
-        <div style={{ borderBottom: '1px solid #f3f4f6', display: 'flex' }}>
+        <div style={{ borderBottom: '1px solid #f3f4f6', display: 'flex', overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
           {['contacts', 'calls', 'prompt', 'voice'].map((tab) => (
             <button
               key={tab}
@@ -1541,7 +1541,7 @@ export default function CampaignDetail() {
                 </div>
               </div>
 
-              <div style={{ marginTop: '16px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+              <div style={{ marginTop: '16px', display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '16px' }}>
                 <div>
                   <label style={{ display: 'block', fontSize: '14px', color: '#6b7280', marginBottom: '4px' }}>Voice</label>
                   <p style={{ color: '#4b5563', textTransform: 'capitalize' }}>{campaign.voice}</p>
@@ -1587,7 +1587,7 @@ export default function CampaignDetail() {
               {/* Voice Selection */}
               <div style={{ marginBottom: '24px', padding: '20px', backgroundColor: '#f9fafb', borderRadius: '12px', border: '1px solid #f3f4f6' }}>
                 <h4 style={{ fontWeight: '600', color: '#4b5563', marginBottom: '16px', fontSize: '15px' }}>AI Voice</h4>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '12px' }}>
                   {[
                     { value: 'astra', label: 'Astra', desc: 'Female, Warm & Friendly', gender: 'female' },
                     { value: 'andromeda', label: 'Andromeda', desc: 'Female, Professional', gender: 'female' },
@@ -1660,7 +1660,7 @@ export default function CampaignDetail() {
               </div>
 
               {/* Language, Time Limit, Bot Name, Voicemail */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '24px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '16px', marginBottom: '24px' }}>
                 <div style={{ padding: '20px', backgroundColor: '#f9fafb', borderRadius: '12px', border: '1px solid #f3f4f6' }}>
                   <label style={{ display: 'block', fontSize: '12px', fontWeight: '600', color: '#9ca3af', marginBottom: '8px', textTransform: 'uppercase' }}>Language</label>
                   <select
@@ -1748,7 +1748,7 @@ export default function CampaignDetail() {
             </div>
 
             <form onSubmit={handleSaveEdit}>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '20px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '16px', marginBottom: '20px' }}>
                 <div>
                   <label style={{ display: 'block', fontSize: '14px', fontWeight: '500', color: '#4b5563', marginBottom: '8px' }}>Campaign Name *</label>
                   <input
@@ -1773,7 +1773,7 @@ export default function CampaignDetail() {
                 </div>
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '20px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '16px', marginBottom: '20px' }}>
                 <div>
                   <label style={{ display: 'block', fontSize: '14px', fontWeight: '500', color: '#4b5563', marginBottom: '8px' }}>Type</label>
                   <select
@@ -1815,7 +1815,7 @@ export default function CampaignDetail() {
                 </div>
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '20px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '16px', marginBottom: '20px' }}>
                 <div>
                   <label style={{ display: 'block', fontSize: '14px', fontWeight: '500', color: '#4b5563', marginBottom: '8px' }}>Background Audio</label>
                   <select
@@ -1841,7 +1841,7 @@ export default function CampaignDetail() {
                 </div>
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '20px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '16px', marginBottom: '20px' }}>
                 <div>
                   <label style={{ display: 'block', fontSize: '14px', fontWeight: '500', color: '#4b5563', marginBottom: '8px' }}>Caller ID (Telnyx Phone Number) *</label>
                   <input
@@ -1990,7 +1990,7 @@ export default function CampaignDetail() {
             </div>
 
             <form onSubmit={handleAddContact}>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '20px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '16px', marginBottom: '20px' }}>
                 <div>
                   <label style={{ display: 'block', fontSize: '14px', fontWeight: '500', color: '#4b5563', marginBottom: '8px' }}>First Name *</label>
                   <input
