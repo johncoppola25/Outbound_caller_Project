@@ -1119,6 +1119,7 @@ export default function CampaignDetail() {
                       <th style={{ padding: '12px 16px', textAlign: 'left', fontSize: '12px', fontWeight: '600', color: '#9ca3af', textTransform: 'uppercase' }}>Phone</th>
                       <th style={{ padding: '12px 16px', textAlign: 'left', fontSize: '12px', fontWeight: '600', color: '#9ca3af', textTransform: 'uppercase' }}>Email</th>
                       <th style={{ padding: '12px 16px', textAlign: 'left', fontSize: '12px', fontWeight: '600', color: '#9ca3af', textTransform: 'uppercase' }}>Status</th>
+                      <th style={{ padding: '12px 16px', textAlign: 'left', fontSize: '12px', fontWeight: '600', color: '#9ca3af', textTransform: 'uppercase' }}>Call Result</th>
                       <th style={{ padding: '12px 16px', textAlign: 'left', fontSize: '12px', fontWeight: '600', color: '#9ca3af', textTransform: 'uppercase' }}>Actions</th>
                     </tr>
                   </thead>
@@ -1153,10 +1154,43 @@ export default function CampaignDetail() {
                           </span>
                         </td>
                         <td style={{ padding: '16px' }}>
+                          {(() => {
+                            const contactCalls = calls.filter(c => c.contact_id === contact.id);
+                            if (contactCalls.length === 0) return <span style={{ fontSize: '12px', color: '#d1d5db' }}>--</span>;
+                            const lastCall = contactCalls[0];
+                            const outcome = lastCall.outcome;
+                            const status = lastCall.status;
+                            let label, color, bg;
+                            if (outcome === 'appointment_scheduled') { label = 'Answered - Appt Set'; color = '#059669'; bg = '#ecfdf5'; }
+                            else if (outcome === 'callback_requested') { label = 'Answered - Callback'; color = '#d97706'; bg = '#fffbeb'; }
+                            else if (outcome === 'not_interested') { label = 'Answered - Not Interested'; color = '#dc2626'; bg = '#fef2f2'; }
+                            else if (outcome === 'interested') { label = 'Answered - Interested'; color = '#4f46e5'; bg = '#eef2ff'; }
+                            else if (outcome === 'voicemail' || status === 'voicemail') { label = 'Voicemail'; color = '#7c3aed'; bg = '#f5f3ff'; }
+                            else if (outcome === 'no_answer' || status === 'no_answer') { label = 'No Answer'; color = '#9ca3af'; bg = '#f9fafb'; }
+                            else if (outcome === 'busy') { label = 'Busy'; color = '#7c3aed'; bg = '#f5f3ff'; }
+                            else if (outcome === 'wrong_number') { label = 'Wrong Number'; color = '#dc2626'; bg = '#fef2f2'; }
+                            else if (outcome === 'do_not_call') { label = 'Do Not Call'; color = '#dc2626'; bg = '#fef2f2'; }
+                            else if (status === 'completed') { label = 'Answered'; color = '#059669'; bg = '#ecfdf5'; }
+                            else if (status === 'in_progress') { label = 'On Call'; color = '#d97706'; bg = '#fffbeb'; }
+                            else if (status === 'ringing') { label = 'Ringing...'; color = '#d97706'; bg = '#fffbeb'; }
+                            else if (status === 'queued') { label = 'Queued'; color = '#6b7280'; bg = '#f9fafb'; }
+                            else if (status === 'failed') { label = 'Failed'; color = '#dc2626'; bg = '#fef2f2'; }
+                            else { label = status || outcome || '--'; color = '#6b7280'; bg = '#f9fafb'; }
+                            return (
+                              <span style={{
+                                display: 'inline-block', padding: '4px 10px', borderRadius: '20px',
+                                fontSize: '11px', fontWeight: '600', backgroundColor: bg, color: color
+                              }}>
+                                {label}
+                              </span>
+                            );
+                          })()}
+                        </td>
+                        <td style={{ padding: '16px' }}>
                           <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
                             {contact.status === 'pending' && (
-                              <button 
-                                onClick={() => callSingleContact(contact.id)} 
+                              <button
+                                onClick={() => callSingleContact(contact.id)}
                                 disabled={callingContactId === contact.id}
                                 style={{ 
                                   color: callingContactId === contact.id ? '#6b7280' : '#4f46e5', 
