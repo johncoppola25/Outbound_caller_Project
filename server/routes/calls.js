@@ -81,6 +81,92 @@ router.get('/callbacks', async (req, res) => {
   }
 });
 
+// Parse loose appointment time strings into a Date object
+function parseAppointmentTime(str) {
+  if (!str) return null;
+  const s = String(str).trim();
+  // Try native Date parse first (handles ISO, "2024-01-15 2:30pm", etc.)
+  let d = new Date(s);
+  if (!isNaN(d.getTime()) && d.getFullYear() > 2000) return d;
+  // Try replacing space with T for "2024-01-15 14:30"
+  d = new Date(s.replace(' ', 'T'));
+  if (!isNaN(d.getTime()) && d.getFullYear() > 2000) return d;
+  // Try appending current year for strings like "Monday January 15 2:30pm"
+  const withYear = s + ' ' + new Date().getFullYear();
+  d = new Date(withYear);
+  if (!isNaN(d.getTime()) && d.getFullYear() > 2000) return d;
+  return null;
+}
+
+// Check if a proposed appointment time conflicts with existing ones (within 30 min window)
+export function checkConflicts(db, proposedTime, excludeCallId = null) {
+  const proposed = parseAppointmentTime(proposedTime);
+  if (!proposed) return { hasConflict: false, conflicts: [] };
+
+  const appointments = db.prepare(`
+    SELECT cl.id, cl.appointment_at, ct.first_name, ct.last_name
+    FROM calls cl
+    JOIN contacts ct ON cl.contact_id = ct.id
+    WHERE cl.outcome = 'appointment_scheduled'
+  `).all();
+
+  const conflicts = [];
+  for (const apt of appointments) {
+    if (excludeCallId && String(apt.id) === String(excludeCallId)) continue;
+    const aptTime = parseAppointmentTime(apt.appointment_at);
+    if (!aptTime) continue;
+    const diffMs = Math.abs(proposed.getTime() - aptTime.getTime());
+    if (diffMs < 30 * 60 * 1000) { // within 30 minutes
+      conflicts.push({
+        id: apt.id,
+        appointment_at: apt.appointment_at,
+        contact_name: `${apt.first_name || ''} ${apt.last_name || ''}`.trim(),
+        minutes_apart: Math.round(diffMs / 60000)
+      });
+    }
+  }
+  return { hasConflict: conflicts.length > 0, conflicts };
+}
+
+// Suggest next available slot (30 min after latest conflict)
+function suggestNextSlot(db, proposedTime) {
+  const proposed = parseAppointmentTime(proposedTime);
+  if (!proposed) return null;
+
+  const appointments = db.prepare(`
+    SELECT cl.appointment_at FROM calls cl
+    WHERE cl.outcome = 'appointment_scheduled'
+  `).all();
+
+  const times = appointments.map(a => parseAppointmentTime(a.appointment_at)).filter(Boolean).sort((a, b) => a - b);
+
+  let candidate = new Date(proposed);
+  for (const t of times) {
+    if (Math.abs(candidate.getTime() - t.getTime()) < 30 * 60 * 1000) {
+      candidate = new Date(t.getTime() + 30 * 60 * 1000);
+    }
+  }
+  return candidate;
+}
+
+// Check appointment conflict endpoint
+router.get('/appointments/check-conflict', async (req, res) => {
+  try {
+    const db = await getDb();
+    const { time, exclude_call_id } = req.query;
+    if (!time) return res.status(400).json({ error: 'time parameter required' });
+    const result = checkConflicts(db, time, exclude_call_id);
+    if (result.hasConflict) {
+      const suggestion = suggestNextSlot(db, time);
+      result.suggested_time = suggestion ? suggestion.toISOString() : null;
+    }
+    res.json(result);
+  } catch (error) {
+    console.error('Error checking appointment conflict:', error);
+    res.status(500).json({ error: 'Failed to check conflict' });
+  }
+});
+
 // Get appointments - MUST be before /:id route
 router.get('/appointments', async (req, res) => {
   try {
@@ -93,6 +179,13 @@ router.get('/appointments', async (req, res) => {
       WHERE cl.outcome = 'appointment_scheduled'
       ORDER BY cl.appointment_at ASC, cl.created_at DESC
     `).all();
+
+    // Tag conflicts on each appointment
+    for (const apt of appointments) {
+      const { conflicts } = checkConflicts(db, apt.appointment_at, apt.id);
+      apt.conflicts = conflicts;
+    }
+
     res.json(appointments);
   } catch (error) {
     console.error('Error fetching appointments:', error);

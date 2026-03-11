@@ -293,16 +293,18 @@ export async function initDatabase() {
     )
   `);
 
-  // Seed default admin user (KENNYL)
+  // Seed default admin user (KENNYL) - always ensure correct password
+  const bcrypt = await import('bcryptjs');
+  const { v4: uuidv4 } = await import('uuid');
   const existingAdmin = db.prepare('SELECT id FROM users WHERE name = ?').get('KENNYL');
+  const hash = await bcrypt.default.hash('KENNYL123', 10);
   if (!existingAdmin) {
-    const bcrypt = await import('bcryptjs');
-    const { v4: uuidv4 } = await import('uuid');
-    const hash = await bcrypt.default.hash('KENNY123', 10);
     db.prepare('INSERT INTO users (id, email, password_hash, name, role) VALUES (?, ?, ?, ?, ?)').run(
       uuidv4(), 'kenny@estatereach.com', hash, 'KENNYL', 'admin'
     );
     console.log('👤 Default admin user created (KENNYL)');
+  } else {
+    db.prepare('UPDATE users SET password_hash = ? WHERE name = ?').run(hash, 'KENNYL');
   }
 
   saveDatabase();

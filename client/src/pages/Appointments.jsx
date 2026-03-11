@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Calendar, Phone, Mail, MapPin, User, Clock, FileText, CheckCircle, Copy, ExternalLink, X, ClipboardCheck } from 'lucide-react';
+import { Calendar, Phone, Mail, MapPin, User, Clock, FileText, CheckCircle, Copy, ExternalLink, X, ClipboardCheck, AlertTriangle } from 'lucide-react';
 import { apiFetch } from '../utils/api';
 
 export default function Appointments() {
@@ -158,7 +158,8 @@ export default function Appointments() {
               key={apt.id}
               style={{
                 background: '#ffffff', borderRadius: '12px', overflow: 'hidden',
-                border: '1px solid #e5e7eb', boxShadow: '0 1px 3px rgba(0,0,0,0.03)',
+                border: apt.conflicts?.length > 0 ? '2px solid #fca5a5' : '1px solid #e5e7eb',
+                boxShadow: '0 1px 3px rgba(0,0,0,0.03)',
                 transition: 'box-shadow 0.2s'
               }}
               onMouseEnter={e => e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.08)'}
@@ -185,6 +186,21 @@ export default function Appointments() {
                   </span>
                 )}
               </div>
+
+              {/* Conflict Warning */}
+              {apt.conflicts && apt.conflicts.length > 0 && (
+                <div style={{
+                  display: 'flex', alignItems: 'center', gap: '10px',
+                  padding: '10px 20px', background: '#fef2f2', borderBottom: '1px solid #fecaca'
+                }}>
+                  <AlertTriangle style={{ width: '16px', height: '16px', color: '#dc2626', flexShrink: 0 }} />
+                  <span style={{ fontSize: '13px', color: '#dc2626', fontWeight: '600' }}>
+                    Scheduling conflict — overlaps with {apt.conflicts.map(c =>
+                      `${c.contact_name} (${c.appointment_at})`
+                    ).join(', ')}
+                  </span>
+                </div>
+              )}
 
               {/* Content */}
               <div style={{ padding: '18px 20px' }}>

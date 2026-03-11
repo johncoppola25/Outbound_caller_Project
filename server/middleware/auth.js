@@ -1,10 +1,8 @@
 import jwt from 'jsonwebtoken';
-import crypto from 'crypto';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'estatereach-fallback-' + crypto.randomBytes(32).toString('hex');
-
-if (!process.env.JWT_SECRET) {
-  console.warn('WARNING: JWT_SECRET environment variable is not set. Using a random fallback secret. Tokens will be invalidated on server restart. Set JWT_SECRET in your .env file for production use.');
+// Read JWT_SECRET lazily so dotenv has time to load
+export function getJwtSecret() {
+  return process.env.JWT_SECRET || 'estatereach-outbound-caller-secret-2026';
 }
 
 export function authenticateToken(req, res, next) {
@@ -16,7 +14,7 @@ export function authenticateToken(req, res, next) {
   }
 
   try {
-    const decoded = jwt.verify(token, JWT_SECRET);
+    const decoded = jwt.verify(token, getJwtSecret());
     req.user = decoded;
     next();
   } catch (err) {

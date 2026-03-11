@@ -8,8 +8,26 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const savedToken = localStorage.getItem('estatereach_token');
-    const savedUser = localStorage.getItem('estatereach_user');
+    // Check localStorage first (remember me), then sessionStorage
+    let savedToken = localStorage.getItem('estatereach_token');
+    let savedUser = localStorage.getItem('estatereach_user');
+    let savedExpiry = localStorage.getItem('estatereach_token_expiry');
+
+    // If remembered, check if the 30-day expiry has passed
+    if (savedToken && savedExpiry && Date.now() > Number(savedExpiry)) {
+      localStorage.removeItem('estatereach_token');
+      localStorage.removeItem('estatereach_user');
+      localStorage.removeItem('estatereach_token_expiry');
+      savedToken = null;
+      savedUser = null;
+    }
+
+    // Fall back to session storage
+    if (!savedToken) {
+      savedToken = sessionStorage.getItem('estatereach_token');
+      savedUser = sessionStorage.getItem('estatereach_user');
+    }
+
     if (savedToken && savedUser) {
       try {
         setToken(savedToken);
@@ -17,16 +35,31 @@ export function AuthProvider({ children }) {
       } catch (e) {
         localStorage.removeItem('estatereach_token');
         localStorage.removeItem('estatereach_user');
+        localStorage.removeItem('estatereach_token_expiry');
+        sessionStorage.removeItem('estatereach_token');
+        sessionStorage.removeItem('estatereach_user');
       }
     }
     setLoading(false);
   }, []);
 
-  const login = (newToken, newUser) => {
+  const login = (newToken, newUser, rememberMe = false) => {
     setToken(newToken);
     setUser(newUser);
-    localStorage.setItem('estatereach_token', newToken);
-    localStorage.setItem('estatereach_user', JSON.stringify(newUser));
+    if (rememberMe) {
+      const thirtyDays = 30 * 24 * 60 * 60 * 1000;
+      localStorage.setItem('estatereach_token', newToken);
+      localStorage.setItem('estatereach_user', JSON.stringify(newUser));
+      localStorage.setItem('estatereach_token_expiry', String(Date.now() + thirtyDays));
+      sessionStorage.removeItem('estatereach_token');
+      sessionStorage.removeItem('estatereach_user');
+    } else {
+      sessionStorage.setItem('estatereach_token', newToken);
+      sessionStorage.setItem('estatereach_user', JSON.stringify(newUser));
+      localStorage.removeItem('estatereach_token');
+      localStorage.removeItem('estatereach_user');
+      localStorage.removeItem('estatereach_token_expiry');
+    }
   };
 
   const logout = () => {
@@ -34,6 +67,9 @@ export function AuthProvider({ children }) {
     setUser(null);
     localStorage.removeItem('estatereach_token');
     localStorage.removeItem('estatereach_user');
+    localStorage.removeItem('estatereach_token_expiry');
+    sessionStorage.removeItem('estatereach_token');
+    sessionStorage.removeItem('estatereach_user');
   };
 
   const isAuthenticated = !!token && !!user;

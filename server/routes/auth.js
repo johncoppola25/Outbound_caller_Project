@@ -2,12 +2,10 @@ import express from 'express';
 import { v4 as uuidv4 } from 'uuid';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
-import crypto from 'crypto';
 import { getDb } from '../db/init.js';
-import { authenticateToken } from '../middleware/auth.js';
+import { authenticateToken, getJwtSecret } from '../middleware/auth.js';
 
 const router = express.Router();
-const JWT_SECRET = process.env.JWT_SECRET || 'estatereach-fallback-' + crypto.randomBytes(32).toString('hex');
 
 // POST /api/auth/register
 router.post('/register', async (req, res) => {
@@ -35,7 +33,7 @@ router.post('/register', async (req, res) => {
 
     const token = jwt.sign(
       { userId: id, email, name },
-      JWT_SECRET,
+      getJwtSecret(),
       { expiresIn: '7d' }
     );
 
@@ -67,14 +65,14 @@ router.post('/login', async (req, res) => {
       return res.status(401).json({ error: 'Invalid username or password.' });
     }
 
-    const validPassword = await bcrypt.compare(password, user.password_hash);
+    const validPassword = await bcrypt.compare(password, String(user.password_hash));
     if (!validPassword) {
       return res.status(401).json({ error: 'Invalid username or password.' });
     }
 
     const token = jwt.sign(
       { userId: user.id, email: user.email, name: user.name },
-      JWT_SECRET,
+      getJwtSecret(),
       { expiresIn: '7d' }
     );
 

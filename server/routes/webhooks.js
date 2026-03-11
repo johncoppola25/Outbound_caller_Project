@@ -3,6 +3,7 @@ import { getDb } from '../db/init.js';
 import { broadcast } from '../index.js';
 import { startAIConversation } from '../services/telnyx.js';
 import { calculateLeadScore } from '../services/leadScoring.js';
+import { checkConflicts } from './calls.js';
 
 const router = express.Router();
 
@@ -335,6 +336,19 @@ router.post('/ai-tool/schedule_appointment', async (req, res) => {
     `).get(`%${contact_name}%`);
 
     const appointmentStr = `${date} ${time}`;
+
+    // Check for scheduling conflicts
+    const { hasConflict, conflicts } = checkConflicts(db, appointmentStr);
+    if (hasConflict) {
+      const conflictNames = conflicts.map(c => `${c.contact_name} at ${c.appointment_at}`).join(', ');
+      console.log('⚠️ Appointment conflict detected:', conflictNames);
+      res.json({
+        success: false,
+        conflict: true,
+        message: `That time slot is not available — there's already an appointment at ${conflicts[0].appointment_at}. Please suggest a different time at least 30 minutes before or after.`
+      });
+      return;
+    }
 
     if (call) {
       db.prepare(`
