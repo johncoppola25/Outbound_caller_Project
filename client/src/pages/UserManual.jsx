@@ -1,10 +1,11 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import {
   BookOpen, ChevronDown, ChevronRight, LayoutDashboard, Megaphone, Users, Phone,
   PhoneCall, Calendar, BarChart3, ClipboardCheck, Settings, Upload, UserPlus,
   Play, Square, Edit3, Trash2, Eye, Bell, Search, Zap, CheckCircle2, AlertCircle,
-  ArrowRight, MessageSquare, Target, Shield
+  ArrowRight, MessageSquare, Target, Shield, Send, Sparkles, Bot, User, Loader2
 } from 'lucide-react';
+import { apiFetch } from '../utils/api';
 
 const sections = [
   {
@@ -532,6 +533,50 @@ const sections = [
 export default function UserManual() {
   const [expandedSections, setExpandedSections] = useState(new Set(['getting-started']));
   const [searchQuery, setSearchQuery] = useState('');
+  const [aiQuestion, setAiQuestion] = useState('');
+  const [aiMessages, setAiMessages] = useState([]);
+  const [aiLoading, setAiLoading] = useState(false);
+  const chatEndRef = useRef(null);
+  const inputRef = useRef(null);
+
+  useEffect(() => {
+    chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [aiMessages]);
+
+  const askAI = async (e) => {
+    e.preventDefault();
+    const q = aiQuestion.trim();
+    if (!q || aiLoading) return;
+
+    const userMsg = { role: 'user', text: q };
+    setAiMessages(prev => [...prev, userMsg]);
+    setAiQuestion('');
+    setAiLoading(true);
+
+    try {
+      const res = await apiFetch('/api/manual/ask', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ question: q })
+      });
+      const data = await res.json();
+      setAiMessages(prev => [...prev, { role: 'assistant', text: data.answer || data.error || 'No answer available.' }]);
+    } catch {
+      setAiMessages(prev => [...prev, { role: 'assistant', text: 'Sorry, the AI assistant is temporarily unavailable. Please browse the manual sections below.' }]);
+    } finally {
+      setAiLoading(false);
+      inputRef.current?.focus();
+    }
+  };
+
+  const suggestedQuestions = [
+    'How do I create a new campaign?',
+    'How do I import contacts from CSV?',
+    'How do I make a call?',
+    'How do appointments work?',
+    'What do the contact statuses mean?',
+    'How do I set up webhooks?'
+  ];
 
   const toggleSection = (id) => {
     setExpandedSections(prev => {
@@ -589,6 +634,190 @@ export default function UserManual() {
             </p>
           </div>
         </div>
+      </div>
+
+      {/* AI Assistant Chat */}
+      <div style={{
+        background: 'linear-gradient(135deg, #1e1b4b 0%, #312e81 50%, #3730a3 100%)',
+        borderRadius: '16px',
+        padding: '24px',
+        marginBottom: '20px',
+        boxShadow: '0 4px 20px rgba(79,70,229,0.25)',
+        position: 'relative',
+        overflow: 'hidden'
+      }}>
+        {/* Background decoration */}
+        <div style={{
+          position: 'absolute', top: '-30px', right: '-30px', width: '120px', height: '120px',
+          background: 'radial-gradient(circle, rgba(167,139,250,0.15) 0%, transparent 70%)',
+          borderRadius: '50%'
+        }} />
+        <div style={{
+          position: 'absolute', bottom: '-20px', left: '40%', width: '80px', height: '80px',
+          background: 'radial-gradient(circle, rgba(129,140,248,0.1) 0%, transparent 70%)',
+          borderRadius: '50%'
+        }} />
+
+        {/* Header */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px', position: 'relative' }}>
+          <div style={{
+            width: '36px', height: '36px', borderRadius: '10px',
+            background: 'linear-gradient(135deg, #818cf8, #a78bfa)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            boxShadow: '0 2px 8px rgba(129,140,248,0.4)'
+          }}>
+            <Sparkles style={{ width: '18px', height: '18px', color: 'white' }} />
+          </div>
+          <div>
+            <h2 style={{ fontSize: '16px', fontWeight: '700', color: '#f9fafb', margin: 0 }}>
+              AI Help Assistant
+            </h2>
+            <p style={{ fontSize: '12px', color: '#a5b4fc', margin: '2px 0 0' }}>
+              Ask me anything about EstateReach
+            </p>
+          </div>
+        </div>
+
+        {/* Chat Messages */}
+        {aiMessages.length > 0 && (
+          <div style={{
+            background: 'rgba(255,255,255,0.06)',
+            borderRadius: '12px',
+            padding: '14px',
+            marginBottom: '14px',
+            maxHeight: '320px',
+            overflowY: 'auto',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '12px',
+            backdropFilter: 'blur(10px)',
+            border: '1px solid rgba(255,255,255,0.08)'
+          }}>
+            {aiMessages.map((msg, i) => (
+              <div key={i} style={{
+                display: 'flex', gap: '10px', alignItems: 'flex-start',
+                flexDirection: msg.role === 'user' ? 'row-reverse' : 'row'
+              }}>
+                <div style={{
+                  width: '28px', height: '28px', borderRadius: '8px', flexShrink: 0,
+                  background: msg.role === 'user' ? '#4f46e5' : 'linear-gradient(135deg, #818cf8, #a78bfa)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center'
+                }}>
+                  {msg.role === 'user'
+                    ? <User style={{ width: '14px', height: '14px', color: 'white' }} />
+                    : <Bot style={{ width: '14px', height: '14px', color: 'white' }} />
+                  }
+                </div>
+                <div style={{
+                  background: msg.role === 'user' ? '#4f46e5' : 'rgba(255,255,255,0.1)',
+                  borderRadius: msg.role === 'user' ? '12px 12px 4px 12px' : '12px 12px 12px 4px',
+                  padding: '10px 14px',
+                  maxWidth: '80%',
+                  border: msg.role === 'user' ? 'none' : '1px solid rgba(255,255,255,0.08)'
+                }}>
+                  <p style={{
+                    fontSize: '13px', lineHeight: '1.6', margin: 0,
+                    color: msg.role === 'user' ? '#ffffff' : '#e0e7ff',
+                    whiteSpace: 'pre-wrap'
+                  }}>{msg.text}</p>
+                </div>
+              </div>
+            ))}
+            {aiLoading && (
+              <div style={{ display: 'flex', gap: '10px', alignItems: 'flex-start' }}>
+                <div style={{
+                  width: '28px', height: '28px', borderRadius: '8px', flexShrink: 0,
+                  background: 'linear-gradient(135deg, #818cf8, #a78bfa)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center'
+                }}>
+                  <Bot style={{ width: '14px', height: '14px', color: 'white' }} />
+                </div>
+                <div style={{
+                  background: 'rgba(255,255,255,0.1)',
+                  borderRadius: '12px 12px 12px 4px',
+                  padding: '10px 14px',
+                  border: '1px solid rgba(255,255,255,0.08)',
+                  display: 'flex', alignItems: 'center', gap: '8px'
+                }}>
+                  <Loader2 style={{ width: '14px', height: '14px', color: '#a5b4fc', animation: 'spin 1s linear infinite' }} />
+                  <span style={{ fontSize: '13px', color: '#a5b4fc' }}>Thinking...</span>
+                </div>
+              </div>
+            )}
+            <div ref={chatEndRef} />
+          </div>
+        )}
+
+        {/* Suggested Questions (only show when no messages) */}
+        {aiMessages.length === 0 && (
+          <div style={{
+            display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '14px'
+          }}>
+            {suggestedQuestions.map((q, i) => (
+              <button
+                key={i}
+                onClick={() => { setAiQuestion(q); inputRef.current?.focus(); }}
+                style={{
+                  padding: '6px 12px',
+                  background: 'rgba(255,255,255,0.08)',
+                  border: '1px solid rgba(255,255,255,0.12)',
+                  borderRadius: '20px',
+                  color: '#c7d2fe',
+                  fontSize: '11px',
+                  cursor: 'pointer',
+                  transition: 'all 0.15s',
+                  fontWeight: '500'
+                }}
+                onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.15)'; e.currentTarget.style.color = '#ffffff'; }}
+                onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.08)'; e.currentTarget.style.color = '#c7d2fe'; }}
+              >
+                {q}
+              </button>
+            ))}
+          </div>
+        )}
+
+        {/* Input */}
+        <form onSubmit={askAI} style={{ display: 'flex', gap: '10px', position: 'relative' }}>
+          <input
+            ref={inputRef}
+            type="text"
+            placeholder="Ask a question... e.g., How do I create a new campaign?"
+            value={aiQuestion}
+            onChange={(e) => setAiQuestion(e.target.value)}
+            disabled={aiLoading}
+            style={{
+              flex: 1, padding: '12px 16px',
+              background: 'rgba(255,255,255,0.1)',
+              border: '1px solid rgba(255,255,255,0.15)',
+              borderRadius: '12px',
+              fontSize: '13px', color: '#f9fafb',
+              outline: 'none',
+              boxSizing: 'border-box',
+              opacity: aiLoading ? 0.6 : 1
+            }}
+            onFocus={e => e.target.style.borderColor = 'rgba(167,139,250,0.5)'}
+            onBlur={e => e.target.style.borderColor = 'rgba(255,255,255,0.15)'}
+          />
+          <button
+            type="submit"
+            disabled={aiLoading || !aiQuestion.trim()}
+            style={{
+              padding: '12px 20px',
+              background: aiLoading || !aiQuestion.trim() ? 'rgba(129,140,248,0.3)' : 'linear-gradient(135deg, #818cf8, #6366f1)',
+              border: 'none',
+              borderRadius: '12px',
+              cursor: aiLoading || !aiQuestion.trim() ? 'not-allowed' : 'pointer',
+              display: 'flex', alignItems: 'center', gap: '8px',
+              color: 'white', fontSize: '13px', fontWeight: '600',
+              transition: 'all 0.15s',
+              boxShadow: aiLoading || !aiQuestion.trim() ? 'none' : '0 2px 8px rgba(99,102,241,0.4)'
+            }}
+          >
+            <Send style={{ width: '15px', height: '15px' }} />
+            Ask
+          </button>
+        </form>
       </div>
 
       {/* Search + Controls */}

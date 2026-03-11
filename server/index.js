@@ -19,6 +19,7 @@ import webhooksRouter from './routes/webhooks.js';
 import dncRouter from './routes/dnc.js';
 import authRouter from './routes/auth.js';
 import meetingsRouter from './routes/meetings.js';
+import manualRouter from './routes/manual.js';
 import { initDatabase } from './db/init.js';
 import { authenticateToken } from './middleware/auth.js';
 import { generalLimiter, authLimiter, callLimiter } from './middleware/rateLimiter.js';
@@ -102,6 +103,7 @@ app.use('/api/calls', authenticateToken, callsRouter);
 app.use('/api/stats', authenticateToken, statsRouter);
 app.use('/api/dnc', authenticateToken, dncRouter);
 app.use('/api/meetings', authenticateToken, meetingsRouter);
+app.use('/api/manual', authenticateToken, manualRouter);
 
 // Health check (public)
 app.get('/api/health', (req, res) => {
