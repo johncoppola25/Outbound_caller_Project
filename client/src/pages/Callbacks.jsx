@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Phone, Clock, ArrowUpRight } from 'lucide-react';
+import { apiFetch } from '../utils/api';
 
 export default function Callbacks() {
   const [callbacks, setCallbacks] = useState([]);
@@ -12,7 +13,7 @@ export default function Callbacks() {
 
   async function fetchCallbacks() {
     try {
-      const res = await fetch('/api/calls/callbacks');
+      const res = await apiFetch('/api/calls/callbacks');
       const data = await res.json();
       setCallbacks(Array.isArray(data) ? data : []);
     } catch (err) {

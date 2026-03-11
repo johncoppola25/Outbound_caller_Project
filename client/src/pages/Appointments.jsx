@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Calendar, Phone, Mail, MapPin, User, Clock, FileText, CheckCircle, Copy, ExternalLink, X, ClipboardCheck } from 'lucide-react';
+import { apiFetch } from '../utils/api';
 
 export default function Appointments() {
   const [appointments, setAppointments] = useState([]);
@@ -17,7 +18,7 @@ export default function Appointments() {
 
   async function fetchAppointments() {
     try {
-      const res = await fetch('/api/calls/appointments');
+      const res = await apiFetch('/api/calls/appointments');
       const data = await res.json();
       setAppointments(Array.isArray(data) ? data : []);
     } catch (err) {
@@ -63,7 +64,7 @@ export default function Appointments() {
     if (!completingApt) return;
     setSubmitting(true);
     try {
-      const res = await fetch('/api/meetings/complete', {
+      const res = await apiFetch('/api/meetings/complete', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

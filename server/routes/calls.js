@@ -478,6 +478,10 @@ router.put('/:id/outcome', async (req, res) => {
     
     const call = db.prepare('SELECT * FROM calls WHERE id = ?').get(req.params.id);
 
+    if (!call) {
+      return res.status(404).json({ error: 'Call not found' });
+    }
+
     // Update contact status based on outcome
     if (outcome === 'appointment_scheduled') {
       db.prepare(`UPDATE contacts SET status = 'converted' WHERE id = ?`).run(call.contact_id);
@@ -1041,7 +1045,7 @@ router.post('/sync-all-stale', async (req, res) => {
     });
   } catch (err) {
     console.error('Bulk sync error:', err);
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -1069,7 +1073,7 @@ router.post('/process-retries', async (req, res) => {
       // The actual call initiation would happen via the normal call flow
     }
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 

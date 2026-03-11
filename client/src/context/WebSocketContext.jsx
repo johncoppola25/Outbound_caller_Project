@@ -9,32 +9,45 @@ export function WebSocketProvider({ children }) {
 
   useEffect(() => {
     let socket = null;
-    
+    let reconnectTimer = null;
+    let backoff = 1000; // Start at 1 second
+    const MAX_BACKOFF = 30000; // Cap at 30 seconds
+    let unmounted = false;
+
     const connect = () => {
+      if (unmounted) return;
       try {
         const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
         // In production (same origin), use the page's host. In dev, use port 3001.
         const isDev = window.location.port === '5173' || window.location.port === '5174';
         const wsHost = isDev ? `${window.location.hostname}:3001` : window.location.host;
         const wsUrl = `${protocol}//${wsHost}`;
-        
+
         socket = new WebSocket(wsUrl);
-        
+
         socket.onopen = () => {
           console.log('WebSocket connected');
           setIsConnected(true);
+          backoff = 1000; // Reset backoff on successful connection
         };
-        
+
         socket.onclose = () => {
           console.log('WebSocket disconnected');
           setIsConnected(false);
+          if (!unmounted) {
+            console.log(`WebSocket reconnecting in ${backoff / 1000}s...`);
+            reconnectTimer = setTimeout(() => {
+              backoff = Math.min(backoff * 2, MAX_BACKOFF);
+              connect();
+            }, backoff);
+          }
         };
-        
+
         socket.onerror = (error) => {
           console.log('WebSocket error:', error);
           setIsConnected(false);
         };
-        
+
         socket.onmessage = (event) => {
           try {
             const data = JSON.parse(event.data);
@@ -52,12 +65,22 @@ export function WebSocketProvider({ children }) {
         };
       } catch (error) {
         console.error('Error creating WebSocket:', error);
+        if (!unmounted) {
+          reconnectTimer = setTimeout(() => {
+            backoff = Math.min(backoff * 2, MAX_BACKOFF);
+            connect();
+          }, backoff);
+        }
       }
     };
-    
+
     connect();
-    
+
     return () => {
+      unmounted = true;
+      if (reconnectTimer) {
+        clearTimeout(reconnectTimer);
+      }
       if (socket) {
         socket.close();
       }

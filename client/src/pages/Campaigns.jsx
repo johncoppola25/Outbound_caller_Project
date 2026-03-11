@@ -10,6 +10,7 @@ import {
   Trash2
 } from 'lucide-react';
 import CreateCampaignModal from '../components/CreateCampaignModal';
+import { apiFetch } from '../utils/api';
 
 export default function Campaigns() {
   const [campaigns, setCampaigns] = useState([]);
@@ -23,7 +24,7 @@ export default function Campaigns() {
 
   async function fetchCampaigns() {
     try {
-      const res = await fetch('/api/campaigns');
+      const res = await apiFetch('/api/campaigns');
       const data = await res.json();
       setCampaigns(data);
     } catch (err) {
@@ -38,7 +39,7 @@ export default function Campaigns() {
     e.stopPropagation();
     if (!confirm('Are you sure you want to delete this campaign?')) return;
     try {
-      await fetch(`/api/campaigns/${id}`, { method: 'DELETE' });
+      await apiFetch(`/api/campaigns/${id}`, { method: 'DELETE' });
       setCampaigns(campaigns.filter(c => c.id !== id));
     } catch (err) {
       console.error('Error deleting campaign:', err);

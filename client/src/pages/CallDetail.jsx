@@ -6,6 +6,7 @@ import {
   FileText, Activity, Loader
 } from 'lucide-react';
 import { useWebSocket } from '../context/WebSocketContext';
+import { apiFetch } from '../utils/api';
 
 const outcomeConfig = {
   appointment_scheduled: { label: 'Appointment Scheduled', color: '#059669', bg: '#ecfdf5', border: '#a7f3d0', icon: CheckCircle },
@@ -37,14 +38,14 @@ export default function CallDetail() {
   const hasSyncedRef = useRef(false);
 
   const fetchCall = useCallback(async () => {
-    try { const res = await fetch(`/api/calls/${id}`); const data = await res.json(); setCall(data); return data; }
+    try { const res = await apiFetch(`/api/calls/${id}`); const data = await res.json(); setCall(data); return data; }
     catch (err) { console.error('Error:', err); return null; } finally { setLoading(false); }
   }, [id]);
 
   const syncFromTelnyx = useCallback(async () => {
     setSyncing(true); setLastSyncDebug(null);
     try {
-      const res = await fetch(`/api/calls/${id}/sync`, { method: 'POST' }); const data = await res.json();
+      const res = await apiFetch(`/api/calls/${id}/sync`, { method: 'POST' }); const data = await res.json();
       if (data.call) setCall(prev => ({ ...prev, ...data.call }));
       setAutoSynced(true); setLastSyncDebug(data.debug || (data.message ? [data.message] : null)); return data;
     } catch (err) { setAutoSynced(true); setLastSyncDebug(['Sync failed: ' + err.message]); return null; }
@@ -57,7 +58,7 @@ export default function CallDetail() {
       const isActive = data.status === 'ringing' || data.status === 'in_progress' || data.status === 'queued';
       const missingData = !data.transcript && !data.summary && !data.outcome;
       if (isActive) {
-        pollRef.current = setInterval(async () => { const res = await fetch(`/api/calls/${id}/sync`, { method: 'POST' }); const sd = await res.json(); if (sd.call) setCall(prev => ({ ...prev, ...sd.call })); }, 5000);
+        pollRef.current = setInterval(async () => { const res = await apiFetch(`/api/calls/${id}/sync`, { method: 'POST' }); const sd = await res.json(); if (sd.call) setCall(prev => ({ ...prev, ...sd.call })); }, 5000);
       } else if (!hasSyncedRef.current) {
         hasSyncedRef.current = true;
         // Always sync completed calls to get the latest transcript with speaker labels
@@ -92,7 +93,7 @@ export default function CallDetail() {
 
   async function handleSetOutcome(outcome) {
     setSavingOutcome(true);
-    try { const res = await fetch(`/api/calls/${id}/outcome`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ outcome }) }); if (res.ok) { const data = await res.json(); setCall(prev => ({ ...prev, outcome, ...data })); setShowOutcomeSelector(false); } }
+    try { const res = await apiFetch(`/api/calls/${id}/outcome`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ outcome }) }); if (res.ok) { const data = await res.json(); setCall(prev => ({ ...prev, outcome, ...data })); setShowOutcomeSelector(false); } }
     catch (err) { console.error('Error:', err); } finally { setSavingOutcome(false); }
   }
 

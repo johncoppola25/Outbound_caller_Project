@@ -13,6 +13,7 @@ import {
   Download
 } from 'lucide-react';
 import { useWebSocket } from '../context/WebSocketContext';
+import { apiFetch } from '../utils/api';
 
 export default function Calls() {
   const [calls, setCalls] = useState([]);
@@ -39,7 +40,7 @@ export default function Calls() {
 
   async function fetchCalls() {
     try {
-      const res = await fetch('/api/calls?limit=200');
+      const res = await apiFetch('/api/calls?limit=200');
       const data = await res.json();
       setCalls(data.calls || []);
     } catch (err) {
@@ -75,7 +76,7 @@ export default function Calls() {
     e.preventDefault();
     e.stopPropagation();
     try {
-      await fetch(`/api/calls/${callId}/outcome`, {
+      await apiFetch(`/api/calls/${callId}/outcome`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ outcome })

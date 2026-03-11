@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Zap } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
@@ -6,11 +7,9 @@ const API_BASE = import.meta.env.VITE_API_URL || '';
 
 export default function Login() {
   const { login } = useAuth();
-  const [isRegister, setIsRegister] = useState(false);
-  const [email, setEmail] = useState('');
+  const navigate = useNavigate();
+  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
-  const [name, setName] = useState('');
-  const [company, setCompany] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -19,37 +18,28 @@ export default function Login() {
     setError('');
     setLoading(true);
 
-    const endpoint = isRegister ? '/api/auth/register' : '/api/auth/login';
-    const body = isRegister
-      ? { email, password, name, company }
-      : { email, password };
-
     try {
-      const res = await fetch(`${API_BASE}${endpoint}`, {
+      const res = await fetch(`${API_BASE}/api/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
+        body: JSON.stringify({ username, password }),
       });
 
       const data = await res.json();
 
       if (!res.ok) {
-        setError(data.error || 'Something went wrong.');
+        setError(data.error || 'Invalid credentials.');
         setLoading(false);
         return;
       }
 
       login(data.token, data.user);
+      navigate('/dashboard');
     } catch (err) {
       setError('Network error. Please try again.');
     } finally {
       setLoading(false);
     }
-  };
-
-  const toggleMode = () => {
-    setIsRegister(!isRegister);
-    setError('');
   };
 
   return (
@@ -63,46 +53,21 @@ export default function Login() {
           <p style={styles.tagline}>AI-Powered Outbound Calling Platform</p>
         </div>
 
-        <h2 style={styles.heading}>{isRegister ? 'Create Account' : 'Sign In'}</h2>
+        <h2 style={styles.heading}>Sign In</h2>
 
         {error && <div style={styles.error}>{error}</div>}
 
         <form onSubmit={handleSubmit} style={styles.form}>
-          {isRegister && (
-            <>
-              <div style={styles.fieldGroup}>
-                <label style={styles.label}>Name</label>
-                <input
-                  type="text"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  placeholder="Your full name"
-                  required
-                  style={styles.input}
-                />
-              </div>
-              <div style={styles.fieldGroup}>
-                <label style={styles.label}>Company</label>
-                <input
-                  type="text"
-                  value={company}
-                  onChange={(e) => setCompany(e.target.value)}
-                  placeholder="Company name (optional)"
-                  style={styles.input}
-                />
-              </div>
-            </>
-          )}
-
           <div style={styles.fieldGroup}>
-            <label style={styles.label}>Email</label>
+            <label style={styles.label}>Username</label>
             <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="you@example.com"
+              type="text"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              placeholder="Enter your username"
               required
               style={styles.input}
+              autoComplete="username"
             />
           </div>
 
@@ -115,22 +80,18 @@ export default function Login() {
               placeholder="Enter your password"
               required
               style={styles.input}
+              autoComplete="current-password"
             />
           </div>
 
-          <button type="submit" disabled={loading} style={styles.button}>
-            {loading
-              ? (isRegister ? 'Creating Account...' : 'Signing In...')
-              : (isRegister ? 'Create Account' : 'Sign In')}
+          <button type="submit" disabled={loading} style={{
+            ...styles.button,
+            opacity: loading ? 0.7 : 1,
+            cursor: loading ? 'default' : 'pointer'
+          }}>
+            {loading ? 'Signing In...' : 'Sign In'}
           </button>
         </form>
-
-        <p style={styles.toggleText}>
-          {isRegister ? 'Already have an account? ' : "Don't have an account? "}
-          <span onClick={toggleMode} style={styles.toggleLink}>
-            {isRegister ? 'Sign in' : 'Sign up'}
-          </span>
-        </p>
       </div>
     </div>
   );
@@ -227,19 +188,7 @@ const styles = {
     color: '#ffffff',
     fontSize: '15px',
     fontWeight: '600',
-    cursor: 'pointer',
     marginTop: '4px',
     transition: 'background-color 0.2s',
-  },
-  toggleText: {
-    textAlign: 'center',
-    marginTop: '20px',
-    fontSize: '14px',
-    color: '#64748b',
-  },
-  toggleLink: {
-    color: '#4f46e5',
-    fontWeight: '500',
-    cursor: 'pointer',
   },
 };

@@ -5,7 +5,10 @@ import './index.css'
 
 const root = document.getElementById('root')
 if (!root) {
-  document.body.innerHTML = '<h1 style="padding:20px;color:red">Root element not found</h1>'
+  const h1 = document.createElement('h1')
+  h1.style.cssText = 'padding:20px;color:red'
+  h1.textContent = 'Root element not found'
+  document.body.appendChild(h1)
 } else {
   ;(async () => {
     try {
@@ -19,14 +22,32 @@ if (!root) {
       )
     } catch (err) {
       console.error('Failed to load app:', err)
-      root.innerHTML = `
-        <div style="padding:40px;font-family:sans-serif">
-          <h1 style="color:#151c30">Failed to load app</h1>
-          <p style="color:#755f4e;margin:16px 0">${err.message}</p>
-          <p style="color:#99826a;font-size:14px">Check the browser console (F12) for details.</p>
-          <button onclick="location.reload()" style="margin-top:20px;padding:12px 24px;background:#1e2a45;color:white;border:none;border-radius:8px;cursor:pointer">Reload</button>
-        </div>
-      `
+      root.textContent = ''
+      const container = document.createElement('div')
+      container.style.cssText = 'padding:40px;font-family:sans-serif'
+
+      const h1 = document.createElement('h1')
+      h1.style.color = '#151c30'
+      h1.textContent = 'Failed to load app'
+      container.appendChild(h1)
+
+      const p1 = document.createElement('p')
+      p1.style.cssText = 'color:#755f4e;margin:16px 0'
+      p1.textContent = err.message
+      container.appendChild(p1)
+
+      const p2 = document.createElement('p')
+      p2.style.cssText = 'color:#99826a;font-size:14px'
+      p2.textContent = 'Check the browser console (F12) for details.'
+      container.appendChild(p2)
+
+      const btn = document.createElement('button')
+      btn.style.cssText = 'margin-top:20px;padding:12px 24px;background:#1e2a45;color:white;border:none;border-radius:8px;cursor:pointer'
+      btn.textContent = 'Reload'
+      btn.addEventListener('click', () => location.reload())
+      container.appendChild(btn)
+
+      root.appendChild(container)
     }
   })()
 }

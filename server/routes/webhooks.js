@@ -64,12 +64,16 @@ router.post('/telnyx', async (req, res) => {
         
       case 'call.answered':
         db.prepare(`UPDATE calls SET status = 'in_progress' WHERE id = ?`).run(callId);
-        
+
         // Start AI conversation
         const call = db.prepare('SELECT * FROM calls WHERE id = ?').get(callId);
-        const campaign = db.prepare('SELECT * FROM campaigns WHERE id = ?').get(call?.campaign_id);
-        const contact = db.prepare('SELECT * FROM contacts WHERE id = ?').get(call?.contact_id);
-        
+        if (!call) {
+          console.warn('Call not found in DB after answer event:', callId);
+          break;
+        }
+        const campaign = db.prepare('SELECT * FROM campaigns WHERE id = ?').get(call.campaign_id);
+        const contact = db.prepare('SELECT * FROM contacts WHERE id = ?').get(call.contact_id);
+
         if (campaign?.telnyx_assistant_id) {
           try {
             await startAIConversation(

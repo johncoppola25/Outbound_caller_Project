@@ -15,10 +15,13 @@ import {
   Bell,
   Check,
   CheckCheck,
-  ClipboardCheck
+  ClipboardCheck,
+  LogOut
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useWebSocket } from '../context/WebSocketContext';
+import { useAuth } from '../context/AuthContext';
+import { apiFetch } from '../utils/api';
 
 const API_BASE = '';
 
@@ -37,6 +40,7 @@ const navigation = [
 export default function Layout() {
   const location = useLocation();
   const { isConnected, subscribe } = useWebSocket();
+  const { user, logout } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
   const [appointmentCount, setAppointmentCount] = useState(0);
@@ -51,9 +55,9 @@ export default function Layout() {
   const fetchNotifications = useCallback(async () => {
     try {
       const [apptRes, callbackRes, callsRes] = await Promise.all([
-        fetch(`${API_BASE}/api/calls/appointments`),
-        fetch(`${API_BASE}/api/calls/callbacks`),
-        fetch(`${API_BASE}/api/calls?limit=20`)
+        apiFetch(`${API_BASE}/api/calls/appointments`),
+        apiFetch(`${API_BASE}/api/calls/callbacks`),
+        apiFetch(`${API_BASE}/api/calls?limit=20`)
       ]);
       const notifs = [];
       if (apptRes.ok) {
@@ -358,18 +362,33 @@ export default function Layout() {
           </div>
         </div>
 
-        {/* User */}
+        {/* User & Sign Out */}
         <div style={{ padding: '10px', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '6px 10px' }}>
-            <div style={{
-              width: '32px', height: '32px', background: '#4f46e5', borderRadius: '8px',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              fontSize: '11px', fontWeight: '700', color: 'white'
-            }}>RE</div>
-            <div>
-              <p style={{ fontSize: '12px', fontWeight: '600', color: '#e5e7eb' }}>Agent</p>
-              <p style={{ fontSize: '10px', color: '#6b7280' }}>Professional</p>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '6px 10px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <div style={{
+                width: '32px', height: '32px', background: '#4f46e5', borderRadius: '8px',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontSize: '11px', fontWeight: '700', color: 'white'
+              }}>{(user?.name || 'U')[0].toUpperCase()}</div>
+              <div>
+                <p style={{ fontSize: '12px', fontWeight: '600', color: '#e5e7eb' }}>{user?.name || 'User'}</p>
+                <p style={{ fontSize: '10px', color: '#6b7280' }}>Admin</p>
+              </div>
             </div>
+            <button
+              onClick={() => { logout(); navigate('/login'); }}
+              title="Sign Out"
+              style={{
+                background: 'rgba(239,68,68,0.1)', border: 'none', borderRadius: '6px',
+                padding: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center',
+                justifyContent: 'center', color: '#f87171', transition: 'background 0.15s'
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(239,68,68,0.2)'}
+              onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(239,68,68,0.1)'}
+            >
+              <LogOut style={{ width: '16px', height: '16px' }} />
+            </button>
           </div>
         </div>
       </aside>

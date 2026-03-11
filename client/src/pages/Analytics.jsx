@@ -17,6 +17,7 @@ import {
   XCircle,
   PhoneForwarded
 } from 'lucide-react';
+import { apiFetch } from '../utils/api';
 
 export default function Analytics() {
   const [period, setPeriod] = useState('7d');
@@ -33,8 +34,8 @@ export default function Analytics() {
     setLoading(true);
     try {
       const [analyticsRes, statsRes] = await Promise.all([
-        fetch(`/api/stats/analytics?period=${period}`),
-        fetch('/api/stats/dashboard')
+        apiFetch(`/api/stats/analytics?period=${period}`),
+        apiFetch('/api/stats/dashboard')
       ]);
       const analyticsData = await analyticsRes.json();
       const statsData = await statsRes.json();
@@ -50,7 +51,7 @@ export default function Analytics() {
   async function syncStaleCalls() {
     setSyncing(true);
     try {
-      await fetch('/api/calls/sync-all-stale', { method: 'POST' });
+      await apiFetch('/api/calls/sync-all-stale', { method: 'POST' });
       await fetchAnalytics();
     } catch (err) {
       console.error('Sync error:', err);

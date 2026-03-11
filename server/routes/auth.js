@@ -2,11 +2,12 @@ import express from 'express';
 import { v4 as uuidv4 } from 'uuid';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
+import crypto from 'crypto';
 import { getDb } from '../db/init.js';
 import { authenticateToken } from '../middleware/auth.js';
 
 const router = express.Router();
-const JWT_SECRET = process.env.JWT_SECRET || 'estatereach-secret-key-change-in-production';
+const JWT_SECRET = process.env.JWT_SECRET || 'estatereach-fallback-' + crypto.randomBytes(32).toString('hex');
 
 // POST /api/auth/register
 router.post('/register', async (req, res) => {
@@ -51,22 +52,24 @@ router.post('/register', async (req, res) => {
 // POST /api/auth/login
 router.post('/login', async (req, res) => {
   try {
-    const { email, password } = req.body;
+    const { username, password, email } = req.body;
+    const loginName = username || email; // support both
 
-    if (!email || !password) {
-      return res.status(400).json({ error: 'Email and password are required.' });
+    if (!loginName || !password) {
+      return res.status(400).json({ error: 'Username and password are required.' });
     }
 
     const db = await getDb();
 
-    const user = db.prepare('SELECT * FROM users WHERE email = ?').get(email);
+    // Look up by username or email
+    const user = db.prepare('SELECT * FROM users WHERE email = ? OR name = ?').get(loginName, loginName);
     if (!user) {
-      return res.status(401).json({ error: 'Invalid email or password.' });
+      return res.status(401).json({ error: 'Invalid username or password.' });
     }
 
     const validPassword = await bcrypt.compare(password, user.password_hash);
     if (!validPassword) {
-      return res.status(401).json({ error: 'Invalid email or password.' });
+      return res.status(401).json({ error: 'Invalid username or password.' });
     }
 
     const token = jwt.sign(

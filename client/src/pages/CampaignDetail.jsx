@@ -20,6 +20,7 @@ import {
   FileText
 } from 'lucide-react';
 import { useWebSocket } from '../context/WebSocketContext';
+import { apiFetch } from '../utils/api';
 
 // Format phone for display (e.g. 732-402-8535)
 function formatCallbackPhone(phone) {
@@ -250,7 +251,7 @@ export default function CampaignDetail() {
 
   async function fetchCampaign() {
     try {
-      const res = await fetch(`/api/campaigns/${id}`);
+      const res = await apiFetch(`/api/campaigns/${id}`);
       const data = await res.json();
       if (!res.ok) {
         setCampaign(null);
@@ -265,7 +266,7 @@ export default function CampaignDetail() {
 
   async function fetchContacts() {
     try {
-      const res = await fetch(`/api/contacts/campaign/${id}?limit=100`);
+      const res = await apiFetch(`/api/contacts/campaign/${id}?limit=100`);
       const data = await res.json();
       setContacts(data.contacts || []);
     } catch (err) {
@@ -275,7 +276,7 @@ export default function CampaignDetail() {
 
   async function fetchCalls() {
     try {
-      const res = await fetch(`/api/calls/campaign/${id}?limit=100`);
+      const res = await apiFetch(`/api/calls/campaign/${id}?limit=100`);
       const data = await res.json();
       setCalls(data.calls || []);
     } catch (err) {
@@ -285,7 +286,7 @@ export default function CampaignDetail() {
 
   async function fetchStats() {
     try {
-      const res = await fetch(`/api/stats/campaign/${id}`);
+      const res = await apiFetch(`/api/stats/campaign/${id}`);
       const data = await res.json();
       setStats(data);
     } catch (err) {
@@ -304,7 +305,7 @@ export default function CampaignDetail() {
     formData.append('file', file);
 
     try {
-      const res = await fetch(`/api/contacts/upload/${id}`, {
+      const res = await apiFetch(`/api/contacts/upload/${id}`, {
         method: 'POST',
         body: formData
       });
@@ -326,7 +327,7 @@ export default function CampaignDetail() {
     if (!confirm('Start calling all pending contacts?')) return;
     setCallingInProgress(true);
     try {
-      const res = await fetch(`/api/calls/start-campaign/${id}`, {
+      const res = await apiFetch(`/api/calls/start-campaign/${id}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ maxConcurrent: 3 })
@@ -350,7 +351,7 @@ export default function CampaignDetail() {
 
   async function stopCampaign() {
     try {
-      await fetch(`/api/calls/stop-campaign/${id}`, { method: 'POST' });
+      await apiFetch(`/api/calls/stop-campaign/${id}`, { method: 'POST' });
       setCallingInProgress(false);
       fetchContacts();
       fetchCalls();
@@ -361,7 +362,7 @@ export default function CampaignDetail() {
 
   async function pauseCampaign() {
     try {
-      await fetch(`/api/campaigns/${id}/pause`, { method: 'POST' });
+      await apiFetch(`/api/campaigns/${id}/pause`, { method: 'POST' });
       fetchCampaign();
     } catch (err) {
       console.error('Error pausing campaign:', err);
@@ -370,7 +371,7 @@ export default function CampaignDetail() {
 
   async function resumeCampaign() {
     try {
-      await fetch(`/api/calls/resume-campaign/${id}`, { method: 'POST' });
+      await apiFetch(`/api/calls/resume-campaign/${id}`, { method: 'POST' });
       fetchCampaign();
       setCallingInProgress(true);
     } catch (err) {
@@ -382,7 +383,7 @@ export default function CampaignDetail() {
     if (callingContactId) return; // Prevent double-clicks
     setCallingContactId(contactId);
     try {
-      await fetch('/api/calls/initiate', {
+      await apiFetch('/api/calls/initiate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ campaign_id: id, contact_id: contactId })
@@ -414,7 +415,7 @@ export default function CampaignDetail() {
       for (let i = 0; i < pendingContacts.length; i++) {
         const contact = pendingContacts[i];
         try {
-          await fetch('/api/calls/initiate', {
+          await apiFetch('/api/calls/initiate', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ campaign_id: id, contact_id: contact.id })
@@ -450,7 +451,7 @@ export default function CampaignDetail() {
     e.preventDefault();
     setSaving(true);
     try {
-      const res = await fetch(`/api/campaigns/${id}`, {
+      const res = await apiFetch(`/api/campaigns/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(editForm)
@@ -501,7 +502,7 @@ export default function CampaignDetail() {
     console.log('Saving prompt, voice settings, and greeting to server...');
     
     try {
-      const res = await fetch(`/api/campaigns/${id}`, {
+      const res = await apiFetch(`/api/campaigns/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
@@ -548,7 +549,7 @@ export default function CampaignDetail() {
     }
     setAddingContact(true);
     try {
-      const res = await fetch('/api/contacts', {
+      const res = await apiFetch('/api/contacts', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -584,7 +585,7 @@ export default function CampaignDetail() {
   async function handleDeleteContact(contactId) {
     if (!confirm('Are you sure you want to delete this contact?')) return;
     try {
-      const res = await fetch(`/api/contacts/${contactId}`, { method: 'DELETE' });
+      const res = await apiFetch(`/api/contacts/${contactId}`, { method: 'DELETE' });
       if (res.ok) {
         fetchContacts();
         fetchStats();
@@ -599,14 +600,14 @@ export default function CampaignDetail() {
     setLoadingAllContacts(true);
     try {
       // Get all campaigns first
-      const campaignsRes = await fetch('/api/campaigns');
+      const campaignsRes = await apiFetch('/api/campaigns');
       const campaigns = await campaignsRes.json();
       
       // Get contacts from each campaign
       const allContactsData = [];
       for (const campaign of campaigns) {
         if (campaign.id !== id) { // Exclude current campaign
-          const res = await fetch(`/api/contacts/campaign/${campaign.id}?limit=200`);
+          const res = await apiFetch(`/api/contacts/campaign/${campaign.id}?limit=200`);
           const data = await res.json();
           const contactsWithCampaign = (data.contacts || []).map(c => ({
             ...c,
@@ -652,7 +653,7 @@ export default function CampaignDetail() {
       for (const contactId of selectedContactIds) {
         const contact = allContacts.find(c => c.id === contactId);
         if (contact) {
-          const res = await fetch('/api/contacts', {
+          const res = await apiFetch('/api/contacts', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -726,7 +727,7 @@ export default function CampaignDetail() {
     if (!confirm('Are you sure you want to reset this campaign?\n\nThis will:\n• Delete all call records\n• Reset all contacts to "pending" status\n\nThis action cannot be undone.')) return;
     
     try {
-      const res = await fetch(`/api/campaigns/${id}/reset`, { method: 'POST' });
+      const res = await apiFetch(`/api/campaigns/${id}/reset`, { method: 'POST' });
       if (res.ok) {
         fetchContacts();
         fetchCalls();

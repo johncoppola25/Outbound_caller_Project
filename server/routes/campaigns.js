@@ -12,7 +12,8 @@ router.get('/test-telnyx', async (req, res) => {
     const result = await testConnection();
     res.json(result);
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error('Error testing Telnyx:', error);
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -23,7 +24,8 @@ router.get('/telnyx-assistants', async (req, res) => {
     const result = await listAIAssistants();
     res.json(result);
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error('Error fetching Telnyx assistants:', error);
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -33,7 +35,8 @@ router.get('/test-connection', async (req, res) => {
     const result = await testConnection();
     res.json(result);
   } catch (error) {
-    res.status(500).json({ success: false, error: error.message });
+    console.error('Error testing connection:', error);
+    res.status(500).json({ success: false, error: 'Internal server error' });
   }
 });
 
@@ -43,7 +46,8 @@ router.get('/phone-numbers', async (req, res) => {
     const numbers = await listPhoneNumbers();
     res.json(numbers);
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error('Error fetching phone numbers:', error);
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -53,7 +57,8 @@ router.get('/assistants', async (req, res) => {
     const result = await listAIAssistants();
     res.json(result);
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error('Error fetching assistants:', error);
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -149,7 +154,7 @@ router.post('/', async (req, res) => {
     res.status(201).json(response);
   } catch (error) {
     console.error('❌ Error creating campaign:', error);
-    res.status(500).json({ error: 'Failed to create campaign: ' + error.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -309,7 +314,7 @@ router.post('/:id/reset', async (req, res) => {
     res.json({ success: true });
   } catch (error) {
     console.error('Error resetting campaign:', error);
-    res.status(500).json({ error: 'Failed to reset campaign: ' + error.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -396,7 +401,7 @@ router.post('/setup-telnyx', async (req, res) => {
     });
   } catch (error) {
     console.error('Error setting up Telnyx:', error);
-    res.status(500).json({ error: 'Failed to setup Telnyx: ' + error.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -416,7 +421,7 @@ router.get('/telnyx-status', async (req, res) => {
     });
   } catch (error) {
     console.error('Error checking Telnyx status:', error);
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 

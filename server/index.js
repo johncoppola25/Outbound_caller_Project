@@ -20,6 +20,8 @@ import dncRouter from './routes/dnc.js';
 import authRouter from './routes/auth.js';
 import meetingsRouter from './routes/meetings.js';
 import { initDatabase } from './db/init.js';
+import { authenticateToken } from './middleware/auth.js';
+import { generalLimiter, authLimiter, callLimiter } from './middleware/rateLimiter.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -38,7 +40,22 @@ if (!fs.existsSync(uploadsDir)) {
 await initDatabase();
 
 // Middleware
-app.use(cors());
+
+// CORS restriction
+app.use(cors({
+  origin: process.env.CORS_ORIGIN ? process.env.CORS_ORIGIN.split(',') : ['http://localhost:3001', 'http://localhost:5173'],
+  credentials: true
+}));
+
+// Security headers
+app.use((req, res, next) => {
+  res.setHeader('X-Frame-Options', 'DENY');
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-XSS-Protection', '1; mode=block');
+  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+  next();
+});
+
 app.use(express.json());
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
@@ -64,17 +81,29 @@ export const broadcast = (data) => {
   });
 };
 
-// API Routes
-app.use('/api/auth', authRouter);
-app.use('/api/campaigns', campaignsRouter);
-app.use('/api/contacts', contactsRouter);
-app.use('/api/calls', callsRouter);
-app.use('/api/stats', statsRouter);
-app.use('/api/webhooks', webhooksRouter);
-app.use('/api/dnc', dncRouter);
-app.use('/api/meetings', meetingsRouter);
+// General rate limiter for all API routes
+app.use('/api/', generalLimiter);
 
-// Health check
+// Auth rate limiter (stricter)
+app.use('/api/auth', authLimiter);
+
+// Call initiation rate limiter
+app.use('/api/calls/initiate', callLimiter);
+app.use('/api/calls/start-campaign', callLimiter);
+
+// API Routes - unprotected routes first
+app.use('/api/auth', authRouter);               // login/register are public, /me uses its own auth
+app.use('/api/webhooks', webhooksRouter);        // Telnyx webhooks - must be unprotected
+
+// Protected routes - require valid JWT
+app.use('/api/campaigns', authenticateToken, campaignsRouter);
+app.use('/api/contacts', authenticateToken, contactsRouter);
+app.use('/api/calls', authenticateToken, callsRouter);
+app.use('/api/stats', authenticateToken, statsRouter);
+app.use('/api/dnc', authenticateToken, dncRouter);
+app.use('/api/meetings', authenticateToken, meetingsRouter);
+
+// Health check (public)
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });

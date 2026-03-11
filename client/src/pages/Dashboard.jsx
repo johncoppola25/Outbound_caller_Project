@@ -5,6 +5,7 @@ import {
   ArrowUpRight, BarChart3, Upload, Activity, TrendingUp, Flame, Thermometer, Snowflake, DollarSign
 } from 'lucide-react';
 import { useWebSocket } from '../context/WebSocketContext';
+import { apiFetch } from '../utils/api';
 
 export default function Dashboard() {
   const [stats, setStats] = useState(null);
@@ -35,7 +36,7 @@ export default function Dashboard() {
 
   async function fetchStats() {
     try {
-      const res = await fetch('/api/stats/dashboard');
+      const res = await apiFetch('/api/stats/dashboard');
       if (!res.ok) throw new Error('Failed to fetch stats');
       setStats(await res.json());
     } catch (err) { console.error('Error fetching stats:', err); }
@@ -43,7 +44,7 @@ export default function Dashboard() {
 
   async function fetchRecentCalls() {
     try {
-      const res = await fetch('/api/calls?limit=10');
+      const res = await apiFetch('/api/calls?limit=10');
       if (!res.ok) throw new Error('Failed to fetch calls');
       const data = await res.json();
       setRecentCalls(data.calls || []);

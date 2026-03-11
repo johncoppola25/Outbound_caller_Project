@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { ClipboardCheck, Phone, Mail, MapPin, Calendar, FileText, ChevronLeft, ChevronDown, ChevronRight, Trash2, CheckCircle, XCircle, Clock, RotateCcw, UserX, Filter } from 'lucide-react';
+import { apiFetch } from '../utils/api';
 
 const outcomeLabels = {
   follow_up_needed: { label: 'Follow-Up Needed', color: '#d97706', bg: '#fefce8', border: '#fde68a', icon: Clock, order: 1 },
@@ -23,7 +24,7 @@ export default function MeetingHistory() {
 
   async function fetchMeetings() {
     try {
-      const res = await fetch('/api/meetings');
+      const res = await apiFetch('/api/meetings');
       const data = await res.json();
       setMeetings(Array.isArray(data) ? data : []);
     } catch (err) {
@@ -37,7 +38,7 @@ export default function MeetingHistory() {
   async function deleteMeeting(id) {
     if (!confirm('Remove this meeting from history?')) return;
     try {
-      await fetch(`/api/meetings/${id}`, { method: 'DELETE' });
+      await apiFetch(`/api/meetings/${id}`, { method: 'DELETE' });
       setMeetings(prev => prev.filter(m => m.id !== id));
     } catch (err) {
       console.error('Error deleting meeting:', err);

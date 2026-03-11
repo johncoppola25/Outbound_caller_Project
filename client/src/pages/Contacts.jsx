@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import {
   Search, Upload, Users, Phone, Mail, Trash2, Edit3, X, UserPlus, Eye, MapPin, FileText
 } from 'lucide-react';
+import { apiFetch } from '../utils/api';
 
 const inputStyle = {
   width: '100%', padding: '10px 14px',
@@ -56,19 +57,19 @@ export default function Contacts() {
   useEffect(() => { if (campaigns.length > 0) fetchAllContacts(); }, [campaigns, selectedCampaign, statusFilter]);
 
   async function fetchCampaigns() {
-    try { const res = await fetch('/api/campaigns'); const data = await res.json(); setCampaigns(data); } catch (err) { console.error('Error:', err); } finally { setLoading(false); }
+    try { const res = await apiFetch('/api/campaigns'); const data = await res.json(); setCampaigns(data); } catch (err) { console.error('Error:', err); } finally { setLoading(false); }
   }
 
   async function fetchAllContacts() {
     try {
       if (selectedCampaign !== 'all') {
         const url = `/api/contacts/campaign/${selectedCampaign}?limit=200` + (statusFilter !== 'all' ? `&status=${statusFilter}` : '');
-        const res = await fetch(url); const data = await res.json(); setContacts(data.contacts || []);
+        const res = await apiFetch(url); const data = await res.json(); setContacts(data.contacts || []);
       } else {
         const allContacts = [];
         for (const campaign of campaigns) {
           const url = `/api/contacts/campaign/${campaign.id}?limit=100` + (statusFilter !== 'all' ? `&status=${statusFilter}` : '');
-          const res = await fetch(url); const data = await res.json();
+          const res = await apiFetch(url); const data = await res.json();
           allContacts.push(...(data.contacts || []).map(c => ({ ...c, campaign_name: campaign.name })));
         }
         setContacts(allContacts);
@@ -78,7 +79,7 @@ export default function Contacts() {
 
   async function deleteContact(id) {
     if (!confirm('Delete this contact?')) return;
-    try { await fetch(`/api/contacts/${id}`, { method: 'DELETE' }); setContacts(contacts.filter(c => c.id !== id)); } catch (err) { console.error('Error:', err); }
+    try { await apiFetch(`/api/contacts/${id}`, { method: 'DELETE' }); setContacts(contacts.filter(c => c.id !== id)); } catch (err) { console.error('Error:', err); }
   }
 
   function openEditModal(contact) {
@@ -91,7 +92,7 @@ export default function Contacts() {
     e.preventDefault(); if (!editingContact) return;
     setSaving(true);
     try {
-      const res = await fetch(`/api/contacts/${editingContact.id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(editForm) });
+      const res = await apiFetch(`/api/contacts/${editingContact.id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(editForm) });
       if (res.ok) { const updated = await res.json(); setContacts(contacts.map(c => c.id === editingContact.id ? { ...c, ...updated } : c)); setShowEditModal(false); setEditingContact(null); showToast('Contact saved!'); }
       else { const error = await res.json(); showToast(error.error || 'Failed', 'error'); }
     } catch (err) { showToast('Error updating contact', 'error'); } finally { setSaving(false); }
@@ -102,7 +103,7 @@ export default function Contacts() {
     if (!addForm.first_name || !addForm.phone || !addForm.campaign_id) { showToast('First name, phone, and campaign required', 'error'); return; }
     setAdding(true);
     try {
-      const res = await fetch('/api/contacts', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(addForm) });
+      const res = await apiFetch('/api/contacts', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(addForm) });
       if (res.ok) { const nc = await res.json(); const camp = campaigns.find(c => c.id === addForm.campaign_id); setContacts([{ ...nc, campaign_name: camp?.name }, ...contacts]); setShowAddModal(false); setAddForm({ first_name: '', last_name: '', phone: '', email: '', property_address: '', notes: '', campaign_id: '' }); showToast('Contact added!'); }
       else { const error = await res.json(); showToast(error.error || 'Failed', 'error'); }
     } catch (err) { showToast('Error adding contact', 'error'); } finally { setAdding(false); }
@@ -114,7 +115,7 @@ export default function Contacts() {
     setUploading(true); setUploadResult(null);
     try {
       const formData = new FormData(); formData.append('file', uploadFile);
-      const res = await fetch(`/api/contacts/upload/${uploadCampaignId}`, { method: 'POST', body: formData });
+      const res = await apiFetch(`/api/contacts/upload/${uploadCampaignId}`, { method: 'POST', body: formData });
       const result = await res.json();
       if (res.ok) { setUploadResult(result); showToast(`Uploaded ${result.imported} contacts!`); fetchAllContacts(); }
       else showToast(result.error || 'Upload failed', 'error');
@@ -177,11 +178,17 @@ export default function Contacts() {
                 onChange={async (e) => {
                   const action = e.target.value; e.target.value = '';
                   if (action === 'dnc') {
-                    for (const id of selectedIds) { const c = contacts.find(x => x.id === id); if (c?.phone) await fetch('/api/dnc', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ phone: c.phone, reason: 'Bulk add' }) }); }
+                    for (const id of selectedIds) { const c = contacts.find(x => x.id === id); if (c?.phone) await apiFetch('/api/dnc', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ phone: c.phone, reason: 'Bulk add' }) }); }
                     showToast(`${selectedIds.size} added to DNC list`);
                   } else if (action === 'export') {
                     const sel = contacts.filter(c => selectedIds.has(c.id));
-                    const csv = ['first_name,last_name,phone,email,property_address,status'].concat(sel.map(c => `${c.first_name || ''},${c.last_name || ''},${c.phone || ''},${c.email || ''},${c.property_address || ''},${c.status || ''}`)).join('\n');
+                    const escapeCsvCell = (cell) => {
+                      const str = String(cell || '');
+                      if (/^[=+\-@\t\r]/.test(str)) return "'" + str;
+                      if (str.includes(',') || str.includes('"') || str.includes('\n')) return '"' + str.replace(/"/g, '""') + '"';
+                      return str;
+                    };
+                    const csv = ['first_name,last_name,phone,email,property_address,status'].concat(sel.map(c => [c.first_name, c.last_name, c.phone, c.email, c.property_address, c.status].map(escapeCsvCell).join(','))).join('\n');
                     const a = document.createElement('a'); a.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent('\uFEFF' + csv); a.download = 'contacts-export.csv'; a.click(); showToast('Exported to CSV');
                   }
                   setSelectedIds(new Set());

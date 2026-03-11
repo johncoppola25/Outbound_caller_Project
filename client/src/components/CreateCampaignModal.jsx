@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { X, Sparkles, ChevronRight, ChevronLeft } from 'lucide-react';
+import { apiFetch } from '../utils/api';
 
 const steps = ['Template', 'Details', 'AI Prompt'];
 
@@ -26,7 +27,7 @@ export default function CreateCampaignModal({ onClose, onCreated }) {
   useEffect(() => { fetchTemplates(); }, []);
 
   async function fetchTemplates() {
-    try { const res = await fetch('/api/campaigns/templates/list'); const data = await res.json(); setTemplates(data); } catch (err) { console.error('Error:', err); }
+    try { const res = await apiFetch('/api/campaigns/templates/list'); const data = await res.json(); setTemplates(data); } catch (err) { console.error('Error:', err); }
   }
 
   function selectTemplate(template) {
@@ -36,7 +37,7 @@ export default function CreateCampaignModal({ onClose, onCreated }) {
 
   async function handleSubmit() {
     setSaving(true);
-    try { const res = await fetch('/api/campaigns', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(formData) }); const campaign = await res.json(); onCreated(campaign); }
+    try { const res = await apiFetch('/api/campaigns', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(formData) }); const campaign = await res.json(); onCreated(campaign); }
     catch (err) { console.error('Error:', err); } finally { setSaving(false); }
   }
 

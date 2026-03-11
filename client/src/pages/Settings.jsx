@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Phone, CheckCircle, XCircle, RefreshCw, AlertCircle, Sparkles, Settings as SettingsIcon, CreditCard, ShieldOff } from 'lucide-react';
+import { apiFetch } from '../utils/api';
 
 export default function Settings() {
   const [phoneNumbers, setPhoneNumbers] = useState([]);
@@ -20,29 +21,29 @@ export default function Settings() {
   }
 
   async function fetchDnc() {
-    try { const res = await fetch('/api/dnc'); const data = await res.json(); setDncList(data || []); } catch { setDncList([]); }
+    try { const res = await apiFetch('/api/dnc'); const data = await res.json(); setDncList(data || []); } catch { setDncList([]); }
   }
 
   async function addToDnc(e) {
     e.preventDefault();
     if (!dncPhone.trim()) return;
-    try { await fetch('/api/dnc', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ phone: dncPhone.trim() }) }); setDncPhone(''); fetchDnc(); } catch (err) { console.error(err); }
+    try { await apiFetch('/api/dnc', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ phone: dncPhone.trim() }) }); setDncPhone(''); fetchDnc(); } catch (err) { console.error(err); }
   }
 
   async function removeFromDnc(phone) {
-    try { await fetch(`/api/dnc/${encodeURIComponent(phone)}`, { method: 'DELETE' }); fetchDnc(); } catch (err) { console.error(err); }
+    try { await apiFetch(`/api/dnc/${encodeURIComponent(phone)}`, { method: 'DELETE' }); fetchDnc(); } catch (err) { console.error(err); }
   }
 
   async function testConnection() {
-    try { const res = await fetch('/api/campaigns/test-connection'); const data = await res.json(); setConnectionStatus(data); if (data.balance) setBalance(data.balance); } catch (err) { setConnectionStatus({ success: false, error: err.message }); }
+    try { const res = await apiFetch('/api/campaigns/test-connection'); const data = await res.json(); setConnectionStatus(data); if (data.balance) setBalance(data.balance); } catch (err) { setConnectionStatus({ success: false, error: err.message }); }
   }
 
   async function fetchPhoneNumbers() {
-    try { const res = await fetch('/api/campaigns/phone-numbers'); const data = await res.json(); setPhoneNumbers(data || []); } catch (err) { console.error('Error fetching phone numbers:', err); }
+    try { const res = await apiFetch('/api/campaigns/phone-numbers'); const data = await res.json(); setPhoneNumbers(data || []); } catch (err) { console.error('Error fetching phone numbers:', err); }
   }
 
   async function fetchAssistants() {
-    try { const res = await fetch('/api/campaigns/assistants'); const data = await res.json(); setAssistants(data.data || []); } catch (err) { console.error('Error fetching assistants:', err); }
+    try { const res = await apiFetch('/api/campaigns/assistants'); const data = await res.json(); setAssistants(data.data || []); } catch (err) { console.error('Error fetching assistants:', err); }
   }
 
   async function handleRefresh() { setRefreshing(true); await loadAllData(); setRefreshing(false); }
@@ -217,7 +218,7 @@ export default function Settings() {
         <button
           onClick={async () => {
             try {
-              const res = await fetch('/api/webhooks/test');
+              const res = await apiFetch('/api/webhooks/test');
               const data = await res.json();
               alert(data.success ? 'Webhook URL is reachable!' : data.message || 'Unknown error');
             } catch { alert('Could not reach server'); }
