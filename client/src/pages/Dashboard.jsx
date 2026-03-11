@@ -12,7 +12,14 @@ export default function Dashboard() {
   const [recentCalls, setRecentCalls] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
   const { subscribe } = useWebSocket();
+
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth < 768);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   useEffect(() => {
     fetchDashboardData();
@@ -82,7 +89,7 @@ export default function Dashboard() {
       </div>
 
       {/* Stat Cards */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '14px', marginBottom: '24px' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(4, 1fr)', gap: '14px', marginBottom: '24px' }}>
         {statCards.map((card, i) => (
           <Link key={card.title} to={card.link} style={{
             background: '#fff', borderRadius: '12px', padding: '20px',
@@ -110,7 +117,7 @@ export default function Dashboard() {
 
       {/* Lead Scores + Cost Row */}
       {(leadScores || costs) && (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '14px', marginBottom: '24px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(4, 1fr)', gap: '14px', marginBottom: '24px' }}>
           {leadScores && <>
             <div style={{ background: '#fff', borderRadius: '12px', padding: '16px 20px', border: '1px solid #e5e7eb', display: 'flex', alignItems: 'center', gap: '14px' }}>
               <div style={{ width: '36px', height: '36px', borderRadius: '9px', background: '#fef2f2', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>

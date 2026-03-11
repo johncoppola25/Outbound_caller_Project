@@ -982,7 +982,7 @@ export default function CampaignDetail() {
             <div>
               {/* Upload & Add Section */}
               <div style={{ marginBottom: '24px', padding: '16px', backgroundColor: '#f9fafb', borderRadius: '12px', border: '1px solid #f3f4f6' }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
                   <div>
                     <h3 style={{ fontWeight: '500', color: '#4b5563' }}>Add Contacts</h3>
                     <p style={{ fontSize: '14px', color: '#6b7280' }}>Upload CSV or add contacts manually</p>
@@ -1058,7 +1058,7 @@ export default function CampaignDetail() {
                 {/* Call All Contacts Button */}
                 {contacts.length > 0 && pendingContacts > 0 && (
                   <div style={{ marginTop: '16px', paddingTop: '16px', borderTop: '1px solid #f3f4f6' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
                       <div>
                         <h4 style={{ fontWeight: '500', color: '#4b5563', marginBottom: '4px' }}>Call All Contacts</h4>
                         <p style={{ fontSize: '12px', color: '#6b7280' }}>Initiate calls for all {pendingContacts} pending contact(s)</p>
@@ -1329,7 +1329,7 @@ export default function CampaignDetail() {
           {/* Prompt Tab */}
           {activeTab === 'prompt' && (
             <div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '12px' }}>
                 <div>
                   <h3 style={{ fontWeight: '500', color: '#4b5563', marginBottom: '8px' }}>AI Assistant Prompt</h3>
                   <p style={{ fontSize: '14px', color: '#6b7280' }}>Edit your prompt below and click Save to sync with Telnyx.</p>
@@ -1557,7 +1557,7 @@ export default function CampaignDetail() {
           {/* Voice Settings Tab */}
           {activeTab === 'voice' && (
             <div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', flexWrap: 'wrap', gap: '12px' }}>
                 <div>
                   <h3 style={{ fontWeight: '500', color: '#4b5563', marginBottom: '8px' }}>Voice & Call Settings</h3>
                   <p style={{ fontSize: '14px', color: '#6b7280' }}>Configure the AI voice, speed, language, and call behavior. Changes sync to Telnyx when saved.</p>
@@ -1739,7 +1739,7 @@ export default function CampaignDetail() {
       {/* Edit Campaign Modal */}
       {showEditModal && (
         <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 50, padding: isMobile ? '16px' : '0' }}>
-          <div style={{ background: '#ffffff', borderRadius: '16px', padding: isMobile ? '24px' : '32px', width: isMobile ? '100%' : '600px', maxWidth: '100%', maxHeight: '90vh', overflowY: 'auto' }}>
+          <div style={{ background: '#ffffff', borderRadius: '16px', padding: isMobile ? '24px' : '32px', width: 'min(600px, calc(100vw - 32px))', maxWidth: '100%', maxHeight: '90vh', overflowY: 'auto' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
               <h2 style={{ fontSize: '24px', fontFamily: 'Inter, sans-serif', fontWeight: '600', color: '#111827' }}>Edit Campaign</h2>
               <button onClick={() => setShowEditModal(false)} style={{ background: 'transparent', border: 'none', cursor: 'pointer', padding: '4px' }}>
@@ -1981,7 +1981,7 @@ export default function CampaignDetail() {
       {/* Add Contact Modal */}
       {showAddContactModal && (
         <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 50, padding: isMobile ? '16px' : '0' }}>
-          <div style={{ background: '#ffffff', borderRadius: '16px', padding: isMobile ? '24px' : '32px', width: isMobile ? '100%' : '500px', maxWidth: '100%', maxHeight: '90vh', overflowY: 'auto' }}>
+          <div style={{ background: '#ffffff', borderRadius: '16px', padding: isMobile ? '24px' : '32px', width: 'min(500px, calc(100vw - 32px))', maxWidth: '100%', maxHeight: '90vh', overflowY: 'auto' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
               <h2 style={{ fontSize: '24px', fontFamily: 'Inter, sans-serif', fontWeight: '600', color: '#111827' }}>Add Contact</h2>
               <button onClick={() => setShowAddContactModal(false)} style={{ background: 'transparent', border: 'none', cursor: 'pointer', padding: '4px' }}>
@@ -2081,7 +2081,7 @@ export default function CampaignDetail() {
       {/* Add from Contacts Modal */}
       {showAddFromContactsModal && (
         <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 50, padding: isMobile ? '16px' : '0' }}>
-          <div style={{ background: '#ffffff', borderRadius: '16px', padding: isMobile ? '24px' : '32px', width: isMobile ? '100%' : '700px', maxWidth: '100%', maxHeight: '90vh', overflowY: 'auto' }}>
+          <div style={{ background: '#ffffff', borderRadius: '16px', padding: isMobile ? '24px' : '32px', width: 'min(700px, calc(100vw - 32px))', maxWidth: '100%', maxHeight: '90vh', overflowY: 'auto' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
               <div>
                 <h2 style={{ fontSize: '24px', fontFamily: 'Inter, sans-serif', fontWeight: '600', color: '#111827' }}>Add from Contacts</h2>
@@ -2191,7 +2191,7 @@ export default function CampaignDetail() {
       {/* View Contact Modal */}
       {showViewContactModal && viewingContact && (
         <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 50, padding: isMobile ? '16px' : '0' }}>
-          <div style={{ background: '#ffffff', borderRadius: '16px', padding: isMobile ? '24px' : '32px', width: isMobile ? '100%' : '500px', maxWidth: '100%', maxHeight: '90vh', overflowY: 'auto' }}>
+          <div style={{ background: '#ffffff', borderRadius: '16px', padding: isMobile ? '24px' : '32px', width: 'min(500px, calc(100vw - 32px))', maxWidth: '100%', maxHeight: '90vh', overflowY: 'auto' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
               <h2 style={{ fontSize: '24px', fontFamily: 'Inter, sans-serif', fontWeight: '600', color: '#111827' }}>Contact Details</h2>
               <button onClick={() => { setShowViewContactModal(false); setViewingContact(null); }} style={{ background: 'transparent', border: 'none', cursor: 'pointer', padding: '4px' }}>

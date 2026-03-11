@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Zap, Eye, EyeOff } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
@@ -14,6 +14,13 @@ export default function Login() {
   const [error, setError] = useState('');
   const [rememberMe, setRememberMe] = useState(true);
   const [loading, setLoading] = useState(false);
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth < 768);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -46,25 +53,33 @@ export default function Login() {
 
   return (
     <div style={styles.page}>
-      {/* Left Panel - Blue Gradient Branding */}
-      <div style={styles.leftPanel}>
-        <div style={styles.brandingContent}>
-          <div style={styles.logoRow}>
-            <div style={styles.logoIcon}>
-              <Zap size={32} color="#ffffff" />
+      {/* Left Panel - Blue Gradient Branding (hidden on mobile) */}
+      {!isMobile && (
+        <div style={styles.leftPanel}>
+          <div style={styles.brandingContent}>
+            <div style={styles.logoRow}>
+              <div style={styles.logoIcon}>
+                <Zap size={32} color="#ffffff" />
+              </div>
+              <span style={styles.logoText}>ESTATEREACH</span>
             </div>
-            <span style={styles.logoText}>ESTATEREACH</span>
+            <div style={styles.divider} />
+            <h2 style={styles.portalTitle}>Outbound Caller</h2>
+            <p style={styles.portalSubtitle}>AI-Powered Calling Platform</p>
           </div>
-          <div style={styles.divider} />
-          <h2 style={styles.portalTitle}>Outbound Caller</h2>
-          <p style={styles.portalSubtitle}>AI-Powered Calling Platform</p>
+          <p style={styles.poweredBy}>Powered by EstateReach</p>
         </div>
-        <p style={styles.poweredBy}>Powered by EstateReach</p>
-      </div>
+      )}
 
       {/* Right Panel - Login Form */}
-      <div style={styles.rightPanel}>
-        <div style={styles.formContainer}>
+      <div style={{
+        ...styles.rightPanel,
+        ...(isMobile ? { flex: '1 1 100%', padding: '16px' } : {})
+      }}>
+        <div style={{
+          ...styles.formContainer,
+          ...(isMobile ? { maxWidth: 'calc(100vw - 32px)', width: '100%' } : {})
+        }}>
           <h1 style={styles.welcomeHeading}>Welcome back</h1>
           <p style={styles.welcomeSubtext}>Sign in to your account to continue</p>
 

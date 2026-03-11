@@ -19,7 +19,7 @@ const modalOverlay = { position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0
 const modalBox = {
   background: '#ffffff',
   border: '1px solid #e5e7eb', borderRadius: '12px',
-  padding: '28px', width: '500px', maxHeight: '90vh', overflowY: 'auto',
+  padding: '28px', width: 'min(500px, calc(100vw - 32px))', maxHeight: '90vh', overflowY: 'auto',
   boxShadow: '0 20px 60px rgba(0,0,0,0.15)'
 };
 
@@ -227,6 +227,7 @@ export default function Contacts() {
         </div>
       ) : (
         <div style={{ background: '#ffffff', borderRadius: '12px', overflow: 'hidden', border: '1px solid #e5e7eb', boxShadow: '0 1px 3px rgba(0,0,0,0.03)' }}>
+          <div style={{ overflowX: 'auto' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead>
               <tr>
@@ -282,6 +283,7 @@ export default function Contacts() {
               ))}
             </tbody>
           </table>
+          </div>
           <div style={{ padding: '12px 20px', borderTop: '1px solid #f3f4f6', background: '#f9fafb' }}>
             <p style={{ fontSize: '13px', color: '#6b7280' }}>Showing {filteredContacts.length} contacts</p>
           </div>

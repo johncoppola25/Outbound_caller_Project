@@ -96,7 +96,7 @@ export default function Appointments() {
 
   return (
     <div style={{ animation: 'fadeIn 0.3s ease-out' }}>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px', flexWrap: 'wrap', gap: '16px' }}>
         <div>
           <h1 style={{ fontSize: '26px', fontWeight: '800', color: '#111827', letterSpacing: '-0.03em' }}>Appointments</h1>
           <p style={{ color: '#6b7280', marginTop: '4px', fontSize: '14px' }}>
@@ -204,7 +204,7 @@ export default function Appointments() {
 
               {/* Content */}
               <div style={{ padding: '18px 20px' }}>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '16px' }}>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                       <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: '#eef2ff', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
@@ -331,7 +331,7 @@ export default function Appointments() {
           <div onClick={() => setCompletingApt(null)} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 2000 }} />
           <div style={{
             position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%, -50%)',
-            zIndex: 2001, width: '480px', maxWidth: '90vw',
+            zIndex: 2001, width: 'min(480px, calc(100vw - 32px))',
             background: 'white', borderRadius: '16px', boxShadow: '0 20px 60px rgba(0,0,0,0.2)',
             overflow: 'hidden'
           }}>

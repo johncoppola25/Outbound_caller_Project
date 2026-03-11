@@ -170,7 +170,7 @@ export default function Analytics() {
       </div>
 
       {/* Top Metrics */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '12px', marginBottom: '16px' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '12px', marginBottom: '16px' }}>
         {[
           { label: 'Total Calls', value: totalCalls, icon: Phone, color: '#4f46e5', bg: '#eef2ff' },
           { label: 'Answer Rate', value: `${answerRate}%`, icon: PhoneCall, color: '#059669', bg: '#ecfdf5' },
@@ -192,7 +192,7 @@ export default function Analytics() {
       </div>
 
       {/* Call Outcomes Breakdown + Today/This Week */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '16px', marginBottom: '16px' }}>
         {/* Call Outcomes */}
         <div style={cardStyle}>
           <h2 style={{ fontSize: '15px', fontWeight: '700', color: '#111827', marginBottom: '16px' }}>Call Outcomes</h2>
@@ -285,7 +285,7 @@ export default function Analytics() {
       </div>
 
       {/* Contact Pipeline + Cost */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '16px', marginBottom: '16px' }}>
         <div style={cardStyle}>
           <h2 style={{ fontSize: '15px', fontWeight: '700', color: '#111827', marginBottom: '16px' }}>Contact Pipeline</h2>
           <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '16px' }}>

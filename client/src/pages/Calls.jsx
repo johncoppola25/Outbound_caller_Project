@@ -20,7 +20,14 @@ export default function Calls() {
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
   const { subscribe } = useWebSocket();
+
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth < 768);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   useEffect(() => {
     fetchCalls();
@@ -156,7 +163,7 @@ export default function Calls() {
       </div>
 
       {/* Stats Row */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '12px', marginBottom: '20px' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(4, 1fr)', gap: '12px', marginBottom: '20px' }}>
         {[
           { label: 'Total Calls', value: calls.length, icon: Phone, color: '#4f46e5', bg: '#eef2ff' },
           { label: 'Active Now', value: activeCalls, icon: PhoneCall, color: '#d97706', bg: '#fffbeb' },
@@ -207,7 +214,7 @@ export default function Calls() {
               onBlur={e => e.target.style.borderColor = '#e5e7eb'}
             />
           </div>
-          <div style={{ display: 'flex', gap: '4px', background: '#f9fafb', borderRadius: '8px', padding: '3px', border: '1px solid #e5e7eb' }}>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', background: '#f9fafb', borderRadius: '8px', padding: '3px', border: '1px solid #e5e7eb' }}>
             {statusOptions.map((option) => (
               <button
                 key={option.value}
@@ -254,7 +261,7 @@ export default function Calls() {
       ) : (
         <div style={{
           background: '#ffffff',
-          borderRadius: '12px', overflow: 'hidden',
+          borderRadius: '12px', overflow: 'hidden', overflowX: 'auto',
           border: '1px solid #e5e7eb', boxShadow: '0 1px 3px rgba(0,0,0,0.03)'
         }}>
           {filteredCalls.map((call, idx) => (

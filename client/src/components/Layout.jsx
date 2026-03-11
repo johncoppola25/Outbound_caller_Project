@@ -214,7 +214,7 @@ export default function Layout() {
                     style={{ position: 'fixed', inset: 0, zIndex: 1001 }} />
                   <div style={{
                     position: 'absolute', top: '40px', left: 0, zIndex: 1002,
-                    width: '320px', maxHeight: '440px',
+                    width: 'min(320px, calc(100vw - 40px))', maxHeight: '440px',
                     background: 'white', borderRadius: '12px',
                     boxShadow: '0 10px 40px rgba(0,0,0,0.25)', border: '1px solid #e5e7eb',
                     overflow: 'hidden', display: 'flex', flexDirection: 'column'

@@ -156,7 +156,7 @@ export default function Campaigns() {
           )}
         </div>
       ) : (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '16px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '16px' }}>
           {filteredCampaigns.map((campaign, i) => {
             const colors = typeColors[campaign.type] || { bg: '#f3f4f6', color: '#6b7280', border: '#e5e7eb' };
             return (
