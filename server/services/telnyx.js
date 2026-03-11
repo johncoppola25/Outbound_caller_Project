@@ -249,7 +249,7 @@ export async function createAIAssistant(campaign) {
     const result = await telnyxRequest('/ai/assistants', 'POST', {
       name: campaign.name,
       instructions: fullInstructions,
-      model: 'meta-llama/Meta-Llama-3.1-8B-Instruct',
+      model: 'meta-llama/Meta-Llama-3.1-70B-Instruct',
       greeting: campaign.greeting || 'Hello,',
 
       // Tools - hangup, transfer, webhooks for scheduling
@@ -577,7 +577,7 @@ When the person says "yes", "speaking", "this is him/her", or anything confirmin
         const newAssistant = await telnyxRequest('/ai/assistants', 'POST', {
           name: `Call - ${contactFullName || 'Unknown'} - ${new Date().toISOString().slice(0, 16)}`,
           instructions: fullPrompt + callFlowRules,
-          model: 'meta-llama/Meta-Llama-3.1-8B-Instruct',
+          model: 'meta-llama/Meta-Llama-3.1-70B-Instruct',
           greeting: updatedGreeting,
           tools: callTools,
           voice_settings: {
