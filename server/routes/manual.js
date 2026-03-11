@@ -1,7 +1,14 @@
 import express from 'express';
-import { telnyxRequest } from '../services/telnyx.js';
+import fetch from 'node-fetch';
+import dotenv from 'dotenv';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+dotenv.config({ path: path.join(__dirname, '..', '..', '.env') });
 
 const router = express.Router();
+const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
 
 // All the manual content as context for the AI
 const MANUAL_CONTEXT = `You are a helpful assistant for the EstateReach AI Outreach platform. Answer the user's question based ONLY on the information below. Keep answers concise and actionable. Use numbered steps when explaining how to do something. If you don't know the answer from the manual content, say so.
@@ -185,32 +192,35 @@ router.post('/ask', async (req, res) => {
       return res.status(400).json({ error: 'Question is required' });
     }
 
-    // Try /chat/completions first, fallback to /ai/chat/completions
-    let response;
-    try {
-      response = await telnyxRequest('/chat/completions', 'POST', {
-        model: 'meta-llama/Meta-Llama-3.1-70B-Instruct',
+    if (!OPENAI_API_KEY) {
+      return res.status(500).json({ error: 'OpenAI API key is not configured. Add OPENAI_API_KEY to your environment variables.' });
+    }
+
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${OPENAI_API_KEY}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        model: 'gpt-4o-mini',
         messages: [
           { role: 'system', content: MANUAL_CONTEXT },
           { role: 'user', content: question.trim() }
         ],
         max_tokens: 500,
         temperature: 0.3
-      });
-    } catch (e1) {
-      console.log('Chat completions failed, trying /ai/generate:', e1.message);
-      response = await telnyxRequest('/ai/generate', 'POST', {
-        model: 'meta-llama/Meta-Llama-3.1-70B-Instruct',
-        prompt: MANUAL_CONTEXT + '\n\nUser question: ' + question.trim() + '\n\nAnswer:',
-        max_tokens: 500,
-        temperature: 0.3
-      });
+      })
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      console.error('OpenAI API error:', data);
+      return res.status(500).json({ error: 'AI assistant encountered an error. Please try again.' });
     }
 
-    const answer = response?.data?.choices?.[0]?.message?.content
-      || response?.choices?.[0]?.message?.content
-      || response?.data?.text
-      || response?.text
+    const answer = data?.choices?.[0]?.message?.content
       || 'Sorry, I couldn\'t find an answer to that question. Try rephrasing or browse the manual sections below.';
 
     res.json({ answer });

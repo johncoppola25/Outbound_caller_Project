@@ -537,14 +537,19 @@ export default function UserManual() {
   const [aiMessages, setAiMessages] = useState([]);
   const [aiLoading, setAiLoading] = useState(false);
   const chatEndRef = useRef(null);
+  const chatContainerRef = useRef(null);
   const inputRef = useRef(null);
 
   useEffect(() => {
-    chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    // Only scroll within the chat box itself, not the whole page
+    if (chatContainerRef.current) {
+      chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
+    }
   }, [aiMessages]);
 
   const askAI = async (e) => {
     e.preventDefault();
+    e.stopPropagation();
     const q = aiQuestion.trim();
     if (!q || aiLoading) return;
 
@@ -680,7 +685,7 @@ export default function UserManual() {
 
         {/* Chat Messages */}
         {aiMessages.length > 0 && (
-          <div style={{
+          <div ref={chatContainerRef} style={{
             background: 'rgba(255,255,255,0.06)',
             borderRadius: '12px',
             padding: '14px',
@@ -744,7 +749,6 @@ export default function UserManual() {
                 </div>
               </div>
             )}
-            <div ref={chatEndRef} />
           </div>
         )}
 
