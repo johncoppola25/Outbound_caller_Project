@@ -262,7 +262,7 @@ You have a "hangup" tool. You MUST use it to end the call. After you say your go
 
       // Transcription - Deepgram Flux (requires 'en' not 'en-US')
       transcription: {
-        model: 'deepgram/flux',
+        model: 'deepgram/nova-2',
         language: 'en',
         settings: {
           eot_threshold: 0.7,
@@ -285,7 +285,7 @@ You have a "hangup" tool. You MUST use it to end the call. After you say your go
       interruption_settings: {
         enable: true,
         start_speaking_plan: {
-          wait_seconds: 0.4
+          wait_seconds: 0.8
         }
       },
 
@@ -371,7 +371,7 @@ You have a "hangup" tool. You MUST use it to end the call. After you say your go
       interruption_settings: {
         enable: true,
         start_speaking_plan: {
-          wait_seconds: 0.4
+          wait_seconds: 0.8
         }
       }
     };
@@ -594,12 +594,12 @@ You have a "hangup" tool. You MUST use it to end the call. After you say your go
             use_speaker_boost: true
           },
           transcription: {
-            model: 'deepgram/flux',
+            model: 'deepgram/nova-2',
             language: 'en',
             settings: {
-              eot_threshold: 0.5,
-              eot_timeout_ms: 2000,
-              eager_eot_threshold: 0.2
+              eot_threshold: 0.7,
+              eot_timeout_ms: 3000,
+              eager_eot_threshold: 0.4
             }
           },
           telephony_settings: {
@@ -611,7 +611,7 @@ You have a "hangup" tool. You MUST use it to end the call. After you say your go
           interruption_settings: {
             enable: true,
             start_speaking_plan: {
-              wait_seconds: 0.4
+              wait_seconds: 0.8
             }
           }
         });
@@ -704,10 +704,10 @@ async function patchCampaignAssistantFallback(assistantId, instructions, greetin
     },
     interruption_settings: {
       enable: true,
-      start_speaking_plan: { wait_seconds: 0.4 }
+      start_speaking_plan: { wait_seconds: 0.8 }
     },
     transcription: {
-      model: 'deepgram/flux',
+      model: 'deepgram/nova-2',
       language: 'en',
       settings: { eot_threshold: 0.7, eot_timeout_ms: 3000, eager_eot_threshold: 0.4 }
     }
