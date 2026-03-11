@@ -16,7 +16,8 @@ import {
   Check,
   CheckCheck,
   ClipboardCheck,
-  LogOut
+  LogOut,
+  BookOpen
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useWebSocket } from '../context/WebSocketContext';
@@ -35,6 +36,7 @@ const navigation = [
   { name: 'Analytics', href: '/analytics', icon: BarChart3 },
   { name: 'Meeting History', href: '/meeting-history', icon: ClipboardCheck },
   { name: 'Settings', href: '/settings', icon: Settings },
+  { name: 'User Manual', href: '/user-manual', icon: BookOpen },
 ];
 
 export default function Layout() {

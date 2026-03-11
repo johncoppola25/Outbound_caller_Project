@@ -11,6 +11,7 @@ import Appointments from './pages/Appointments';
 import Analytics from './pages/Analytics';
 import Settings from './pages/Settings';
 import MeetingHistory from './pages/MeetingHistory';
+import UserManual from './pages/UserManual';
 import Login from './pages/Login';
 import { WebSocketProvider } from './context/WebSocketContext';
 import { AuthProvider, useAuth } from './context/AuthContext';
@@ -51,6 +52,7 @@ function App() {
               <Route path="analytics" element={<Analytics />} />
               <Route path="meeting-history" element={<MeetingHistory />} />
               <Route path="settings" element={<Settings />} />
+              <Route path="user-manual" element={<UserManual />} />
             </Route>
           </Routes>
         </BrowserRouter>
