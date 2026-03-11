@@ -621,11 +621,18 @@ You have a "hangup" tool. You MUST use it to end the call. After you say your go
           assistantIdToUse = tempAssistantId;
           console.log('✅ Temporary assistant created:', tempAssistantId);
         } else {
-          console.warn('⚠️ Could not extract assistant ID from response, using campaign assistant');
+          console.warn('⚠️ Could not extract assistant ID from response, patching campaign assistant as fallback');
+          await patchCampaignAssistantFallback(assistantIdToUse, fullPrompt + callFlowRules, updatedGreeting, callTools, voiceName, callData.campaign);
         }
       } catch (createError) {
-        console.error('⚠️ Could not create temp assistant, falling back to campaign assistant:', createError.message);
-        // Fall back to the campaign's shared assistant
+        console.error('⚠️ Could not create temp assistant, patching campaign assistant as fallback:', createError.message);
+        // Fall back: PATCH the campaign assistant with the correct contact name
+        try {
+          await patchCampaignAssistantFallback(assistantIdToUse, fullPrompt + callFlowRules, updatedGreeting, callTools, voiceName, callData.campaign);
+          console.log('✅ Campaign assistant patched with correct contact name as fallback');
+        } catch (patchErr) {
+          console.error('❌ Fallback PATCH also failed:', patchErr.message);
+        }
       }
     }
 
@@ -677,6 +684,34 @@ You have a "hangup" tool. You MUST use it to end the call. After you say your go
     console.error('❌ Failed to initiate AI call:', error.message);
     throw error;
   }
+}
+
+// Fallback: PATCH the campaign's shared assistant with the correct contact name
+// Used when temp assistant creation fails, so the call still has the right name
+async function patchCampaignAssistantFallback(assistantId, instructions, greeting, tools, voiceName, campaign) {
+  if (!assistantId) return;
+  console.log('🔄 Fallback: PATCHing campaign assistant with correct name...');
+  await telnyxRequest(`/ai/assistants/${assistantId}`, 'PATCH', {
+    instructions,
+    greeting,
+    tools,
+    voice_settings: {
+      voice: voiceName,
+      voice_speed: parseFloat(campaign?.voice_speed) || 1.0,
+      similarity_boost: 0.5,
+      style: 0.0,
+      use_speaker_boost: true
+    },
+    interruption_settings: {
+      enable: true,
+      start_speaking_plan: { wait_seconds: 0.4 }
+    },
+    transcription: {
+      model: 'deepgram/flux',
+      language: 'en',
+      settings: { eot_threshold: 0.7, eot_timeout_ms: 3000, eager_eot_threshold: 0.4 }
+    }
+  });
 }
 
 // Update assistant with personalized prompt for a specific call (PATCH only - never delete during active calls)
