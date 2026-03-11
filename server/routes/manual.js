@@ -185,18 +185,32 @@ router.post('/ask', async (req, res) => {
       return res.status(400).json({ error: 'Question is required' });
     }
 
-    const response = await telnyxRequest('/ai/chat/completions', 'POST', {
-      model: 'meta-llama/Meta-Llama-3.1-70B-Instruct',
-      messages: [
-        { role: 'system', content: MANUAL_CONTEXT },
-        { role: 'user', content: question.trim() }
-      ],
-      max_tokens: 500,
-      temperature: 0.3
-    });
+    // Try /chat/completions first, fallback to /ai/chat/completions
+    let response;
+    try {
+      response = await telnyxRequest('/chat/completions', 'POST', {
+        model: 'meta-llama/Meta-Llama-3.1-70B-Instruct',
+        messages: [
+          { role: 'system', content: MANUAL_CONTEXT },
+          { role: 'user', content: question.trim() }
+        ],
+        max_tokens: 500,
+        temperature: 0.3
+      });
+    } catch (e1) {
+      console.log('Chat completions failed, trying /ai/generate:', e1.message);
+      response = await telnyxRequest('/ai/generate', 'POST', {
+        model: 'meta-llama/Meta-Llama-3.1-70B-Instruct',
+        prompt: MANUAL_CONTEXT + '\n\nUser question: ' + question.trim() + '\n\nAnswer:',
+        max_tokens: 500,
+        temperature: 0.3
+      });
+    }
 
     const answer = response?.data?.choices?.[0]?.message?.content
       || response?.choices?.[0]?.message?.content
+      || response?.data?.text
+      || response?.text
       || 'Sorry, I couldn\'t find an answer to that question. Try rephrasing or browse the manual sections below.';
 
     res.json({ answer });
