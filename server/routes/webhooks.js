@@ -264,6 +264,24 @@ router.post('/telnyx', async (req, res) => {
             WHERE id = ?
           `).run('\n\n' + payload.conversation_summary, callId);
         }
+        // Extract transcript from conversation messages (who said what)
+        if (payload.messages && Array.isArray(payload.messages)) {
+          const msgTranscript = payload.messages
+            .filter(m => m.content || m.text)
+            .map(m => `${m.role === 'assistant' ? 'AI' : 'Contact'}: ${m.content || m.text}`)
+            .join('\n');
+          if (msgTranscript) {
+            db.prepare(`UPDATE calls SET transcript = ? WHERE id = ?`).run(msgTranscript, callId);
+          }
+        }
+        // Also try transcript field directly
+        if (payload.transcript && !payload.messages) {
+          const existingForConv = db.prepare('SELECT transcript FROM calls WHERE id = ?').get(callId);
+          if (!existingForConv?.transcript) {
+            const t = typeof payload.transcript === 'string' ? payload.transcript : JSON.stringify(payload.transcript, null, 2);
+            db.prepare(`UPDATE calls SET transcript = ? WHERE id = ?`).run(t, callId);
+          }
+        }
         break;
     }
     

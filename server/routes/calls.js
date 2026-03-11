@@ -880,7 +880,8 @@ router.post('/:id/sync', async (req, res) => {
     }
 
     // 5) Fetch AI conversation transcript (who said what)
-    if (!call.transcript && !updates.transcript) {
+    // Always try this - it gives the best formatted transcript with speaker labels
+    if (!updates.transcript || !updates.transcript.includes('AI:')) {
       try {
         const campaign = db.prepare('SELECT telnyx_assistant_id FROM campaigns WHERE id = ?').get(call.campaign_id);
         const contact = db.prepare('SELECT phone FROM contacts WHERE id = ?').get(call.contact_id);
@@ -893,9 +894,10 @@ router.post('/:id/sync', async (req, res) => {
         );
 
         if (result?.transcript) {
+          // Prefer the AI conversation transcript since it has speaker labels (AI: / Contact:)
           updates.transcript = result.transcript;
           debugInfo.push(`AI conversation transcript: ${result.messageCount} messages`);
-        } else {
+        } else if (!call.transcript && !updates.transcript) {
           debugInfo.push('No AI conversation transcript found');
         }
       } catch (e) {

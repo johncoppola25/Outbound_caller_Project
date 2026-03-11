@@ -58,9 +58,16 @@ export default function CallDetail() {
       const missingData = !data.transcript && !data.summary && !data.outcome;
       if (isActive) {
         pollRef.current = setInterval(async () => { const res = await fetch(`/api/calls/${id}/sync`, { method: 'POST' }); const sd = await res.json(); if (sd.call) setCall(prev => ({ ...prev, ...sd.call })); }, 5000);
-      } else if (missingData && !hasSyncedRef.current) {
+      } else if (!hasSyncedRef.current) {
         hasSyncedRef.current = true;
-        syncFromTelnyx().then(sd => { const sm = sd && !sd.call?.transcript && !sd.call?.summary && !sd.call?.recording_url; if (sm) [60000, 180000, 300000].forEach(d => setTimeout(() => syncFromTelnyx(), d)); });
+        // Always sync completed calls to get the latest transcript with speaker labels
+        syncFromTelnyx().then(sd => {
+          const noTranscript = !sd?.call?.transcript;
+          // Retry more aggressively if no transcript found
+          if (noTranscript) {
+            [10000, 30000, 60000, 120000, 300000].forEach(d => setTimeout(() => syncFromTelnyx(), d));
+          }
+        });
       } else { setAutoSynced(true); }
     });
     const unsubscribe = subscribe((message) => {
@@ -69,7 +76,7 @@ export default function CallDetail() {
           const updated = { ...prev, ...message.call };
           if (prev?.status !== 'completed' && updated.status === 'completed' && !hasSyncedRef.current) {
             hasSyncedRef.current = true;
-            const doRetries = () => syncFromTelnyx().then(d => { const sm = d && !d.call?.transcript && !d.call?.summary && !d.call?.recording_url; if (sm) [60000, 180000, 300000].forEach(delay => setTimeout(() => syncFromTelnyx(), delay)); });
+            const doRetries = () => syncFromTelnyx().then(d => { const noTranscript = !d?.call?.transcript; if (noTranscript) [10000, 30000, 60000, 120000, 300000].forEach(delay => setTimeout(() => syncFromTelnyx(), delay)); });
             setTimeout(() => doRetries(), 3000);
           }
           return updated;
@@ -296,14 +303,33 @@ export default function CallDetail() {
             </div>
           )}
 
-          {call.transcript && (
+          {/* Always show transcript section for completed calls */}
+          {(call.transcript || (!isActive && (call.status === 'completed' || call.status === 'voicemail'))) && (
             <div style={cardStyle}>
-              <h2 style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '15px', fontWeight: '700', color: '#111827', marginBottom: '14px' }}>
-                <MessageSquare style={{ width: '16px', height: '16px', color: '#7c3aed' }} /> Transcript
-              </h2>
-              <div style={{ background: '#f9fafb', borderRadius: '10px', padding: '14px', maxHeight: '500px', overflowY: 'auto', border: '1px solid #e5e7eb' }}>
-                {formatTranscript(call.transcript)}
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px' }}>
+                <h2 style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '15px', fontWeight: '700', color: '#111827' }}>
+                  <MessageSquare style={{ width: '16px', height: '16px', color: '#7c3aed' }} /> Transcript
+                </h2>
+                <button onClick={syncFromTelnyx} disabled={syncing}
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', padding: '4px 10px', background: 'none', color: '#4f46e5', border: '1px solid #e5e7eb', borderRadius: '6px', cursor: syncing ? 'default' : 'pointer', fontSize: '11px', fontWeight: '600', opacity: syncing ? 0.6 : 1 }}>
+                  <RefreshCw style={{ width: '12px', height: '12px', animation: syncing ? 'spin 1s linear infinite' : 'none' }} />
+                  {syncing ? 'Syncing...' : 'Refresh'}
+                </button>
               </div>
+              {call.transcript ? (
+                <div style={{ background: '#f9fafb', borderRadius: '10px', padding: '14px', maxHeight: '500px', overflowY: 'auto', border: '1px solid #e5e7eb' }}>
+                  {formatTranscript(call.transcript)}
+                </div>
+              ) : (
+                <div style={{ background: '#f9fafb', borderRadius: '10px', padding: '20px', border: '1px dashed #e5e7eb', textAlign: 'center' }}>
+                  <p style={{ color: '#9ca3af', fontSize: '13px', marginBottom: '8px' }}>Transcript not yet available. It may take a moment after the call ends.</p>
+                  <button onClick={syncFromTelnyx} disabled={syncing}
+                    style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '8px 16px', background: '#4f46e5', color: 'white', border: 'none', borderRadius: '8px', cursor: syncing ? 'default' : 'pointer', fontSize: '12px', fontWeight: '600', opacity: syncing ? 0.7 : 1 }}>
+                    <RefreshCw style={{ width: '12px', height: '12px', animation: syncing ? 'spin 1s linear infinite' : 'none' }} />
+                    {syncing ? 'Fetching...' : 'Fetch Transcript'}
+                  </button>
+                </div>
+              )}
             </div>
           )}
 
