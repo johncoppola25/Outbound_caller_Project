@@ -492,27 +492,26 @@ export async function initiateOutboundCall(callData) {
   
   try {
     let assistantIdToUse = callData.assistant_id;
-    
-    // If we have contact data and campaign data, create a personalized assistant for this call
+    let tempAssistantId = null; // Track if we created a temp assistant to clean up later
+
+    // Create a FRESH temporary assistant for each call with personalized greeting/prompt
+    // This prevents the previous contact's name from leaking into the next call
     if (callData.contact && callData.campaign) {
-      console.log('📝 Creating personalized assistant for contact:', callData.contact.first_name, callData.contact.last_name);
-      
-      // Build contact name first
+      console.log('📝 Creating temporary assistant for contact:', callData.contact.first_name, callData.contact.last_name);
+
       const firstName = callData.contact.first_name || '';
       const lastName = callData.contact.last_name || '';
       const contactFullName = `${firstName} ${lastName}`.trim();
       const botName = callData.campaign.bot_name || 'Julia';
-      
+
       // Replace ALL variables in the prompt and greeting
-      // This handles [First Name], [Owner Name], [Your Name]/[Bot Name], {{contact.first_name}}, etc.
       let personalizedPrompt = replaceContactVariables(callData.campaign.ai_prompt, callData.contact, botName, callData.campaign);
-      let personalizedGreeting = replaceContactVariables(callData.campaign.greeting, callData.contact, botName, callData.campaign);
-      
+
       // Override greeting to use first name only for the "may I speak with" opener
       let updatedGreeting = firstName
         ? `Hi, may I speak with ${firstName} please?`
-        : personalizedGreeting;
-      
+        : replaceContactVariables(callData.campaign.greeting, callData.contact, botName, callData.campaign);
+
       // Add context so the AI knows who it is and who it's calling
       let nameContext = '';
       if (contactFullName) {
@@ -532,28 +531,10 @@ When the person says "yes", "speaking", "this is him/her", or anything confirmin
 
 `;
       }
-      
-      // Put contact context FIRST, then the original prompt (with variables already replaced)
-      const promptWithNameVerification = nameContext + personalizedPrompt;
-      
-      console.log('   Personalized greeting (EXACT - no override):', updatedGreeting);
-      console.log('   Contact Full Name:', contactFullName);
-      console.log('   Prompt preview (first 200 chars):', promptWithNameVerification.substring(0, 200));
-      
-      // Update the EXISTING assistant with personalized prompt/greeting for this call
-      // This reuses the same assistant instead of creating a new one each time
-      if (assistantIdToUse) {
-        try {
-          console.log('🔄 Updating EXISTING assistant for this call with personalized name verification...');
-          console.log('   Using Assistant ID:', assistantIdToUse);
-          console.log('   Contact Name:', contactFullName);
-          console.log('   Updated Greeting:', updatedGreeting);
-          
-          // Build tools and call flow instructions for this call
-          const webhookBaseUrl = process.env.WEBHOOK_BASE_URL || process.env.NGROK_URL || process.env.RENDER_EXTERNAL_URL || '';
-          const callTools = buildAssistantTools(webhookBaseUrl, fromNumber);
 
-          const callFlowRules = `
+      const fullPrompt = nameContext + personalizedPrompt;
+
+      const callFlowRules = `
 
 ## CRITICAL CALL BEHAVIOR RULES
 - When the conversation is done, say a brief goodbye like "Have a great day, bye!" and then IMMEDIATELY end the call. Do NOT say the word "hangup" or any tool name out loud.
@@ -572,40 +553,64 @@ When the person says "yes", "speaking", "this is him/her", or anything confirmin
 - Keep your responses short and conversational, not scripted.
 - Listen carefully to what they say before moving to the next topic.`;
 
-          // Try to update the existing assistant with PATCH
-          const updateResult = await telnyxRequest(`/ai/assistants/${assistantIdToUse}`, 'PATCH', {
-            instructions: promptWithNameVerification + callFlowRules,
-            greeting: updatedGreeting,
-            tools: callTools,
-            interruption_settings: {
-              enable: true,
-              start_speaking_plan: {
-                wait_seconds: 0.4
-              }
-            },
-            transcription: {
-              model: 'deepgram/flux',
-              language: 'en',
-              settings: {
-                eot_threshold: 0.5,
-                eot_timeout_ms: 2000,
-                eager_eot_threshold: 0.2
-              }
+      const webhookBaseUrl = process.env.WEBHOOK_BASE_URL || process.env.NGROK_URL || process.env.RENDER_EXTERNAL_URL || '';
+      const callTools = buildAssistantTools(webhookBaseUrl, fromNumber);
+      const voiceName = getVoiceName(callData.campaign.voice);
+
+      try {
+        console.log('🆕 Creating NEW temporary assistant for this call...');
+        console.log('   Contact:', contactFullName);
+        console.log('   Greeting:', updatedGreeting);
+
+        const newAssistant = await telnyxRequest('/ai/assistants', 'POST', {
+          name: `Call - ${contactFullName || 'Unknown'} - ${new Date().toISOString().slice(0, 16)}`,
+          instructions: fullPrompt + callFlowRules,
+          model: 'meta-llama/Meta-Llama-3.1-8B-Instruct',
+          greeting: updatedGreeting,
+          tools: callTools,
+          voice_settings: {
+            voice: voiceName,
+            voice_speed: parseFloat(callData.campaign.voice_speed) || 1.0,
+            similarity_boost: 0.5,
+            style: 0.0,
+            use_speaker_boost: true
+          },
+          transcription: {
+            model: 'deepgram/flux',
+            language: 'en',
+            settings: {
+              eot_threshold: 0.5,
+              eot_timeout_ms: 2000,
+              eager_eot_threshold: 0.2
             }
-          });
-          
-          console.log('✅ Successfully updated existing assistant with personalized prompt');
-          console.log('   Assistant now knows the contact name is:', contactFullName);
-        } catch (updateError) {
-          console.error('⚠️ Could not update existing assistant, using original:', updateError.message);
-          console.error('   Error details:', updateError);
-          // Continue with original assistant - it will still work, just may not have the personalized greeting
+          },
+          telephony_settings: {
+            default_texml_app_id: texmlAppId,
+            noise_suppression: 'deepfilternet',
+            time_limit_secs: 1800
+          },
+          enabled_features: ['telephony'],
+          interruption_settings: {
+            enable: true,
+            start_speaking_plan: {
+              wait_seconds: 0.4
+            }
+          }
+        });
+
+        tempAssistantId = newAssistant.data?.id || newAssistant.id || newAssistant.data?.assistant_id;
+        if (tempAssistantId) {
+          assistantIdToUse = tempAssistantId;
+          console.log('✅ Temporary assistant created:', tempAssistantId);
+        } else {
+          console.warn('⚠️ Could not extract assistant ID from response, using campaign assistant');
         }
-      } else {
-        console.log('⚠️ No assistant ID available, cannot personalize for this call');
+      } catch (createError) {
+        console.error('⚠️ Could not create temp assistant, falling back to campaign assistant:', createError.message);
+        // Fall back to the campaign's shared assistant
       }
     }
-    
+
     // Build request
     const requestBody = {
       From: fromNumber,
@@ -613,12 +618,14 @@ When the person says "yes", "speaking", "this is him/her", or anything confirmin
       AIAssistantId: assistantIdToUse
     };
     
-    // Add ClientState with call_id so webhooks can match the call
+    // Add ClientState with call_id (and temp assistant ID for cleanup on hangup)
     if (callData.call_id) {
-      requestBody.ClientState = Buffer.from(JSON.stringify({ call_id: callData.call_id })).toString('base64');
-      console.log('   Client State includes call_id:', callData.call_id);
+      const stateObj = { call_id: callData.call_id };
+      if (tempAssistantId) stateObj.temp_assistant_id = tempAssistantId;
+      requestBody.ClientState = Buffer.from(JSON.stringify(stateObj)).toString('base64');
+      console.log('   Client State:', JSON.stringify(stateObj));
     }
-    
+
     // Also send DynamicVariables as backup (in case Telnyx uses them)
     if (callData.contact) {
       requestBody.DynamicVariables = JSON.stringify({
@@ -631,15 +638,24 @@ When the person says "yes", "speaking", "this is him/her", or anything confirmin
           notes: callData.contact.notes || ''
         }
       });
-      console.log('   Dynamic Variables: contact.first_name =', callData.contact.first_name);
     }
-    
+
     // Use the TeXML AI Calls endpoint for AI-powered calls
     const result = await telnyxRequest(`/texml/ai_calls/${texmlAppId}`, 'POST', requestBody);
-    
+
     console.log('✅ AI Call initiated:', result.data?.call_sid || result.call_sid);
+    if (tempAssistantId) {
+      console.log('   Temp assistant to cleanup on hangup:', tempAssistantId);
+    }
     return result;
   } catch (error) {
+    // If call failed and we created a temp assistant, clean it up
+    if (tempAssistantId) {
+      try {
+        await telnyxRequest(`/ai/assistants/${tempAssistantId}`, 'DELETE');
+        console.log('🗑️ Cleaned up temp assistant after call failure:', tempAssistantId);
+      } catch (e) { /* ignore cleanup errors */ }
+    }
     console.error('❌ Failed to initiate AI call:', error.message);
     throw error;
   }

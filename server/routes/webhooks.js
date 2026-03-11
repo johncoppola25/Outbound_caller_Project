@@ -1,7 +1,7 @@
 import express from 'express';
 import { getDb } from '../db/init.js';
 import { broadcast } from '../index.js';
-import { startAIConversation } from '../services/telnyx.js';
+import { startAIConversation, telnyxRequest } from '../services/telnyx.js';
 import { calculateLeadScore } from '../services/leadScoring.js';
 import { checkConflicts } from './calls.js';
 
@@ -166,8 +166,18 @@ router.post('/telnyx', async (req, res) => {
             console.error('SMS follow-up error:', smsErr.message);
           }
         }
+
+        // Clean up temporary assistant created for this call
+        if (clientState.temp_assistant_id) {
+          try {
+            await telnyxRequest(`/ai/assistants/${clientState.temp_assistant_id}`, 'DELETE');
+            console.log('🗑️ Cleaned up temp assistant:', clientState.temp_assistant_id);
+          } catch (cleanupErr) {
+            console.error('Temp assistant cleanup error:', cleanupErr.message);
+          }
+        }
         break;
-        
+
       case 'call.machine.detection.ended':
         const machineResult = payload.result;
         if (machineResult === 'machine') {
