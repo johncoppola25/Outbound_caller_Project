@@ -65,31 +65,9 @@ router.post('/telnyx', async (req, res) => {
         
       case 'call.answered':
         db.prepare(`UPDATE calls SET status = 'in_progress' WHERE id = ?`).run(callId);
-
-        // Start AI conversation
-        const call = db.prepare('SELECT * FROM calls WHERE id = ?').get(callId);
-        if (!call) {
-          console.warn('Call not found in DB after answer event:', callId);
-          break;
-        }
-        const campaign = db.prepare('SELECT * FROM campaigns WHERE id = ?').get(call.campaign_id);
-        const contact = db.prepare('SELECT * FROM contacts WHERE id = ?').get(call.contact_id);
-
-        if (campaign?.telnyx_assistant_id) {
-          try {
-            await startAIConversation(
-              payload.call_control_id,
-              campaign.telnyx_assistant_id,
-              {
-                contact_name: `${contact?.first_name || ''} ${contact?.last_name || ''}`.trim(),
-                property_address: contact?.property_address,
-                campaign_type: campaign.type
-              }
-            );
-          } catch (err) {
-            console.error('Error starting AI conversation:', err);
-          }
-        }
+        // AI conversation starts automatically via TeXML AI Calls — no need to call startAIConversation here.
+        // Doing so would start a SECOND conversation with the campaign's shared assistant, overriding
+        // the per-call temp assistant that has the correct contact name and personalized prompt.
         break;
         
       case 'call.hangup':
