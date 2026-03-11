@@ -227,24 +227,10 @@ export async function createAIAssistant(campaign) {
     // Append call flow instructions to ensure proper hangup and pacing behavior
     const callFlowInstructions = `
 
-## CRITICAL: ENDING THE CALL
-You have a "hangup" tool. You MUST use it to end the call. After you say your goodbye message, IMMEDIATELY call the hangup tool. Do NOT wait for a response after saying goodbye. Do NOT stay on the line.
-- Say "Have a great day, bye!" then USE THE HANGUP TOOL right away.
-- If the contact says goodbye → say a quick goodbye → USE THE HANGUP TOOL.
-- If not interested → say "No problem, have a great day!" → USE THE HANGUP TOOL.
-- If they ask you to stop calling → apologize briefly → USE THE HANGUP TOOL.
-- If voicemail → leave a brief message → USE THE HANGUP TOOL.
-- If no response after your greeting → try once more → USE THE HANGUP TOOL.
-- After confirming an appointment → repeat details, say thanks and goodbye → USE THE HANGUP TOOL.
-- NEVER say the word "hangup" out loud. Just say goodbye naturally, then silently use the hangup tool.
-- NEVER stay on the line after saying goodbye. Always use the hangup tool immediately.
-
-## CONVERSATION PACING RULES
-- Ask only ONE question at a time, then STOP and WAIT for the person to respond.
-- Never ask multiple questions in a single turn.
-- After asking a question, be silent and let the person answer fully before speaking again.
-- Keep your responses short and conversational, not scripted.
-- Listen carefully to what they say before moving to the next topic.`;
+RULES:
+- One question at a time. Wait for response. Keep it short and natural.
+- After goodbye, IMMEDIATELY use the hangup tool. Never stay on the line after saying bye.
+- Never say "hangup" out loud. Say bye naturally, then use the tool silently.`;
 
     const fullInstructions = instructionsToSend + callFlowInstructions;
 
@@ -338,24 +324,10 @@ export async function updateAIAssistant(assistantId, campaign) {
 
     const callFlowInstructions = `
 
-## CRITICAL: ENDING THE CALL
-You have a "hangup" tool. You MUST use it to end the call. After you say your goodbye message, IMMEDIATELY call the hangup tool. Do NOT wait for a response after saying goodbye. Do NOT stay on the line.
-- Say "Have a great day, bye!" then USE THE HANGUP TOOL right away.
-- If the contact says goodbye → say a quick goodbye → USE THE HANGUP TOOL.
-- If not interested → say "No problem, have a great day!" → USE THE HANGUP TOOL.
-- If they ask you to stop calling → apologize briefly → USE THE HANGUP TOOL.
-- If voicemail → leave a brief message → USE THE HANGUP TOOL.
-- If no response after your greeting → try once more → USE THE HANGUP TOOL.
-- After confirming an appointment → repeat details, say thanks and goodbye → USE THE HANGUP TOOL.
-- NEVER say the word "hangup" out loud. Just say goodbye naturally, then silently use the hangup tool.
-- NEVER stay on the line after saying goodbye. Always use the hangup tool immediately.
-
-## CONVERSATION PACING RULES
-- Ask only ONE question at a time, then STOP and WAIT for the person to respond.
-- Never ask multiple questions in a single turn.
-- After asking a question, be silent and let the person answer fully before speaking again.
-- Keep your responses short and conversational, not scripted.
-- Listen carefully to what they say before moving to the next topic.`;
+RULES:
+- One question at a time. Wait for response. Keep it short and natural.
+- After goodbye, IMMEDIATELY use the hangup tool. Never stay on the line after saying bye.
+- Never say "hangup" out loud. Say bye naturally, then use the tool silently.`;
 
     const patchBody = {
       instructions: (campaign.ai_prompt || 'You are a helpful AI assistant.') + callFlowInstructions,
@@ -520,30 +492,13 @@ export async function initiateOutboundCall(callData) {
       const contact = callData.contact;
       let nameContext = '';
       if (contactFullName) {
-        // Build contact details section with all available info
-        let contactDetails = `- First Name: ${firstName}`;
-        if (lastName) contactDetails += `\n- Last Name: ${lastName}`;
-        if (contact.phone) contactDetails += `\n- Phone: ${contact.phone}`;
-        if (contact.email) contactDetails += `\n- Email: ${contact.email}`;
-        if (contact.property_address) contactDetails += `\n- Property Address: ${contact.property_address}`;
-        if (contact.notes) contactDetails += `\n- Notes: ${contact.notes}`;
+        let contactDetails = `${firstName}`;
+        if (contact.property_address) contactDetails += ` | Property: ${contact.property_address}`;
+        if (contact.email) contactDetails += ` | Email: ${contact.email}`;
+        if (contact.notes) contactDetails += ` | Notes: ${contact.notes}`;
 
-        nameContext = `## YOUR IDENTITY & THIS CALL
-Your name is ${botName}. Always refer to yourself as ${botName}.
-You are ${botName} - you are NOT ${firstName}.
-
-## CONTACT INFORMATION (the person you are calling)
-${contactDetails}
-IMPORTANT: Only use their FIRST NAME "${firstName}" when addressing them. NEVER say their last name or full name.
-You already have their info — do NOT ask for details you already know (like their address or email). Use this info naturally in conversation when relevant.
-
-## CALL OPENING FLOW - READ THIS CAREFULLY
-The greeting has ALREADY asked "may I speak with ${firstName}?" - you do NOT need to ask again.
-When the person says "yes", "speaking", "this is him/her", or anything confirming their identity:
-- Do NOT ask for their name again. Do NOT say "may I speak with" again. They already confirmed.
-- Immediately introduce yourself: "Great, hi ${firstName}, this is ${botName}..." and state why you are calling.
-- Keep it natural and conversational. Be brief. Do NOT repeat the name verification.
-- Respond QUICKLY - do not pause for a long time before responding.
+        nameContext = `You are ${botName}. Contact: ${contactDetails}. Use ONLY first name "${firstName}".
+Greeting already asked for ${firstName}. When they confirm (yes/speaking/this is them), immediately say "Great, hi ${firstName}, this is ${botName}..." and state why you're calling. Do NOT re-ask their name. Respond FAST.
 
 `;
       }
@@ -552,24 +507,10 @@ When the person says "yes", "speaking", "this is him/her", or anything confirmin
 
       const callFlowRules = `
 
-## CRITICAL: ENDING THE CALL
-You have a "hangup" tool. You MUST use it to end the call. After you say your goodbye message, IMMEDIATELY call the hangup tool. Do NOT wait for a response after saying goodbye. Do NOT stay on the line.
-- Say "Have a great day, bye!" then USE THE HANGUP TOOL right away.
-- If the contact says goodbye → say a quick goodbye → USE THE HANGUP TOOL.
-- If not interested → say "No problem, have a great day!" → USE THE HANGUP TOOL.
-- If they ask you to stop calling → apologize briefly → USE THE HANGUP TOOL.
-- If voicemail → leave a brief message → USE THE HANGUP TOOL.
-- If no response after your greeting → try once more → USE THE HANGUP TOOL.
-- After confirming an appointment → repeat details, say thanks and goodbye → USE THE HANGUP TOOL.
-- NEVER say the word "hangup" out loud. Just say goodbye naturally, then silently use the hangup tool.
-- NEVER stay on the line after saying goodbye. Always use the hangup tool immediately.
-
-## CONVERSATION PACING RULES
-- Ask only ONE question at a time, then STOP and WAIT for the person to respond.
-- Never ask multiple questions in a single turn.
-- After asking a question, be silent and let the person answer fully before speaking again.
-- Keep your responses short and conversational, not scripted.
-- Listen carefully to what they say before moving to the next topic.`;
+RULES:
+- One question at a time. Wait for response. Keep it short and natural.
+- After goodbye, IMMEDIATELY use the hangup tool. Never stay on the line after saying bye.
+- Never say "hangup" out loud. Say bye naturally, then use the tool silently.`;
 
       const webhookBaseUrl = process.env.WEBHOOK_BASE_URL || process.env.NGROK_URL || process.env.RENDER_EXTERNAL_URL || '';
       const callTools = buildAssistantTools(webhookBaseUrl, fromNumber);
