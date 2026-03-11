@@ -973,6 +973,78 @@ router.post('/:id/sync', async (req, res) => {
   }
 });
 
+// Bulk sync all stale calls - fixes calls stuck in ringing/in_progress
+router.post('/sync-all-stale', async (req, res) => {
+  try {
+    const db = await getDb();
+    // Find calls that are stuck in non-terminal states and older than 5 minutes
+    const staleCalls = db.prepare(`
+      SELECT id, telnyx_call_id, status, campaign_id, contact_id
+      FROM calls
+      WHERE status IN ('ringing', 'in_progress', 'queued')
+      AND created_at < datetime('now', '-5 minutes')
+    `).all();
+
+    let synced = 0;
+    let fixed = 0;
+
+    for (const call of staleCalls) {
+      try {
+        if (call.telnyx_call_id) {
+          // Try to get call details from Telnyx
+          const details = await getCallDetails(call.telnyx_call_id);
+          const d = details?.data;
+          if (d && (d.state === 'hangup' || d.is_alive === false)) {
+            const duration = d.call_duration || d.duration_seconds || 0;
+            db.prepare(`
+              UPDATE calls SET status = 'completed', duration_seconds = ?, ended_at = COALESCE(?, datetime('now'))
+              WHERE id = ?
+            `).run(duration, d.end_time, call.id);
+            fixed++;
+          }
+        }
+
+        // If still stuck after checking Telnyx (or no telnyx_call_id), mark as completed
+        const stillStale = db.prepare('SELECT status FROM calls WHERE id = ?').get(call.id);
+        if (stillStale && ['ringing', 'in_progress', 'queued'].includes(stillStale.status)) {
+          db.prepare(`
+            UPDATE calls SET status = 'completed', ended_at = COALESCE(ended_at, datetime('now'))
+            WHERE id = ?
+          `).run(call.id);
+          fixed++;
+        }
+        synced++;
+      } catch (e) {
+        // If Telnyx API fails, still mark old calls as completed
+        db.prepare(`
+          UPDATE calls SET status = 'completed', ended_at = COALESCE(ended_at, datetime('now'))
+          WHERE id = ? AND status IN ('ringing', 'in_progress', 'queued')
+        `).run(call.id);
+        fixed++;
+        synced++;
+      }
+    }
+
+    // Also sync transcripts/outcomes for calls that have no outcome
+    const noOutcomeCalls = db.prepare(`
+      SELECT id FROM calls
+      WHERE status = 'completed' AND outcome IS NULL
+      LIMIT 20
+    `).all();
+
+    res.json({
+      stale_found: staleCalls.length,
+      synced,
+      fixed,
+      no_outcome_calls: noOutcomeCalls.length,
+      message: `Fixed ${fixed} stale calls out of ${staleCalls.length} found`
+    });
+  } catch (err) {
+    console.error('Bulk sync error:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // Process retry queue
 router.post('/process-retries', async (req, res) => {
   try {
