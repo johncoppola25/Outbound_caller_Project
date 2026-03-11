@@ -513,13 +513,25 @@ export async function initiateOutboundCall(callData) {
         : replaceContactVariables(callData.campaign.greeting, callData.contact, botName, callData.campaign);
 
       // Add context so the AI knows who it is and who it's calling
+      const contact = callData.contact;
       let nameContext = '';
       if (contactFullName) {
+        // Build contact details section with all available info
+        let contactDetails = `- First Name: ${firstName}`;
+        if (lastName) contactDetails += `\n- Last Name: ${lastName}`;
+        if (contact.phone) contactDetails += `\n- Phone: ${contact.phone}`;
+        if (contact.email) contactDetails += `\n- Email: ${contact.email}`;
+        if (contact.property_address) contactDetails += `\n- Property Address: ${contact.property_address}`;
+        if (contact.notes) contactDetails += `\n- Notes: ${contact.notes}`;
+
         nameContext = `## YOUR IDENTITY & THIS CALL
 Your name is ${botName}. Always refer to yourself as ${botName}.
-The person you are calling is: "${firstName}".
-IMPORTANT: Only use their FIRST NAME "${firstName}" when addressing them. NEVER say their last name or full name.
 You are ${botName} - you are NOT ${firstName}.
+
+## CONTACT INFORMATION (the person you are calling)
+${contactDetails}
+IMPORTANT: Only use their FIRST NAME "${firstName}" when addressing them. NEVER say their last name or full name.
+You already have their info — do NOT ask for details you already know (like their address or email). Use this info naturally in conversation when relevant.
 
 ## CALL OPENING FLOW - READ THIS CAREFULLY
 The greeting has ALREADY asked "may I speak with ${firstName}?" - you do NOT need to ask again.
