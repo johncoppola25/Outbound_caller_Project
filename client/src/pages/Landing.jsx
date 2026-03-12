@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { Zap, Phone, BarChart3, Calendar, Shield, Mic, Bot, ArrowRight, Check, Star, Clock, DollarSign, Users, ChevronRight, PhoneCall, MessageSquare, Target, TrendingUp } from 'lucide-react';
+import { Phone, BarChart3, Calendar, Shield, Mic, Bot, ArrowRight, Check, Star, Clock, DollarSign, Users, ChevronRight, PhoneCall, MessageSquare, Target, TrendingUp } from 'lucide-react';
 
 export default function Landing() {
   return (
@@ -11,15 +11,7 @@ export default function Landing() {
         background: 'rgba(255,255,255,0.95)', backdropFilter: 'blur(12px)',
         zIndex: 100, borderBottom: '1px solid #f3f4f6'
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <div style={{
-            width: '36px', height: '36px', borderRadius: '10px', background: '#4f46e5',
-            display: 'flex', alignItems: 'center', justifyContent: 'center'
-          }}>
-            <Zap size={20} color="#fff" />
-          </div>
-          <span style={{ fontSize: '18px', fontWeight: '700', letterSpacing: '1px', color: '#111827' }}>ESTATEREACH AI</span>
-        </div>
+        <img src="/logo.png" alt="EstateReach AI" style={{ height: '36px' }} />
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           <Link to="/login" style={{
             padding: '9px 20px', fontSize: '14px', fontWeight: '600', color: '#374151',
@@ -328,14 +320,8 @@ export default function Landing() {
         padding: '40px 24px', background: '#0f172a', color: '#9ca3af',
         textAlign: 'center', fontSize: '13px'
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', marginBottom: '16px' }}>
-          <div style={{
-            width: '28px', height: '28px', borderRadius: '8px', background: '#4f46e5',
-            display: 'flex', alignItems: 'center', justifyContent: 'center'
-          }}>
-            <Zap size={14} color="#fff" />
-          </div>
-          <span style={{ fontSize: '14px', fontWeight: '700', color: '#ffffff', letterSpacing: '1px' }}>ESTATEREACH AI</span>
+        <div style={{ marginBottom: '16px' }}>
+          <img src="/logo.png" alt="EstateReach AI" style={{ height: '28px' }} />
         </div>
         <p style={{ margin: '0 0 8px 0' }}>AI-Powered Outbound Calling Platform</p>
         <p style={{ margin: 0 }}>&copy; 2026 EstateReach AI. All rights reserved.</p>

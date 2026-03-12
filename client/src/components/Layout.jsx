@@ -7,7 +7,6 @@ import {
   Phone,
   BarChart3,
   Settings,
-  Zap,
   Menu,
   X,
   PhoneCall,
@@ -175,17 +174,8 @@ export default function Layout() {
         {/* Logo + Bell */}
         <div style={{ padding: '22px 18px', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '11px' }}>
-            <div style={{
-              width: '36px', height: '36px',
-              background: '#4f46e5', borderRadius: '9px',
-              display: 'flex', alignItems: 'center', justifyContent: 'center'
-            }}>
-              <Zap style={{ width: '18px', height: '18px', color: 'white', strokeWidth: 2.5 }} />
-            </div>
-            <div style={{ flex: 1 }}>
-              <h1 style={{ fontSize: '16px', fontWeight: '700', color: '#f9fafb', letterSpacing: '-0.01em' }}>EstateReach</h1>
-              <p style={{ fontSize: '10px', color: '#6b7280', fontWeight: '500', letterSpacing: '0.08em', textTransform: 'uppercase', marginTop: '1px' }}>AI Outreach</p>
-            </div>
+            <img src="/logo.png" alt="EstateReach AI" style={{ height: '32px' }} />
+            <div style={{ flex: 1 }}></div>
             {/* Bell icon */}
             <div style={{ position: 'relative' }}>
               <button

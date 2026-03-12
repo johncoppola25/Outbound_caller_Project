@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { Zap, Eye, EyeOff } from 'lucide-react';
+import { Eye, EyeOff } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 const API_BASE = import.meta.env.VITE_API_URL || '';
@@ -57,12 +57,7 @@ export default function Login() {
       {!isMobile && (
         <div style={styles.leftPanel}>
           <div style={styles.brandingContent}>
-            <div style={styles.logoRow}>
-              <div style={styles.logoIcon}>
-                <Zap size={32} color="#ffffff" />
-              </div>
-              <span style={styles.logoText}>ESTATEREACH AI</span>
-            </div>
+            <img src="/logo.png" alt="EstateReach AI" style={{ height: '52px', marginBottom: '24px' }} />
             <div style={styles.divider} />
             <h2 style={styles.portalTitle}>Outbound Caller</h2>
             <p style={styles.portalSubtitle}>AI-Powered Calling Platform</p>

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { Zap, Eye, EyeOff, User, Mail, Building2, Lock, ArrowRight, Check } from 'lucide-react';
+import { Eye, EyeOff, User, Mail, Building2, Lock, ArrowRight, Check } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 const API_BASE = import.meta.env.VITE_API_URL || '';
@@ -82,12 +82,7 @@ export default function Signup() {
       {!isMobile && (
         <div style={styles.leftPanel}>
           <div style={styles.brandingContent}>
-            <div style={styles.logoRow}>
-              <div style={styles.logoIcon}>
-                <Zap size={32} color="#ffffff" />
-              </div>
-              <span style={styles.logoText}>ESTATEREACH AI</span>
-            </div>
+            <img src="/logo.png" alt="EstateReach AI" style={{ height: '52px', marginBottom: '24px' }} />
             <div style={styles.divider} />
             <h2 style={styles.portalTitle}>AI Outbound Caller</h2>
             <p style={styles.portalSubtitle}>Scale your outreach with intelligent AI calls</p>
@@ -127,11 +122,8 @@ export default function Signup() {
         }}>
           {/* Mobile logo */}
           {isMobile && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '24px', justifyContent: 'center' }}>
-              <div style={{ ...styles.logoIcon, width: '40px', height: '40px', borderRadius: '10px' }}>
-                <Zap size={22} color="#ffffff" />
-              </div>
-              <span style={{ fontSize: '20px', fontWeight: '700', color: '#111827', letterSpacing: '1px' }}>ESTATEREACH AI</span>
+            <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '24px' }}>
+              <img src="/logo.png" alt="EstateReach AI" style={{ height: '36px' }} />
             </div>
           )}
 
