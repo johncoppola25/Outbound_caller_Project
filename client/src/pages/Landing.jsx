@@ -6,6 +6,7 @@ import { Phone, BarChart3, Calendar, Mic, Bot, ArrowRight, Check, Star, Clock, D
 export default function Landing() {
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [expandedPlan, setExpandedPlan] = useState(null);
 
   useEffect(() => {
     const handleResize = () => {
@@ -347,18 +348,19 @@ export default function Landing() {
             <h2 style={{ fontSize: isMobile ? '26px' : '36px', fontWeight: '800', margin: '0 0 12px 0', letterSpacing: '-0.02em' }}>
               Simple Pricing. No Surprises.
             </h2>
-            <p style={{ fontSize: isMobile ? '14px' : '16px', color: '#6b7280', maxWidth: '520px', margin: '0 auto' }}>
-              Most companies pay $3,000–$10,000/month for lead generation services. We're a fraction of that.
-            </p>
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(2, 1fr)', gap: '20px', maxWidth: '700px', margin: '0 auto' }}>
             {/* Setup Fee */}
-            <div style={{
-              padding: isMobile ? '24px' : '32px', borderRadius: '16px', border: '2px solid #4f46e5',
-              background: '#ffffff', textAlign: 'center', position: 'relative',
-              boxShadow: '0 4px 20px rgba(79,70,229,0.15)'
-            }}>
+            <div
+              onClick={() => setExpandedPlan(expandedPlan === 'setup' ? null : 'setup')}
+              style={{
+                padding: isMobile ? '24px' : '32px', borderRadius: '16px', border: '2px solid #4f46e5',
+                background: '#ffffff', textAlign: 'center', position: 'relative',
+                boxShadow: '0 4px 20px rgba(79,70,229,0.15)', cursor: 'pointer',
+                transition: 'transform 0.2s, box-shadow 0.2s'
+              }}
+            >
               <div style={{
                 position: 'absolute', top: '-12px', left: '50%', transform: 'translateX(-50%)',
                 background: '#4f46e5', color: '#fff', padding: '4px 16px',
@@ -371,16 +373,39 @@ export default function Landing() {
               <p style={{ fontSize: '13px', fontWeight: '600', color: '#6b7280', margin: '0 0 4px 0' }}>One-Time</p>
               <h3 style={{ fontSize: '18px', fontWeight: '700', margin: '0 0 8px 0' }}>Setup Fee</h3>
               <p style={{ fontSize: isMobile ? '36px' : '42px', fontWeight: '800', margin: '0 0 8px 0', color: '#0f172a' }}>$1,000</p>
-              <p style={{ fontSize: '13px', color: '#6b7280', lineHeight: '1.6', margin: 0 }}>
-                Platform setup, custom AI script, campaign creation, training & onboarding
+              <p style={{ fontSize: '13px', color: '#4f46e5', fontWeight: '600', margin: '0 0 4px 0' }}>
+                Click to see what's included {expandedPlan === 'setup' ? '▲' : '▼'}
               </p>
+
+              {expandedPlan === 'setup' && (
+                <div style={{ marginTop: '16px', borderTop: '1px solid #e5e7eb', paddingTop: '16px', textAlign: 'left' }}>
+                  <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
+                    {[
+                      'Full platform setup & configuration',
+                      'Custom AI script written for your business',
+                      'Campaign creation & optimization',
+                      'Contact list import assistance',
+                      'Training & onboarding session',
+                      'Dedicated onboarding specialist'
+                    ].map((f, i) => (
+                      <li key={i} style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px', fontSize: '13px', color: '#374151' }}>
+                        <Check size={15} color="#059669" style={{ flexShrink: 0 }} /> {f}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
             </div>
 
             {/* Monthly */}
-            <div style={{
-              padding: isMobile ? '24px' : '32px', borderRadius: '16px', border: '1px solid #e5e7eb',
-              background: '#ffffff', textAlign: 'center'
-            }}>
+            <div
+              onClick={() => setExpandedPlan(expandedPlan === 'monthly' ? null : 'monthly')}
+              style={{
+                padding: isMobile ? '24px' : '32px', borderRadius: '16px', border: '1px solid #e5e7eb',
+                background: '#ffffff', textAlign: 'center', cursor: 'pointer',
+                transition: 'transform 0.2s, box-shadow 0.2s'
+              }}
+            >
               <div style={{ width: '48px', height: '48px', borderRadius: '12px', background: '#eef2ff', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
                 <Phone size={22} color="#4f46e5" />
               </div>
@@ -388,10 +413,33 @@ export default function Landing() {
               <h3 style={{ fontSize: '18px', fontWeight: '700', margin: '0 0 8px 0' }}>Subscription</h3>
               <p style={{ fontSize: isMobile ? '36px' : '42px', fontWeight: '800', margin: '0', color: '#0f172a' }}>$1,000</p>
               <p style={{ fontSize: '14px', color: '#6b7280', margin: '0 0 4px 0' }}>/month</p>
-              <p style={{ fontSize: '14px', color: '#4f46e5', fontWeight: '600', margin: '0 0 8px 0' }}>+ $100 per booked appointment</p>
-              <p style={{ fontSize: '13px', color: '#6b7280', lineHeight: '1.6', margin: 0 }}>
-                Unlimited AI calls, recordings, transcripts, analytics, voicemail detection, priority support
+              <p style={{ fontSize: '14px', color: '#4f46e5', fontWeight: '600', margin: '0 0 4px 0' }}>+ $100 per booked appointment</p>
+              <p style={{ fontSize: '13px', color: '#4f46e5', fontWeight: '600', margin: '0' }}>
+                Click to see what's included {expandedPlan === 'monthly' ? '▲' : '▼'}
               </p>
+
+              {expandedPlan === 'monthly' && (
+                <div style={{ marginTop: '16px', borderTop: '1px solid #e5e7eb', paddingTop: '16px', textAlign: 'left' }}>
+                  <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
+                    {[
+                      'Unlimited AI outbound calls',
+                      'Call recording & full transcripts',
+                      'Automatic appointment booking',
+                      'Voicemail detection & drop',
+                      'Real-time analytics dashboard',
+                      'Smart lead scoring',
+                      'Multiple campaigns',
+                      'Custom AI scripts',
+                      'Priority support',
+                      '$100 per booked appointment (billed automatically)'
+                    ].map((f, i) => (
+                      <li key={i} style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px', fontSize: '13px', color: '#374151' }}>
+                        <Check size={15} color="#059669" style={{ flexShrink: 0 }} /> {f}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
             </div>
           </div>
 
