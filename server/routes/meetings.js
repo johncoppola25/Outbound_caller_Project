@@ -8,9 +8,12 @@ const router = Router();
 router.get('/', async (req, res) => {
   try {
     const db = await getDb();
+    const isAdmin = req.user.role === 'admin';
     const meetings = db.prepare(`
-      SELECT * FROM meeting_history ORDER BY completed_at DESC
-    `).all();
+      SELECT * FROM meeting_history
+      ${isAdmin ? '' : 'WHERE user_id = ?'}
+      ORDER BY completed_at DESC
+    `).all(...(isAdmin ? [] : [req.user.userId]));
     res.json(meetings);
   } catch (err) {
     console.error('Error fetching meetings:', err);
@@ -45,8 +48,8 @@ router.post('/complete', async (req, res) => {
 
     const id = uuidv4();
     db.prepare(`
-      INSERT INTO meeting_history (id, call_id, contact_name, phone, email, property_address, campaign_name, appointment_at, outcome, notes)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO meeting_history (id, call_id, contact_name, phone, email, property_address, campaign_name, appointment_at, outcome, notes, user_id)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `).run(
       id, call_id,
       `${call.first_name || ''} ${call.last_name || ''}`.trim(),
@@ -56,7 +59,8 @@ router.post('/complete', async (req, res) => {
       call.campaign_name || '',
       call.appointment_at || '',
       outcome || 'completed',
-      notes || ''
+      notes || '',
+      req.user.userId
     );
 
     // Update call outcome to meeting_completed so it no longer shows in appointments
@@ -76,7 +80,9 @@ router.post('/complete', async (req, res) => {
 router.delete('/:id', async (req, res) => {
   try {
     const db = await getDb();
-    db.prepare('DELETE FROM meeting_history WHERE id = ?').run(req.params.id);
+    const isAdmin = req.user.role === 'admin';
+    db.prepare(`DELETE FROM meeting_history WHERE id = ?${isAdmin ? '' : ' AND user_id = ?'}`)
+      .run(...[req.params.id, ...(isAdmin ? [] : [req.user.userId])]);
     res.json({ success: true });
   } catch (err) {
     console.error('Error deleting meeting:', err);

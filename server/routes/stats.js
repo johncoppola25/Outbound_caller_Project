@@ -8,57 +8,66 @@ const router = express.Router();
 router.get('/dashboard', async (req, res) => {
   try {
     const db = await getDb();
-    
+    const isAdmin = req.user.role === 'admin';
+    const uid = req.user.userId;
+
+    // Scoping filters
+    const campFilter = isAdmin ? '' : 'WHERE user_id = ?';
+    const campParams = isAdmin ? [] : [uid];
+    const contactFilter = isAdmin ? '' : 'WHERE campaign_id IN (SELECT id FROM campaigns WHERE user_id = ?)';
+    const contactParams = isAdmin ? [] : [uid];
+    const callFilter = isAdmin ? '' : 'WHERE campaign_id IN (SELECT id FROM campaigns WHERE user_id = ?)';
+    const callParams = isAdmin ? [] : [uid];
+    const callAndFilter = isAdmin ? '' : 'AND campaign_id IN (SELECT id FROM campaigns WHERE user_id = ?)';
+
     // Campaign stats
     const campaignStats = db.prepare(`
-      SELECT 
+      SELECT
         COUNT(*) as total_campaigns,
         SUM(CASE WHEN status = 'active' THEN 1 ELSE 0 END) as active_campaigns
-      FROM campaigns
-    `).get();
-    
+      FROM campaigns ${campFilter}
+    `).get(...campParams);
+
     // Contact stats
     const contactStats = db.prepare(`
-      SELECT 
+      SELECT
         COUNT(*) as total_contacts,
         SUM(CASE WHEN status = 'pending' THEN 1 ELSE 0 END) as pending_contacts,
         SUM(CASE WHEN status = 'converted' THEN 1 ELSE 0 END) as converted_contacts,
         SUM(CASE WHEN status = 'not_interested' THEN 1 ELSE 0 END) as not_interested_contacts
-      FROM contacts
-    `).get();
-    
+      FROM contacts ${contactFilter}
+    `).get(...contactParams);
+
     // Call stats
     const callStats = db.prepare(`
-      SELECT 
+      SELECT
         COUNT(*) as total_calls,
         SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) as completed_calls,
         SUM(CASE WHEN status = 'in_progress' THEN 1 ELSE 0 END) as active_calls,
         SUM(CASE WHEN status = 'failed' THEN 1 ELSE 0 END) as failed_calls,
         SUM(CASE WHEN status = 'queued' THEN 1 ELSE 0 END) as queued_calls,
         AVG(CASE WHEN duration_seconds > 0 THEN duration_seconds END) as avg_duration
-      FROM calls
-    `).get();
-    
+      FROM calls ${callFilter}
+    `).get(...callParams);
+
     // Outcome stats
     const outcomeStats = db.prepare(`
-      SELECT 
-        outcome,
-        COUNT(*) as count
+      SELECT outcome, COUNT(*) as count
       FROM calls
-      WHERE outcome IS NOT NULL
+      WHERE outcome IS NOT NULL ${callAndFilter}
       GROUP BY outcome
-    `).all();
-    
+    `).all(...callParams);
+
     // Today's stats
     const todayStats = db.prepare(`
-      SELECT 
+      SELECT
         COUNT(*) as calls_today,
         SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) as completed_today,
         SUM(CASE WHEN outcome = 'appointment_scheduled' THEN 1 ELSE 0 END) as appointments_today
       FROM calls
-      WHERE DATE(created_at) = DATE('now')
-    `).get();
-    
+      WHERE DATE(created_at) = DATE('now') ${callAndFilter}
+    `).get(...callParams);
+
     // This week's stats
     const weekStats = db.prepare(`
       SELECT
@@ -66,17 +75,19 @@ router.get('/dashboard', async (req, res) => {
         SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) as completed_this_week,
         SUM(CASE WHEN outcome = 'appointment_scheduled' THEN 1 ELSE 0 END) as appointments_this_week
       FROM calls
-      WHERE DATE(created_at) >= DATE('now', '-7 days')
-    `).get();
+      WHERE DATE(created_at) >= DATE('now', '-7 days') ${callAndFilter}
+    `).get(...callParams);
 
     // Cost tracking
-    const totalCost = db.prepare('SELECT COALESCE(SUM(estimated_cost), 0) as total FROM calls').get();
-    const todayCost = db.prepare("SELECT COALESCE(SUM(estimated_cost), 0) as total FROM calls WHERE date(created_at) = date('now')").get();
+    const totalCost = db.prepare(`SELECT COALESCE(SUM(estimated_cost), 0) as total FROM calls ${callFilter}`).get(...callParams);
+    const todayCost = db.prepare(`SELECT COALESCE(SUM(estimated_cost), 0) as total FROM calls WHERE date(created_at) = date('now') ${callAndFilter}`).get(...callParams);
 
     // Lead score summary
-    const hotLeads = db.prepare('SELECT COUNT(*) as count FROM contacts WHERE lead_score >= 80').get();
-    const warmLeads = db.prepare('SELECT COUNT(*) as count FROM contacts WHERE lead_score >= 50 AND lead_score < 80').get();
-    const coldLeads = db.prepare('SELECT COUNT(*) as count FROM contacts WHERE lead_score < 50').get();
+    const leadFilter = isAdmin ? '' : 'AND campaign_id IN (SELECT id FROM campaigns WHERE user_id = ?)';
+    const leadParams = isAdmin ? [] : [uid];
+    const hotLeads = db.prepare(`SELECT COUNT(*) as count FROM contacts WHERE lead_score >= 80 ${leadFilter}`).get(...leadParams);
+    const warmLeads = db.prepare(`SELECT COUNT(*) as count FROM contacts WHERE lead_score >= 50 AND lead_score < 80 ${leadFilter}`).get(...leadParams);
+    const coldLeads = db.prepare(`SELECT COUNT(*) as count FROM contacts WHERE lead_score < 50 ${leadFilter}`).get(...leadParams);
 
     res.json({
       campaigns: campaignStats,
@@ -99,6 +110,13 @@ router.get('/campaign/:campaignId', async (req, res) => {
   try {
     const db = await getDb();
     const campaignId = req.params.campaignId;
+    const isAdmin = req.user.role === 'admin';
+
+    // Verify campaign belongs to user
+    if (!isAdmin) {
+      const campaign = db.prepare('SELECT id FROM campaigns WHERE id = ? AND user_id = ?').get(campaignId, req.user.userId);
+      if (!campaign) return res.status(404).json({ error: 'Campaign not found' });
+    }
     
     // Basic stats
     const basicStats = db.prepare(`
@@ -185,7 +203,13 @@ router.get('/analytics', async (req, res) => {
   try {
     const db = await getDb();
     const { period = '7d' } = req.query;
-    
+    const isAdmin = req.user.role === 'admin';
+    const uid = req.user.userId;
+    const userFilter = isAdmin ? '' : 'AND campaign_id IN (SELECT id FROM campaigns WHERE user_id = ?)';
+    const userParams = isAdmin ? [] : [uid];
+    const campFilter = isAdmin ? '' : 'WHERE cp.user_id = ?';
+    const campParams = isAdmin ? [] : [uid];
+
     let dateFilter;
     switch (period) {
       case '24h':
@@ -203,23 +227,23 @@ router.get('/analytics', async (req, res) => {
       default:
         dateFilter = "1=1";
     }
-    
+
     // Calls over time
     const callsOverTime = db.prepare(`
-      SELECT 
+      SELECT
         DATE(created_at) as date,
         COUNT(*) as total,
         SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) as completed,
         SUM(CASE WHEN outcome = 'appointment_scheduled' THEN 1 ELSE 0 END) as appointments
       FROM calls
-      WHERE ${dateFilter}
+      WHERE ${dateFilter} ${userFilter}
       GROUP BY DATE(created_at)
       ORDER BY date
-    `).all();
-    
-    // Campaign performance (completion rate, appointment %, callback %, voicemail %, avg duration)
+    `).all(...userParams);
+
+    // Campaign performance
     const campaignPerformance = db.prepare(`
-      SELECT 
+      SELECT
         cp.id,
         cp.name,
         cp.type,
@@ -231,36 +255,37 @@ router.get('/analytics', async (req, res) => {
         AVG(CASE WHEN cl.duration_seconds > 0 THEN cl.duration_seconds END) as avg_duration
       FROM campaigns cp
       LEFT JOIN calls cl ON cp.id = cl.campaign_id
+      ${campFilter}
       GROUP BY cp.id
       ORDER BY total_calls DESC
-    `).all();
-    
+    `).all(...campParams);
+
     // Best performing hours
     const bestHours = db.prepare(`
-      SELECT 
+      SELECT
         CAST(strftime('%H', created_at) AS INTEGER) as hour,
         COUNT(*) as total_calls,
         SUM(CASE WHEN outcome = 'appointment_scheduled' THEN 1 ELSE 0 END) as appointments,
         ROUND(CAST(SUM(CASE WHEN outcome = 'appointment_scheduled' THEN 1 ELSE 0 END) AS FLOAT) / COUNT(*) * 100, 2) as conversion_rate
       FROM calls
-      WHERE ${dateFilter}
+      WHERE ${dateFilter} ${userFilter}
       GROUP BY hour
       ORDER BY conversion_rate DESC
       LIMIT 5
-    `).all();
-    
+    `).all(...userParams);
+
     // Outcome distribution
     const outcomeDistribution = db.prepare(`
-      SELECT 
+      SELECT
         COALESCE(outcome, 'no_outcome') as outcome,
         COUNT(*) as count,
-        ROUND(CAST(COUNT(*) AS FLOAT) * 100.0 / (SELECT COUNT(*) FROM calls WHERE ${dateFilter}), 2) as percentage
+        ROUND(CAST(COUNT(*) AS FLOAT) * 100.0 / NULLIF((SELECT COUNT(*) FROM calls WHERE ${dateFilter} ${userFilter}), 0), 2) as percentage
       FROM calls
-      WHERE ${dateFilter}
+      WHERE ${dateFilter} ${userFilter}
       GROUP BY outcome
       ORDER BY count DESC
-    `).all();
-    
+    `).all(...userParams, ...userParams);
+
     res.json({
       callsOverTime,
       campaignPerformance,

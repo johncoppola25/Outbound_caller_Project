@@ -66,15 +66,17 @@ router.get('/assistants', async (req, res) => {
 router.get('/', async (req, res) => {
   try {
     const db = await getDb();
+    const isAdmin = req.user.role === 'admin';
     const campaigns = db.prepare(`
-      SELECT c.*, 
+      SELECT c.*,
         (SELECT COUNT(*) FROM contacts WHERE campaign_id = c.id) as contact_count,
         (SELECT COUNT(*) FROM calls WHERE campaign_id = c.id) as call_count,
         (SELECT COUNT(*) FROM calls WHERE campaign_id = c.id AND status = 'completed') as completed_calls
       FROM campaigns c
+      ${isAdmin ? '' : 'WHERE c.user_id = ?'}
       ORDER BY c.created_at DESC
-    `).all();
-    
+    `).all(...(isAdmin ? [] : [req.user.userId]));
+
     res.json(campaigns);
   } catch (error) {
     console.error('Error fetching campaigns:', error);
@@ -86,14 +88,15 @@ router.get('/', async (req, res) => {
 router.get('/:id', async (req, res) => {
   try {
     const db = await getDb();
+    const isAdmin = req.user.role === 'admin';
     const campaign = db.prepare(`
-      SELECT c.*, 
+      SELECT c.*,
         (SELECT COUNT(*) FROM contacts WHERE campaign_id = c.id) as contact_count,
         (SELECT COUNT(*) FROM calls WHERE campaign_id = c.id) as call_count,
         (SELECT COUNT(*) FROM calls WHERE campaign_id = c.id AND status = 'completed') as completed_calls
       FROM campaigns c
-      WHERE c.id = ?
-    `).get(req.params.id);
+      WHERE c.id = ?${isAdmin ? '' : ' AND c.user_id = ?'}
+    `).get(...[req.params.id, ...(isAdmin ? [] : [req.user.userId])]);
     
     if (!campaign) {
       return res.status(404).json({ error: 'Campaign not found' });
@@ -141,9 +144,9 @@ router.post('/', async (req, res) => {
     }
     
     db.prepare(`
-      INSERT INTO campaigns (id, name, type, description, ai_prompt, voice, language, telnyx_assistant_id, caller_id, greeting, time_limit_secs, voicemail_detection, voicemail_message, background_audio, bot_name, calling_hours_start, calling_hours_end, calling_timezone, calling_days)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `).run(id, name, type || 'general', description || '', ai_prompt || '', voice || 'astra', language || 'en-US', telnyx_assistant_id, caller_id || null, greeting || 'Hello,', time_limit_secs || 600, voicemail_detection !== false ? 1 : 0, voicemail_message || null, background_audio || 'silence', bot_name || 'Julia', calling_hours_start || '09:00', calling_hours_end || '18:00', calling_timezone || 'America/New_York', calling_days || '1,2,3,4,5');
+      INSERT INTO campaigns (id, name, type, description, ai_prompt, voice, language, telnyx_assistant_id, caller_id, greeting, time_limit_secs, voicemail_detection, voicemail_message, background_audio, bot_name, calling_hours_start, calling_hours_end, calling_timezone, calling_days, user_id)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(id, name, type || 'general', description || '', ai_prompt || '', voice || 'astra', language || 'en-US', telnyx_assistant_id, caller_id || null, greeting || 'Hello,', time_limit_secs || 600, voicemail_detection !== false ? 1 : 0, voicemail_message || null, background_audio || 'silence', bot_name || 'Julia', calling_hours_start || '09:00', calling_hours_end || '18:00', calling_timezone || 'America/New_York', calling_days || '1,2,3,4,5', req.user.userId);
     
     const campaign = db.prepare('SELECT * FROM campaigns WHERE id = ?').get(id);
     
@@ -167,7 +170,9 @@ router.put('/:id', async (req, res) => {
     const { name, type, description, ai_prompt, voice, language, caller_id, status, greeting, time_limit_secs, voicemail_detection, voicemail_message, background_audio, bot_name, voice_speed, calling_hours_start, calling_hours_end, calling_timezone, calling_days } = req.body;
     
     // Get current campaign to check if we need to update Telnyx
-    const currentCampaign = db.prepare('SELECT * FROM campaigns WHERE id = ?').get(req.params.id);
+    const isAdmin = req.user.role === 'admin';
+    const currentCampaign = db.prepare(`SELECT * FROM campaigns WHERE id = ?${isAdmin ? '' : ' AND user_id = ?'}`)
+      .get(...[req.params.id, ...(isAdmin ? [] : [req.user.userId])]);
     
     if (!currentCampaign) {
       return res.status(404).json({ error: 'Campaign not found' });
@@ -286,7 +291,9 @@ router.put('/:id', async (req, res) => {
 router.delete('/:id', async (req, res) => {
   try {
     const db = await getDb();
-    db.prepare('DELETE FROM campaigns WHERE id = ?').run(req.params.id);
+    const isAdmin = req.user.role === 'admin';
+    db.prepare(`DELETE FROM campaigns WHERE id = ?${isAdmin ? '' : ' AND user_id = ?'}`)
+      .run(...[req.params.id, ...(isAdmin ? [] : [req.user.userId])]);
     res.json({ success: true });
   } catch (error) {
     console.error('Error deleting campaign:', error);
@@ -299,9 +306,11 @@ router.post('/:id/reset', async (req, res) => {
   try {
     const db = await getDb();
     const campaignId = req.params.id;
-    
-    // Verify campaign exists
-    const campaign = db.prepare('SELECT id FROM campaigns WHERE id = ?').get(campaignId);
+    const isAdmin = req.user.role === 'admin';
+
+    // Verify campaign exists and belongs to user
+    const campaign = db.prepare(`SELECT id FROM campaigns WHERE id = ?${isAdmin ? '' : ' AND user_id = ?'}`)
+      .get(...[campaignId, ...(isAdmin ? [] : [req.user.userId])]);
     if (!campaign) {
       return res.status(404).json({ error: 'Campaign not found' });
     }
@@ -327,7 +336,9 @@ router.post('/:id/reset', async (req, res) => {
 router.post('/:id/pause', async (req, res) => {
   try {
     const db = await getDb();
-    db.prepare('UPDATE campaigns SET status = ? WHERE id = ?').run('paused', req.params.id);
+    const isAdmin = req.user.role === 'admin';
+    db.prepare(`UPDATE campaigns SET status = ? WHERE id = ?${isAdmin ? '' : ' AND user_id = ?'}`)
+      .run(...['paused', req.params.id, ...(isAdmin ? [] : [req.user.userId])]);
     res.json({ success: true, status: 'paused' });
   } catch (error) {
     console.error('Error pausing campaign:', error);
@@ -339,7 +350,9 @@ router.post('/:id/pause', async (req, res) => {
 router.post('/:id/resume', async (req, res) => {
   try {
     const db = await getDb();
-    db.prepare('UPDATE campaigns SET status = ? WHERE id = ?').run('active', req.params.id);
+    const isAdmin = req.user.role === 'admin';
+    db.prepare(`UPDATE campaigns SET status = ? WHERE id = ?${isAdmin ? '' : ' AND user_id = ?'}`)
+      .run(...['active', req.params.id, ...(isAdmin ? [] : [req.user.userId])]);
     res.json({ success: true, status: 'active' });
   } catch (error) {
     console.error('Error resuming campaign:', error);

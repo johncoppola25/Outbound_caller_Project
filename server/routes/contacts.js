@@ -38,6 +38,14 @@ const upload = multer({
 router.get('/campaign/:campaignId', async (req, res) => {
   try {
     const db = await getDb();
+    const isAdmin = req.user.role === 'admin';
+
+    // Verify campaign belongs to user
+    if (!isAdmin) {
+      const campaign = db.prepare('SELECT id FROM campaigns WHERE id = ? AND user_id = ?').get(req.params.campaignId, req.user.userId);
+      if (!campaign) return res.status(404).json({ error: 'Campaign not found' });
+    }
+
     const { status, search, page = 1, limit = 50 } = req.query;
     const offset = (page - 1) * limit;
     
@@ -85,13 +93,15 @@ router.get('/campaign/:campaignId', async (req, res) => {
 router.get('/:id', async (req, res) => {
   try {
     const db = await getDb();
+    const isAdmin = req.user.role === 'admin';
     const contact = db.prepare(`
-      SELECT c.*, 
+      SELECT c.*,
         (SELECT COUNT(*) FROM calls WHERE contact_id = c.id) as call_count,
         (SELECT status FROM calls WHERE contact_id = c.id ORDER BY created_at DESC LIMIT 1) as last_call_status
       FROM contacts c
-      WHERE c.id = ?
-    `).get(req.params.id);
+      JOIN campaigns cp ON c.campaign_id = cp.id
+      WHERE c.id = ?${isAdmin ? '' : ' AND cp.user_id = ?'}
+    `).get(...[req.params.id, ...(isAdmin ? [] : [req.user.userId])]);
     
     if (!contact) {
       return res.status(404).json({ error: 'Contact not found' });
@@ -121,8 +131,10 @@ router.post('/upload/:campaignId', upload.single('file'), async (req, res) => {
     const results = [];
     const errors = [];
     
-    // Verify campaign exists
-    const campaign = db.prepare('SELECT id FROM campaigns WHERE id = ?').get(campaignId);
+    // Verify campaign exists and belongs to user
+    const isAdmin = req.user.role === 'admin';
+    const campaign = db.prepare(`SELECT id FROM campaigns WHERE id = ?${isAdmin ? '' : ' AND user_id = ?'}`)
+      .get(...[campaignId, ...(isAdmin ? [] : [req.user.userId])]);
     if (!campaign) {
       return res.status(404).json({ error: 'Campaign not found' });
     }
@@ -197,7 +209,14 @@ router.post('/', async (req, res) => {
   try {
     const db = await getDb();
     const { campaign_id, first_name, last_name, phone, email, property_address, notes } = req.body;
-    
+
+    // Verify campaign belongs to user
+    const isAdmin = req.user.role === 'admin';
+    if (!isAdmin) {
+      const campaign = db.prepare('SELECT id FROM campaigns WHERE id = ? AND user_id = ?').get(campaign_id, req.user.userId);
+      if (!campaign) return res.status(404).json({ error: 'Campaign not found' });
+    }
+
     // Validate phone
     const cleanPhone = phone.replace(/\D/g, '');
     if (!cleanPhone || cleanPhone.length < 10) {
@@ -225,6 +244,14 @@ router.post('/', async (req, res) => {
 router.put('/:id', async (req, res) => {
   try {
     const db = await getDb();
+    const isAdmin = req.user.role === 'admin';
+
+    // Verify contact belongs to user's campaign
+    if (!isAdmin) {
+      const ownsContact = db.prepare('SELECT c.id FROM contacts c JOIN campaigns cp ON c.campaign_id = cp.id WHERE c.id = ? AND cp.user_id = ?').get(req.params.id, req.user.userId);
+      if (!ownsContact) return res.status(404).json({ error: 'Contact not found' });
+    }
+
     const { first_name, last_name, phone, email, property_address, notes, status } = req.body;
     
     let formattedPhone = phone ? phone : null;
@@ -270,6 +297,11 @@ router.put('/:id', async (req, res) => {
 router.delete('/:id', async (req, res) => {
   try {
     const db = await getDb();
+    const isAdmin = req.user.role === 'admin';
+    if (!isAdmin) {
+      const ownsContact = db.prepare('SELECT c.id FROM contacts c JOIN campaigns cp ON c.campaign_id = cp.id WHERE c.id = ? AND cp.user_id = ?').get(req.params.id, req.user.userId);
+      if (!ownsContact) return res.status(404).json({ error: 'Contact not found' });
+    }
     db.prepare('DELETE FROM contacts WHERE id = ?').run(req.params.id);
     res.json({ success: true });
   } catch (error) {
@@ -283,13 +315,18 @@ router.post('/bulk-delete', async (req, res) => {
   try {
     const db = await getDb();
     const { ids } = req.body;
-    
+    const isAdmin = req.user.role === 'admin';
+
     if (!ids || !Array.isArray(ids)) {
       return res.status(400).json({ error: 'Invalid request body' });
     }
-    
+
     const placeholders = ids.map(() => '?').join(',');
-    db.prepare(`DELETE FROM contacts WHERE id IN (${placeholders})`).run(...ids);
+    if (isAdmin) {
+      db.prepare(`DELETE FROM contacts WHERE id IN (${placeholders})`).run(...ids);
+    } else {
+      db.prepare(`DELETE FROM contacts WHERE id IN (${placeholders}) AND campaign_id IN (SELECT id FROM campaigns WHERE user_id = ?)`).run(...ids, req.user.userId);
+    }
     
     res.json({ success: true, deleted: ids.length });
   } catch (error) {

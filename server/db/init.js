@@ -191,6 +191,12 @@ export async function initDatabase() {
   try {
     db.exec(`ALTER TABLE campaigns ADD COLUMN voicemail_message TEXT`);
   } catch (e) { /* column may already exist */ }
+  try {
+    db.exec(`ALTER TABLE campaigns ADD COLUMN user_id TEXT REFERENCES users(id)`);
+  } catch (e) { /* column may already exist */ }
+  try {
+    db.exec(`ALTER TABLE meeting_history ADD COLUMN user_id TEXT REFERENCES users(id)`);
+  } catch (e) { /* column may already exist */ }
 
   // Contacts table - stores uploaded contacts per campaign
   db.exec(`
@@ -377,6 +383,13 @@ export async function initDatabase() {
     console.log('👤 Admin user created (EstateAdmin)');
   } else {
     db.prepare('UPDATE users SET password_hash = ?, role = ? WHERE name = ?').run(adminHash, 'admin', 'EstateAdmin');
+  }
+
+  // Assign orphaned campaigns to KENNYL user
+  const kennyUser = db.prepare('SELECT id FROM users WHERE name = ?').get('KENNYL');
+  if (kennyUser) {
+    db.prepare('UPDATE campaigns SET user_id = ? WHERE user_id IS NULL').run(kennyUser.id);
+    db.prepare('UPDATE meeting_history SET user_id = ? WHERE user_id IS NULL').run(kennyUser.id);
   }
 
   saveDatabase();

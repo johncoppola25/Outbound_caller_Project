@@ -25,22 +25,15 @@ router.get('/users', async (req, res) => {
     const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59).toISOString();
 
     const enriched = users.map(user => {
-      // Call stats
-      const callStats = db.prepare(`
-        SELECT COUNT(*) as total_calls,
-               COALESCE(SUM(duration_seconds), 0) as total_seconds,
-               COALESCE(SUM(estimated_cost), 0) as total_cost
-        FROM calls c
-        JOIN contacts ct ON c.contact_id = ct.id
-        JOIN campaigns cp ON c.campaign_id = cp.id
-      `).get();
-
-      // Per-user call stats via campaigns they own (approximate - uses all calls for now)
+      // Per-user call stats via campaigns they own
       const userCalls = db.prepare(`
         SELECT COUNT(*) as total_calls,
-               COALESCE(SUM(duration_seconds), 0) as total_seconds
-        FROM calls WHERE status = 'completed'
-      `).get();
+               COALESCE(SUM(cl.duration_seconds), 0) as total_seconds,
+               COALESCE(SUM(cl.estimated_cost), 0) as total_cost
+        FROM calls cl
+        JOIN campaigns cp ON cl.campaign_id = cp.id
+        WHERE cp.user_id = ?
+      `).get(user.id);
 
       // Payment stats from local payments table
       const totalPaid = db.prepare(
@@ -81,6 +74,87 @@ router.get('/users', async (req, res) => {
   } catch (err) {
     console.error('Admin users error:', err);
     res.status(500).json({ error: 'Failed to fetch users.' });
+  }
+});
+
+// GET /api/admin/users/:id/data - full user data (campaigns, calls, contacts, stats)
+router.get('/users/:id/data', async (req, res) => {
+  try {
+    const db = await getDb();
+    const userId = req.params.id;
+
+    const user = db.prepare('SELECT id, email, name, company, role, calling_balance, created_at FROM users WHERE id = ?').get(userId);
+    if (!user) return res.status(404).json({ error: 'User not found.' });
+
+    // User's campaigns
+    const campaigns = db.prepare(`
+      SELECT c.*,
+        (SELECT COUNT(*) FROM contacts WHERE campaign_id = c.id) as contact_count,
+        (SELECT COUNT(*) FROM calls WHERE campaign_id = c.id) as call_count,
+        (SELECT COUNT(*) FROM calls WHERE campaign_id = c.id AND status = 'completed') as completed_calls,
+        (SELECT COUNT(*) FROM calls WHERE campaign_id = c.id AND outcome = 'appointment_scheduled') as appointments
+      FROM campaigns c
+      WHERE c.user_id = ?
+      ORDER BY c.created_at DESC
+    `).all(userId);
+
+    // Call stats
+    const callStats = db.prepare(`
+      SELECT
+        COUNT(*) as total_calls,
+        SUM(CASE WHEN cl.status = 'completed' THEN 1 ELSE 0 END) as completed_calls,
+        SUM(CASE WHEN cl.outcome = 'appointment_scheduled' THEN 1 ELSE 0 END) as appointments,
+        SUM(CASE WHEN cl.outcome = 'callback_requested' THEN 1 ELSE 0 END) as callbacks,
+        SUM(CASE WHEN cl.outcome = 'not_interested' THEN 1 ELSE 0 END) as not_interested,
+        AVG(CASE WHEN cl.duration_seconds > 0 THEN cl.duration_seconds END) as avg_duration,
+        COALESCE(SUM(cl.estimated_cost), 0) as total_cost
+      FROM calls cl
+      JOIN campaigns cp ON cl.campaign_id = cp.id
+      WHERE cp.user_id = ?
+    `).get(userId);
+
+    // Contact stats
+    const contactStats = db.prepare(`
+      SELECT
+        COUNT(*) as total,
+        SUM(CASE WHEN ct.status = 'pending' THEN 1 ELSE 0 END) as pending,
+        SUM(CASE WHEN ct.status = 'converted' THEN 1 ELSE 0 END) as converted,
+        SUM(CASE WHEN ct.status = 'not_interested' THEN 1 ELSE 0 END) as not_interested
+      FROM contacts ct
+      JOIN campaigns cp ON ct.campaign_id = cp.id
+      WHERE cp.user_id = ?
+    `).get(userId);
+
+    // Recent calls
+    const recentCalls = db.prepare(`
+      SELECT cl.id, cl.status, cl.outcome, cl.duration_seconds, cl.estimated_cost, cl.created_at,
+        ct.first_name, ct.last_name, ct.phone,
+        cp.name as campaign_name
+      FROM calls cl
+      JOIN contacts ct ON cl.contact_id = ct.id
+      JOIN campaigns cp ON cl.campaign_id = cp.id
+      WHERE cp.user_id = ?
+      ORDER BY cl.created_at DESC
+      LIMIT 25
+    `).all(userId);
+
+    // Upcoming appointments
+    const appointments = db.prepare(`
+      SELECT cl.id, cl.appointment_at, ct.first_name, ct.last_name, ct.phone, cp.name as campaign_name
+      FROM calls cl
+      JOIN contacts ct ON cl.contact_id = ct.id
+      JOIN campaigns cp ON cl.campaign_id = cp.id
+      WHERE cp.user_id = ? AND cl.outcome = 'appointment_scheduled'
+      ORDER BY cl.appointment_at ASC
+    `).all(userId);
+
+    // Phone numbers
+    const phoneNumbers = db.prepare('SELECT * FROM user_phone_numbers WHERE user_id = ?').all(userId);
+
+    res.json({ user, campaigns, callStats, contactStats, recentCalls, appointments, phoneNumbers });
+  } catch (err) {
+    console.error('Admin user data error:', err);
+    res.status(500).json({ error: 'Failed to fetch user data.' });
   }
 });
 

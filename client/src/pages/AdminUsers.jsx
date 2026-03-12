@@ -2,7 +2,8 @@ import { useState, useEffect } from 'react';
 import { Helmet } from 'react-helmet-async';
 import {
   Users, Shield, Trash2, Crown, UserCheck, AlertCircle, ChevronDown, ChevronUp,
-  DollarSign, Phone, Clock, CreditCard, Plus, Minus, X, CheckCircle, Smartphone
+  DollarSign, Phone, Clock, CreditCard, Plus, Minus, X, CheckCircle, Smartphone,
+  BarChart3, Target, PhoneCall, Calendar, MapPin, ArrowLeft
 } from 'lucide-react';
 import { apiFetch } from '../utils/api';
 
@@ -16,6 +17,9 @@ export default function AdminUsers() {
   const [adjustAmount, setAdjustAmount] = useState('');
   const [adjustReason, setAdjustReason] = useState('');
   const [stats, setStats] = useState(null);
+  const [selectedUser, setSelectedUser] = useState(null);
+  const [userData, setUserData] = useState(null);
+  const [userDataLoading, setUserDataLoading] = useState(false);
 
   const fetchUsers = async () => {
     try {
@@ -52,6 +56,23 @@ export default function AdminUsers() {
       setExpandedUser(userId);
       if (!userPayments[userId]) fetchUserPayments(userId);
     }
+  };
+
+  const viewUserDetails = async (user) => {
+    setSelectedUser(user);
+    setUserDataLoading(true);
+    try {
+      const [dataRes, payRes] = await Promise.all([
+        apiFetch(`/api/admin/users/${user.id}/data`),
+        apiFetch(`/api/admin/users/${user.id}/payments`)
+      ]);
+      if (dataRes.ok) setUserData(await dataRes.json());
+      if (payRes.ok) {
+        const payData = await payRes.json();
+        setUserPayments(prev => ({ ...prev, [user.id]: payData }));
+      }
+    } catch (e) { /* ignore */ }
+    setUserDataLoading(false);
   };
 
   const handleRoleChange = async (userId, newRole) => {
@@ -118,6 +139,197 @@ export default function AdminUsers() {
 
   if (loading) return <div style={{ padding: '40px', color: '#6b7280' }}>Loading users...</div>;
 
+  // User detail view
+  if (selectedUser) {
+    const payments = userPayments[selectedUser.id] || [];
+    const d = userData;
+    const cs = d?.callStats || {};
+    const cts = d?.contactStats || {};
+
+    return (
+      <div>
+        <Helmet><title>{selectedUser.name} - Admin</title></Helmet>
+
+        {/* Back button + header */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '24px' }}>
+          <button onClick={() => { setSelectedUser(null); setUserData(null); }} style={{
+            background: '#fff', border: '1px solid #e5e7eb', borderRadius: '8px',
+            padding: '8px 10px', cursor: 'pointer', display: 'flex', alignItems: 'center'
+          }}>
+            <ArrowLeft size={16} color="#6b7280" />
+          </button>
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <div style={{
+                width: '36px', height: '36px', borderRadius: '10px', background: '#4f46e5',
+                color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontSize: '14px', fontWeight: '700'
+              }}>
+                {(selectedUser.name || 'U')[0].toUpperCase()}
+              </div>
+              <div>
+                <h1 style={{ fontSize: '20px', fontWeight: '700', color: '#111827', margin: 0 }}>{selectedUser.name}</h1>
+                <p style={{ fontSize: '13px', color: '#6b7280', margin: 0 }}>{selectedUser.email}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {userDataLoading ? (
+          <div style={{ padding: '40px', color: '#6b7280', textAlign: 'center' }}>Loading user data...</div>
+        ) : d ? (
+          <>
+            {/* Stats cards */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '12px', marginBottom: '20px' }}>
+              {[
+                { label: 'Balance', value: `$${(selectedUser.calling_balance || 0).toFixed(2)}`, icon: DollarSign, color: (selectedUser.calling_balance || 0) < 20 ? '#dc2626' : '#059669' },
+                { label: 'Campaigns', value: d.campaigns?.length || 0, icon: Target, color: '#4f46e5' },
+                { label: 'Total Contacts', value: cts.total || 0, icon: Users, color: '#2563eb' },
+                { label: 'Total Calls', value: cs.total_calls || 0, icon: PhoneCall, color: '#8b5cf6' },
+                { label: 'Appointments', value: cs.appointments || 0, icon: Calendar, color: '#059669' },
+                { label: 'Avg Duration', value: cs.avg_duration ? `${Math.round(cs.avg_duration)}s` : '--', icon: Clock, color: '#f59e0b' },
+                { label: 'Call Cost', value: `$${(cs.total_cost || 0).toFixed(2)}`, icon: BarChart3, color: '#dc2626' },
+                { label: 'Phone Numbers', value: d.phoneNumbers?.length || 0, icon: Smartphone, color: '#0ea5e9' },
+              ].map((s, i) => (
+                <div key={i} style={{ background: '#fff', borderRadius: '12px', border: '1px solid #e5e7eb', padding: '14px 16px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '4px' }}>
+                    <s.icon size={13} color={s.color} />
+                    <span style={{ fontSize: '10px', color: '#6b7280', fontWeight: '500' }}>{s.label}</span>
+                  </div>
+                  <p style={{ fontSize: '20px', fontWeight: '800', color: '#111827', margin: 0 }}>{s.value}</p>
+                </div>
+              ))}
+            </div>
+
+            {/* Campaigns */}
+            <div style={{ background: '#fff', borderRadius: '14px', border: '1px solid #e5e7eb', marginBottom: '16px', overflow: 'hidden' }}>
+              <div style={{ padding: '14px 18px', borderBottom: '1px solid #e5e7eb', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Target size={15} color="#4f46e5" />
+                <span style={{ fontSize: '14px', fontWeight: '700', color: '#111827' }}>Campaigns ({d.campaigns?.length || 0})</span>
+              </div>
+              {(!d.campaigns || d.campaigns.length === 0) ? (
+                <div style={{ padding: '24px', textAlign: 'center', color: '#9ca3af', fontSize: '13px' }}>No campaigns yet</div>
+              ) : d.campaigns.map(c => (
+                <div key={c.id} style={{ padding: '12px 18px', borderBottom: '1px solid #f3f4f6', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <div>
+                    <span style={{ fontSize: '13px', fontWeight: '600', color: '#111827' }}>{c.name}</span>
+                    <div style={{ display: 'flex', gap: '12px', marginTop: '2px' }}>
+                      <span style={{ fontSize: '11px', color: '#6b7280' }}>{c.contact_count} contacts</span>
+                      <span style={{ fontSize: '11px', color: '#6b7280' }}>{c.call_count} calls</span>
+                      <span style={{ fontSize: '11px', color: '#059669' }}>{c.appointments || 0} appts</span>
+                    </div>
+                  </div>
+                  <span style={{
+                    padding: '2px 8px', borderRadius: '10px', fontSize: '10px', fontWeight: '600',
+                    background: c.status === 'active' ? '#ecfdf5' : '#fef3c7',
+                    color: c.status === 'active' ? '#059669' : '#b45309'
+                  }}>{c.status}</span>
+                </div>
+              ))}
+            </div>
+
+            {/* Recent Calls + Appointments side by side */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' }}>
+              {/* Recent Calls */}
+              <div style={{ background: '#fff', borderRadius: '14px', border: '1px solid #e5e7eb', overflow: 'hidden' }}>
+                <div style={{ padding: '14px 18px', borderBottom: '1px solid #e5e7eb', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <PhoneCall size={15} color="#8b5cf6" />
+                  <span style={{ fontSize: '14px', fontWeight: '700', color: '#111827' }}>Recent Calls</span>
+                </div>
+                <div style={{ maxHeight: '320px', overflowY: 'auto' }}>
+                  {(!d.recentCalls || d.recentCalls.length === 0) ? (
+                    <div style={{ padding: '24px', textAlign: 'center', color: '#9ca3af', fontSize: '13px' }}>No calls yet</div>
+                  ) : d.recentCalls.map(cl => (
+                    <div key={cl.id} style={{ padding: '10px 18px', borderBottom: '1px solid #f9fafb', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <div>
+                        <span style={{ fontSize: '12px', fontWeight: '600', color: '#111827' }}>
+                          {cl.first_name} {cl.last_name}
+                        </span>
+                        <div style={{ fontSize: '11px', color: '#6b7280' }}>{cl.campaign_name}</div>
+                      </div>
+                      <div style={{ textAlign: 'right' }}>
+                        <span style={{
+                          padding: '1px 6px', borderRadius: '8px', fontSize: '10px', fontWeight: '600',
+                          background: cl.outcome === 'appointment_scheduled' ? '#ecfdf5' : cl.outcome === 'not_interested' ? '#fef2f2' : '#f3f4f6',
+                          color: cl.outcome === 'appointment_scheduled' ? '#059669' : cl.outcome === 'not_interested' ? '#dc2626' : '#6b7280'
+                        }}>
+                          {(cl.outcome || cl.status || '').replace(/_/g, ' ')}
+                        </span>
+                        <div style={{ fontSize: '10px', color: '#9ca3af', marginTop: '2px' }}>
+                          {cl.duration_seconds ? `${Math.round(cl.duration_seconds / 60)}m` : ''} {cl.created_at ? new Date(cl.created_at).toLocaleDateString() : ''}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Appointments */}
+              <div style={{ background: '#fff', borderRadius: '14px', border: '1px solid #e5e7eb', overflow: 'hidden' }}>
+                <div style={{ padding: '14px 18px', borderBottom: '1px solid #e5e7eb', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <Calendar size={15} color="#059669" />
+                  <span style={{ fontSize: '14px', fontWeight: '700', color: '#111827' }}>Appointments ({d.appointments?.length || 0})</span>
+                </div>
+                <div style={{ maxHeight: '320px', overflowY: 'auto' }}>
+                  {(!d.appointments || d.appointments.length === 0) ? (
+                    <div style={{ padding: '24px', textAlign: 'center', color: '#9ca3af', fontSize: '13px' }}>No appointments</div>
+                  ) : d.appointments.map(apt => (
+                    <div key={apt.id} style={{ padding: '10px 18px', borderBottom: '1px solid #f9fafb' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <span style={{ fontSize: '12px', fontWeight: '600', color: '#111827' }}>
+                          {apt.first_name} {apt.last_name}
+                        </span>
+                        <span style={{ fontSize: '11px', color: '#4f46e5', fontWeight: '600' }}>
+                          {apt.appointment_at || 'TBD'}
+                        </span>
+                      </div>
+                      <div style={{ fontSize: '11px', color: '#6b7280', marginTop: '2px' }}>{apt.campaign_name} - {apt.phone}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Payment History */}
+            <div style={{ background: '#fff', borderRadius: '14px', border: '1px solid #e5e7eb', overflow: 'hidden' }}>
+              <div style={{ padding: '14px 18px', borderBottom: '1px solid #e5e7eb', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <CreditCard size={15} color="#4f46e5" />
+                <span style={{ fontSize: '14px', fontWeight: '700', color: '#111827' }}>Payment History ({payments.length})</span>
+              </div>
+              <div style={{ maxHeight: '300px', overflowY: 'auto' }}>
+                {payments.length === 0 ? (
+                  <div style={{ padding: '24px', textAlign: 'center', color: '#9ca3af', fontSize: '13px' }}>No payments</div>
+                ) : payments.map(p => {
+                  const tc = typeColor(p.type);
+                  return (
+                    <div key={p.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '9px 18px', borderBottom: '1px solid #f9fafb' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <span style={{ padding: '2px 8px', borderRadius: '8px', fontSize: '10px', fontWeight: '600', background: tc.bg, color: tc.color }}>
+                          {typeLabel(p.type)}
+                        </span>
+                        <span style={{ fontSize: '12px', color: '#6b7280' }}>{p.description}</span>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+                        <span style={{ fontSize: '13px', fontWeight: '700', color: p.amount >= 0 ? '#059669' : '#dc2626' }}>
+                          {p.amount >= 0 ? '+' : ''}${Math.abs(p.amount).toFixed(2)}
+                        </span>
+                        <span style={{ fontSize: '11px', color: '#9ca3af', minWidth: '80px', textAlign: 'right' }}>
+                          {new Date(p.created_at).toLocaleDateString()}
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </>
+        ) : (
+          <div style={{ padding: '40px', color: '#dc2626', textAlign: 'center' }}>Failed to load user data</div>
+        )}
+      </div>
+    );
+  }
+
   return (
     <div>
       <Helmet>
@@ -171,7 +383,7 @@ export default function AdminUsers() {
             <div key={user.id} style={{ borderBottom: '1px solid #f3f4f6' }}>
               {/* User row */}
               <div
-                onClick={() => user.role !== 'admin' && toggleExpand(user.id)}
+                onClick={() => user.role !== 'admin' && viewUserDetails(user)}
                 style={{
                   display: 'grid',
                   gridTemplateColumns: 'minmax(180px, 1.5fr) minmax(100px, 1fr) 90px 100px 100px 100px 120px',

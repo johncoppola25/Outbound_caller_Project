@@ -33,6 +33,7 @@ router.get('/export', async (req, res) => {
   try {
     const db = await getDb();
     const { status, outcome } = req.query;
+    const isAdmin = req.user.role === 'admin';
     let query = `
       SELECT cl.id, cl.status, cl.outcome, cl.duration_seconds, cl.started_at, cl.ended_at, cl.created_at,
         ct.first_name, ct.last_name, ct.phone, ct.email, ct.property_address,
@@ -42,7 +43,8 @@ router.get('/export', async (req, res) => {
       JOIN campaigns cp ON cl.campaign_id = cp.id
     `;
     const params = [];
-    if (status) { query += ' WHERE cl.status = ?'; params.push(status); }
+    if (!isAdmin) { query += ' WHERE cp.user_id = ?'; params.push(req.user.userId); }
+    if (status) { query += (params.length ? ' AND' : ' WHERE') + ' cl.status = ?'; params.push(status); }
     if (outcome) { query += (params.length ? ' AND' : ' WHERE') + ' cl.outcome = ?'; params.push(outcome); }
     query += ' ORDER BY cl.created_at DESC LIMIT 5000';
     const calls = db.prepare(query).all(...params);
@@ -66,14 +68,15 @@ router.get('/export', async (req, res) => {
 router.get('/callbacks', async (req, res) => {
   try {
     const db = await getDb();
+    const isAdmin = req.user.role === 'admin';
     const callbacks = db.prepare(`
       SELECT cl.*, ct.first_name, ct.last_name, ct.phone, ct.email, cp.name as campaign_name
       FROM calls cl
       JOIN contacts ct ON cl.contact_id = ct.id
       JOIN campaigns cp ON cl.campaign_id = cp.id
-      WHERE cl.outcome = 'callback_requested'
+      WHERE cl.outcome = 'callback_requested'${isAdmin ? '' : ' AND cp.user_id = ?'}
       ORDER BY cl.callback_preferred_at ASC, cl.created_at DESC
-    `).all();
+    `).all(...(isAdmin ? [] : [req.user.userId]));
     res.json(callbacks);
   } catch (error) {
     console.error('Error fetching callbacks:', error);
@@ -99,7 +102,7 @@ function parseAppointmentTime(str) {
 }
 
 // Check if a proposed appointment time conflicts with existing ones (within 30 min window)
-export function checkConflicts(db, proposedTime, excludeCallId = null) {
+export function checkConflicts(db, proposedTime, excludeCallId = null, userId = null) {
   const proposed = parseAppointmentTime(proposedTime);
   if (!proposed) return { hasConflict: false, conflicts: [] };
 
@@ -107,8 +110,9 @@ export function checkConflicts(db, proposedTime, excludeCallId = null) {
     SELECT cl.id, cl.appointment_at, ct.first_name, ct.last_name
     FROM calls cl
     JOIN contacts ct ON cl.contact_id = ct.id
-    WHERE cl.outcome = 'appointment_scheduled'
-  `).all();
+    JOIN campaigns cp ON cl.campaign_id = cp.id
+    WHERE cl.outcome = 'appointment_scheduled'${userId ? ' AND cp.user_id = ?' : ''}
+  `).all(...(userId ? [userId] : []));
 
   const conflicts = [];
   for (const apt of appointments) {
@@ -129,14 +133,15 @@ export function checkConflicts(db, proposedTime, excludeCallId = null) {
 }
 
 // Suggest next available slot (30 min after latest conflict)
-function suggestNextSlot(db, proposedTime) {
+function suggestNextSlot(db, proposedTime, userId = null) {
   const proposed = parseAppointmentTime(proposedTime);
   if (!proposed) return null;
 
   const appointments = db.prepare(`
     SELECT cl.appointment_at FROM calls cl
-    WHERE cl.outcome = 'appointment_scheduled'
-  `).all();
+    JOIN campaigns cp ON cl.campaign_id = cp.id
+    WHERE cl.outcome = 'appointment_scheduled'${userId ? ' AND cp.user_id = ?' : ''}
+  `).all(...(userId ? [userId] : []));
 
   const times = appointments.map(a => parseAppointmentTime(a.appointment_at)).filter(Boolean).sort((a, b) => a - b);
 
@@ -155,9 +160,11 @@ router.get('/appointments/check-conflict', async (req, res) => {
     const db = await getDb();
     const { time, exclude_call_id } = req.query;
     if (!time) return res.status(400).json({ error: 'time parameter required' });
-    const result = checkConflicts(db, time, exclude_call_id);
+    const isAdmin = req.user.role === 'admin';
+    const scopeUserId = isAdmin ? null : req.user.userId;
+    const result = checkConflicts(db, time, exclude_call_id, scopeUserId);
     if (result.hasConflict) {
-      const suggestion = suggestNextSlot(db, time);
+      const suggestion = suggestNextSlot(db, time, scopeUserId);
       result.suggested_time = suggestion ? suggestion.toISOString() : null;
     }
     res.json(result);
@@ -171,18 +178,20 @@ router.get('/appointments/check-conflict', async (req, res) => {
 router.get('/appointments', async (req, res) => {
   try {
     const db = await getDb();
+    const isAdmin = req.user.role === 'admin';
     const appointments = db.prepare(`
       SELECT cl.*, ct.first_name, ct.last_name, ct.phone, ct.email, ct.property_address, cp.name as campaign_name
       FROM calls cl
       JOIN contacts ct ON cl.contact_id = ct.id
       JOIN campaigns cp ON cl.campaign_id = cp.id
-      WHERE cl.outcome = 'appointment_scheduled'
+      WHERE cl.outcome = 'appointment_scheduled'${isAdmin ? '' : ' AND cp.user_id = ?'}
       ORDER BY cl.appointment_at ASC, cl.created_at DESC
-    `).all();
+    `).all(...(isAdmin ? [] : [req.user.userId]));
 
     // Tag conflicts on each appointment
+    const scopeUserId = isAdmin ? null : req.user.userId;
     for (const apt of appointments) {
-      const { conflicts } = checkConflicts(db, apt.appointment_at, apt.id);
+      const { conflicts } = checkConflicts(db, apt.appointment_at, apt.id, scopeUserId);
       apt.conflicts = conflicts;
     }
 
@@ -197,6 +206,14 @@ router.get('/appointments', async (req, res) => {
 router.get('/campaign/:campaignId', async (req, res) => {
   try {
     const db = await getDb();
+    const isAdmin = req.user.role === 'admin';
+
+    // Verify campaign belongs to user
+    if (!isAdmin) {
+      const campaign = db.prepare('SELECT id FROM campaigns WHERE id = ? AND user_id = ?').get(req.params.campaignId, req.user.userId);
+      if (!campaign) return res.status(404).json({ error: 'Campaign not found' });
+    }
+
     const { status, outcome, page = 1, limit = 50 } = req.query;
     const offset = (page - 1) * limit;
     
@@ -247,14 +264,15 @@ router.get('/campaign/:campaignId', async (req, res) => {
 router.get('/:id', async (req, res) => {
   try {
     const db = await getDb();
+    const isAdmin = req.user.role === 'admin';
     const call = db.prepare(`
       SELECT cl.*, ct.first_name, ct.last_name, ct.phone, ct.email, ct.property_address,
              cp.name as campaign_name, cp.type as campaign_type
       FROM calls cl
       JOIN contacts ct ON cl.contact_id = ct.id
       JOIN campaigns cp ON cl.campaign_id = cp.id
-      WHERE cl.id = ?
-    `).get(req.params.id);
+      WHERE cl.id = ?${isAdmin ? '' : ' AND cp.user_id = ?'}
+    `).get(...[req.params.id, ...(isAdmin ? [] : [req.user.userId])]);
     
     if (!call) {
       return res.status(404).json({ error: 'Call not found' });
@@ -306,10 +324,12 @@ router.post('/initiate', async (req, res) => {
       return res.status(402).json({ error: 'Insufficient balance. Please add funds to make calls.' });
     }
 
-    // Get campaign and contact details
-    const campaign = db.prepare('SELECT * FROM campaigns WHERE id = ?').get(campaign_id);
+    // Get campaign and contact details (verify ownership)
+    const isAdmin = req.user.role === 'admin';
+    const campaign = db.prepare(`SELECT * FROM campaigns WHERE id = ?${isAdmin ? '' : ' AND user_id = ?'}`)
+      .get(...[campaign_id, ...(isAdmin ? [] : [req.user.userId])]);
     const contact = db.prepare('SELECT * FROM contacts WHERE id = ?').get(contact_id);
-    
+
     if (!campaign || !contact) {
       return res.status(404).json({ error: 'Campaign or contact not found' });
     }
@@ -401,8 +421,10 @@ router.post('/start-campaign/:campaignId', async (req, res) => {
       return res.status(402).json({ error: 'Insufficient balance. Please add funds to make calls.' });
     }
 
-    // Get campaign
-    const campaign = db.prepare('SELECT * FROM campaigns WHERE id = ?').get(campaignId);
+    // Get campaign (verify ownership)
+    const isAdmin = req.user.role === 'admin';
+    const campaign = db.prepare(`SELECT * FROM campaigns WHERE id = ?${isAdmin ? '' : ' AND user_id = ?'}`)
+      .get(...[campaignId, ...(isAdmin ? [] : [req.user.userId])]);
     if (!campaign) {
       return res.status(404).json({ error: 'Campaign not found' });
     }
@@ -556,7 +578,9 @@ router.post('/resume-campaign/:campaignId', async (req, res) => {
   try {
     const db = await getDb();
     const campaignId = req.params.campaignId;
-    const campaign = db.prepare('SELECT * FROM campaigns WHERE id = ?').get(campaignId);
+    const isAdmin = req.user.role === 'admin';
+    const campaign = db.prepare(`SELECT * FROM campaigns WHERE id = ?${isAdmin ? '' : ' AND user_id = ?'}`)
+      .get(...[campaignId, ...(isAdmin ? [] : [req.user.userId])]);
     if (!campaign) return res.status(404).json({ error: 'Campaign not found' });
     db.prepare('UPDATE campaigns SET status = ? WHERE id = ?').run('active', campaignId);
     processCallQueue(campaignId, 10, 5000);
@@ -571,10 +595,17 @@ router.post('/resume-campaign/:campaignId', async (req, res) => {
 router.post('/stop-campaign/:campaignId', async (req, res) => {
   try {
     const db = await getDb();
-    
+    const isAdmin = req.user.role === 'admin';
+
+    // Verify campaign belongs to user
+    if (!isAdmin) {
+      const campaign = db.prepare('SELECT id FROM campaigns WHERE id = ? AND user_id = ?').get(req.params.campaignId, req.user.userId);
+      if (!campaign) return res.status(404).json({ error: 'Campaign not found' });
+    }
+
     // Mark queued calls as cancelled
     db.prepare(`
-      UPDATE calls SET status = 'cancelled' 
+      UPDATE calls SET status = 'cancelled'
       WHERE campaign_id = ? AND status IN ('queued', 'initiating')
     `).run(req.params.campaignId);
     
@@ -595,8 +626,16 @@ router.post('/stop-campaign/:campaignId', async (req, res) => {
 router.put('/:id/outcome', async (req, res) => {
   try {
     const db = await getDb();
+    const isAdmin = req.user.role === 'admin';
+
+    // Verify call belongs to user's campaign
+    if (!isAdmin) {
+      const ownsCall = db.prepare('SELECT cl.id FROM calls cl JOIN campaigns cp ON cl.campaign_id = cp.id WHERE cl.id = ? AND cp.user_id = ?').get(req.params.id, req.user.userId);
+      if (!ownsCall) return res.status(404).json({ error: 'Call not found' });
+    }
+
     const { outcome, notes, callback_preferred_at, appointment_at } = req.body;
-    
+
     db.prepare(`
       UPDATE calls SET outcome = ?, summary = COALESCE(?, summary), 
         callback_preferred_at = COALESCE(?, callback_preferred_at),
@@ -658,9 +697,10 @@ router.get('/', async (req, res) => {
       AND (status = 'completed' OR outcome IS NOT NULL OR transcript IS NOT NULL)
     `).run();
 
+    const isAdmin = req.user.role === 'admin';
     const { status, page = 1, limit = 50 } = req.query;
     const offset = (page - 1) * limit;
-    
+
     let query = `
       SELECT cl.*, ct.first_name, ct.last_name, ct.phone, cp.name as campaign_name
       FROM calls cl
@@ -668,12 +708,17 @@ router.get('/', async (req, res) => {
       JOIN campaigns cp ON cl.campaign_id = cp.id
     `;
     const params = [];
-    
+
+    if (!isAdmin) {
+      query += ' WHERE cp.user_id = ?';
+      params.push(req.user.userId);
+    }
+
     if (status) {
-      query += ' WHERE cl.status = ?';
+      query += (params.length ? ' AND' : ' WHERE') + ' cl.status = ?';
       params.push(status);
     }
-    
+
     const countQuery = query.replace(
       'SELECT cl.*, ct.first_name, ct.last_name, ct.phone, cp.name as campaign_name',
       'SELECT COUNT(*) as total'
@@ -705,8 +750,16 @@ router.get('/', async (req, res) => {
 router.post('/:id/sync', async (req, res) => {
   try {
     const db = await getDb();
+    const isAdmin = req.user.role === 'admin';
+
+    // Verify call belongs to user's campaign
+    if (!isAdmin) {
+      const ownsCall = db.prepare('SELECT cl.id FROM calls cl JOIN campaigns cp ON cl.campaign_id = cp.id WHERE cl.id = ? AND cp.user_id = ?').get(req.params.id, req.user.userId);
+      if (!ownsCall) return res.status(404).json({ error: 'Call not found' });
+    }
+
     const call = db.prepare('SELECT * FROM calls WHERE id = ?').get(req.params.id);
-    
+
     if (!call) {
       return res.status(404).json({ error: 'Call not found' });
     }
@@ -1153,13 +1206,17 @@ router.post('/:id/sync', async (req, res) => {
 router.post('/sync-all-stale', async (req, res) => {
   try {
     const db = await getDb();
+    const isAdmin = req.user.role === 'admin';
+    const userFilter = isAdmin ? '' : 'AND campaign_id IN (SELECT id FROM campaigns WHERE user_id = ?)';
+    const userParams = isAdmin ? [] : [req.user.userId];
     // Find calls that are stuck in non-terminal states and older than 5 minutes
     const staleCalls = db.prepare(`
       SELECT id, telnyx_call_id, status, campaign_id, contact_id
       FROM calls
       WHERE status IN ('ringing', 'in_progress', 'queued')
       AND created_at < datetime('now', '-5 minutes')
-    `).all();
+      ${userFilter}
+    `).all(...userParams);
 
     let synced = 0;
     let fixed = 0;
@@ -1225,6 +1282,7 @@ router.post('/sync-all-stale', async (req, res) => {
 router.post('/process-retries', async (req, res) => {
   try {
     const db = await getDb();
+    const isAdmin = req.user.role === 'admin';
     const now = new Date().toISOString();
     const retryContacts = db.prepare(`
       SELECT c.*, ca.id as campaign_id, ca.name as campaign_name
@@ -1234,8 +1292,9 @@ router.post('/process-retries', async (req, res) => {
       AND c.next_retry_at <= ?
       AND c.status = 'pending'
       AND ca.status = 'active'
+      ${isAdmin ? '' : 'AND ca.user_id = ?'}
       LIMIT 50
-    `).all(now);
+    `).all(...[now, ...(isAdmin ? [] : [req.user.userId])]);
 
     res.json({ queued: retryContacts.length, message: `${retryContacts.length} contacts queued for retry` });
 
