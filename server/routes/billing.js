@@ -24,16 +24,7 @@ const PLANS = [
     priceDisplay: '$1,000',
     interval: 'month',
     popular: true,
-    features: ['Unlimited AI calls', 'Call recording & transcripts', 'Voicemail detection', 'Full analytics dashboard', 'Priority support', 'Custom AI scripts', 'Multiple campaigns']
-  },
-  {
-    id: 'appointment',
-    name: 'Per Appointment',
-    price: 10000, // cents = $100
-    priceDisplay: '$100',
-    interval: null,
-    perAppointment: true,
-    features: ['$100 per booked appointment', 'Only pay when AI books meetings', 'Performance-based pricing', 'Tracked automatically']
+    features: ['Unlimited AI calls', 'Call recording & transcripts', 'Voicemail detection', 'Full analytics dashboard', 'Priority support', 'Custom AI scripts', 'Multiple campaigns', '$100 per booked appointment']
   }
 ];
 
@@ -51,15 +42,15 @@ async function ensureStripeProducts() {
       let product = existingProducts.data.find(p => p.name === productName && p.active);
 
       if (!product) {
-        const description = plan.oneTime ? 'One-time platform setup and onboarding'
-          : plan.perAppointment ? 'Per booked appointment charge'
+        const description = plan.oneTime
+          ? 'One-time platform setup and onboarding'
           : 'Monthly AI calling platform subscription';
         product = await stripe.products.create({
           name: productName,
           description,
           metadata: { plan_id: plan.id }
         });
-        console.log(`✅ Created Stripe product: ${productName}`);
+        console.log(`Created Stripe product: ${productName}`);
       }
 
       // Check for existing price
@@ -80,16 +71,16 @@ async function ensureStripeProducts() {
         };
         if (plan.interval) priceData.recurring = { interval: plan.interval };
         price = await stripe.prices.create(priceData);
-        console.log(`✅ Created Stripe price: ${productName} - ${plan.priceDisplay}${plan.interval ? '/mo' : ' one-time'}`);
+        console.log(`Created Stripe price: ${productName} - ${plan.priceDisplay}${plan.interval ? '/mo' : ' one-time'}`);
       }
 
       stripePrices[plan.id] = { priceId: price.id, productId: product.id };
     }
 
-    console.log('✅ Stripe products ready:', Object.keys(stripePrices));
+    console.log('Stripe products ready:', Object.keys(stripePrices));
     return stripePrices;
   } catch (error) {
-    console.error('❌ Error setting up Stripe products:', error.message);
+    console.error('Error setting up Stripe products:', error.message);
     return {};
   }
 }
@@ -98,11 +89,15 @@ async function ensureStripeProducts() {
 router.get('/plans', async (req, res) => {
   try {
     const prices = await ensureStripeProducts();
+    const db = await getDb();
+    const user = db.prepare('SELECT * FROM users WHERE id = ?').get(req.user.id);
+    const setupFeePaid = !!user?.setup_fee_paid;
+
     const plans = PLANS.map(plan => ({
       ...plan,
       stripePriceId: prices[plan.id]?.priceId || null
     }));
-    res.json(plans);
+    res.json({ plans, setupFeePaid });
   } catch (error) {
     console.error('Error fetching plans:', error);
     res.status(500).json({ error: 'Failed to fetch plans' });
@@ -116,7 +111,22 @@ router.get('/subscription', async (req, res) => {
     const user = db.prepare('SELECT * FROM users WHERE id = ?').get(req.user.id);
 
     if (!user?.stripe_customer_id) {
-      return res.json({ subscription: null, plan: null });
+      return res.json({ subscription: null, plan: null, setupFeePaid: !!user?.setup_fee_paid });
+    }
+
+    // Check if setup fee was paid via Stripe (in case DB flag missed it)
+    if (!user.setup_fee_paid) {
+      const payments = await stripe.paymentIntents.list({
+        customer: user.stripe_customer_id,
+        limit: 50
+      });
+      const setupPayment = payments.data.find(p =>
+        p.status === 'succeeded' && p.metadata?.plan_id === 'setup'
+      );
+      if (setupPayment) {
+        db.prepare('UPDATE users SET setup_fee_paid = 1 WHERE id = ?').run(user.id);
+        user.setup_fee_paid = 1;
+      }
     }
 
     // Get active subscription from Stripe
@@ -127,7 +137,6 @@ router.get('/subscription', async (req, res) => {
     });
 
     if (subscriptions.data.length === 0) {
-      // Check for past_due or trialing
       const allSubs = await stripe.subscriptions.list({
         customer: user.stripe_customer_id,
         limit: 1
@@ -135,15 +144,15 @@ router.get('/subscription', async (req, res) => {
       if (allSubs.data.length > 0) {
         const sub = allSubs.data[0];
         const plan = PLANS.find(p => stripePrices[p.id]?.priceId === sub.items.data[0]?.price?.id);
-        return res.json({ subscription: sub, plan: plan || null });
+        return res.json({ subscription: sub, plan: plan || null, setupFeePaid: !!user.setup_fee_paid });
       }
-      return res.json({ subscription: null, plan: null });
+      return res.json({ subscription: null, plan: null, setupFeePaid: !!user.setup_fee_paid });
     }
 
     const sub = subscriptions.data[0];
     const plan = PLANS.find(p => stripePrices[p.id]?.priceId === sub.items.data[0]?.price?.id);
 
-    res.json({ subscription: sub, plan: plan || null });
+    res.json({ subscription: sub, plan: plan || null, setupFeePaid: !!user.setup_fee_paid });
   } catch (error) {
     console.error('Error fetching subscription:', error);
     res.status(500).json({ error: 'Failed to fetch subscription' });
@@ -156,6 +165,11 @@ router.post('/create-checkout-session', async (req, res) => {
     const { planId } = req.body;
     const db = await getDb();
     const user = db.prepare('SELECT * FROM users WHERE id = ?').get(req.user.id);
+
+    // Require setup fee before monthly subscription
+    if (planId === 'monthly' && !user?.setup_fee_paid) {
+      return res.status(400).json({ error: 'Please pay the setup fee first before subscribing.' });
+    }
 
     const prices = await ensureStripeProducts();
     const priceData = prices[planId];
@@ -181,20 +195,61 @@ router.post('/create-checkout-session', async (req, res) => {
     const plan = PLANS.find(p => p.id === planId);
     const mode = plan?.interval ? 'subscription' : 'payment';
 
-    const session = await stripe.checkout.sessions.create({
+    const sessionConfig = {
       customer: customerId,
       payment_method_types: ['card'],
       line_items: [{ price: priceData.priceId, quantity: 1 }],
       mode,
-      success_url: `${baseUrl}/billing?success=true`,
+      success_url: `${baseUrl}/billing?success=true&plan=${planId}`,
       cancel_url: `${baseUrl}/billing?canceled=true`,
       metadata: { user_id: user.id, plan_id: planId }
-    });
+    };
+
+    // For one-time payments, track in payment intent metadata
+    if (mode === 'payment') {
+      sessionConfig.payment_intent_data = {
+        metadata: { user_id: user.id, plan_id: planId }
+      };
+    }
+
+    const session = await stripe.checkout.sessions.create(sessionConfig);
 
     res.json({ url: session.url });
   } catch (error) {
     console.error('Error creating checkout session:', error);
     res.status(500).json({ error: 'Failed to create checkout session' });
+  }
+});
+
+// Mark setup fee as paid (called after successful checkout redirect)
+router.post('/confirm-setup', async (req, res) => {
+  try {
+    const db = await getDb();
+    const user = db.prepare('SELECT * FROM users WHERE id = ?').get(req.user.id);
+
+    if (!user?.stripe_customer_id) {
+      return res.status(400).json({ error: 'No billing account found' });
+    }
+
+    // Verify payment in Stripe
+    const sessions = await stripe.checkout.sessions.list({
+      customer: user.stripe_customer_id,
+      limit: 10
+    });
+
+    const setupSession = sessions.data.find(s =>
+      s.metadata?.plan_id === 'setup' && s.payment_status === 'paid'
+    );
+
+    if (setupSession) {
+      db.prepare('UPDATE users SET setup_fee_paid = 1 WHERE id = ?').run(user.id);
+      return res.json({ setupFeePaid: true });
+    }
+
+    res.json({ setupFeePaid: false });
+  } catch (error) {
+    console.error('Error confirming setup:', error);
+    res.status(500).json({ error: 'Failed to confirm setup payment' });
   }
 });
 

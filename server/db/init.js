@@ -287,6 +287,9 @@ export async function initDatabase() {
   try {
     db.exec(`ALTER TABLE users ADD COLUMN subscription_status TEXT DEFAULT 'none'`);
   } catch (e) { /* column may already exist */ }
+  try {
+    db.exec(`ALTER TABLE users ADD COLUMN setup_fee_paid INTEGER DEFAULT 0`);
+  } catch (e) { /* column may already exist */ }
 
   // Meeting history table - completed meetings
   db.exec(`
