@@ -249,12 +249,12 @@ export default function Layout() {
         {/* Logo + Bell */}
         <div style={{ padding: '22px 18px', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '11px' }}>
-            <svg viewBox="0 0 340 50" style={{ width: '190px' }} xmlns="http://www.w3.org/2000/svg">
+            <svg viewBox="0 0 260 50" style={{ width: '170px' }} xmlns="http://www.w3.org/2000/svg">
               <text x="0" y="34" fontFamily="'Segoe UI', 'Helvetica Neue', Arial, sans-serif" fontSize="38" fontWeight="700" letterSpacing="-0.5">
                 <tspan fill="#ffffff">Out</tspan><tspan fill="#4f46e5">Reach</tspan>
               </text>
-              <text x="220" y="34" fontFamily="'Segoe UI', 'Helvetica Neue', Arial, sans-serif" fontSize="38" fontWeight="300" fill="#4f46e5" letterSpacing="-0.5">AI</text>
-              <rect x="0" y="42" width="50" height="3" rx="1.5" fill="#4f46e5"/>
+              <text x="175" y="34" fontFamily="'Segoe UI', 'Helvetica Neue', Arial, sans-serif" fontSize="38" fontWeight="300" fill="#4f46e5" letterSpacing="-0.5">AI</text>
+              <rect x="0" y="42" width="160" height="3" rx="1.5" fill="#4f46e5"/>
             </svg>
             {/* Bell icon */}
             <div style={{ position: 'relative' }}>
