@@ -143,7 +143,7 @@ router.post('/', async (req, res) => {
     db.prepare(`
       INSERT INTO campaigns (id, name, type, description, ai_prompt, voice, language, telnyx_assistant_id, caller_id, greeting, time_limit_secs, voicemail_detection, voicemail_message, background_audio, bot_name, calling_hours_start, calling_hours_end, calling_timezone, calling_days)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `).run(id, name, type || 'general', description || '', ai_prompt || '', voice || 'astra', language || 'en-US', telnyx_assistant_id, caller_id || null, greeting || 'Hello,', time_limit_secs || 1800, voicemail_detection !== false ? 1 : 0, voicemail_message || null, background_audio || 'silence', bot_name || 'Julia', calling_hours_start || '09:00', calling_hours_end || '18:00', calling_timezone || 'America/New_York', calling_days || '1,2,3,4,5');
+    `).run(id, name, type || 'general', description || '', ai_prompt || '', voice || 'astra', language || 'en-US', telnyx_assistant_id, caller_id || null, greeting || 'Hello,', time_limit_secs || 600, voicemail_detection !== false ? 1 : 0, voicemail_message || null, background_audio || 'silence', bot_name || 'Julia', calling_hours_start || '09:00', calling_hours_end || '18:00', calling_timezone || 'America/New_York', calling_days || '1,2,3,4,5');
     
     const campaign = db.prepare('SELECT * FROM campaigns WHERE id = ?').get(id);
     

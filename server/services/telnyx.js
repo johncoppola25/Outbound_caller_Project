@@ -261,7 +261,7 @@ RULES:
       telephony_settings: {
         default_texml_app_id: texmlAppId,
         noise_suppression: 'deepfilternet',
-        time_limit_secs: campaign.time_limit_secs || 1800
+        time_limit_secs: campaign.time_limit_secs || 600
       },
 
       // Enable telephony feature
@@ -556,7 +556,7 @@ RULES:
           telephony_settings: {
             default_texml_app_id: texmlAppId,
             noise_suppression: 'deepfilternet',
-            time_limit_secs: 1800
+            time_limit_secs: 600
           },
           enabled_features: ['telephony'],
           interruption_settings: {

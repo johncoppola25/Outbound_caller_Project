@@ -143,7 +143,7 @@ export default function CampaignDetail() {
     language: 'en-US',
     caller_id: '',
     greeting: '',
-    time_limit_secs: 1800,
+    time_limit_secs: 600,
     voicemail_detection: true
   });
   const [saving, setSaving] = useState(false);
@@ -189,7 +189,7 @@ export default function CampaignDetail() {
   const [inlineVoice, setInlineVoice] = useState('astra');
   const [inlineVoiceSpeed, setInlineVoiceSpeed] = useState(1.0);
   const [inlineLanguage, setInlineLanguage] = useState('en-US');
-  const [inlineTimeLimitSecs, setInlineTimeLimitSecs] = useState(1800);
+  const [inlineTimeLimitSecs, setInlineTimeLimitSecs] = useState(600);
   const [inlineVoicemailDetection, setInlineVoicemailDetection] = useState(true);
   const [inlineVoicemailMessage, setInlineVoicemailMessage] = useState('');
 
@@ -233,7 +233,7 @@ export default function CampaignDetail() {
         language: campaign.language || 'en-US',
         caller_id: campaign.caller_id || '',
         greeting: campaign.greeting || 'Hello,',
-        time_limit_secs: campaign.time_limit_secs || 1800,
+        time_limit_secs: campaign.time_limit_secs || 600,
         voicemail_detection: campaign.voicemail_detection !== false,
         background_audio: campaign.background_audio || 'silence',
         bot_name: campaign.bot_name || 'Julia'
@@ -245,7 +245,7 @@ export default function CampaignDetail() {
       setInlineVoice(campaign.voice || 'astra');
       setInlineVoiceSpeed(campaign.voice_speed || 1.0);
       setInlineLanguage(campaign.language || 'en-US');
-      setInlineTimeLimitSecs(campaign.time_limit_secs || 1800);
+      setInlineTimeLimitSecs(campaign.time_limit_secs || 600);
       setInlineVoicemailDetection(campaign.voicemail_detection !== undefined ? !!campaign.voicemail_detection : true);
       setInlineVoicemailMessage(campaign.voicemail_message || '');
     }
@@ -499,7 +499,7 @@ export default function CampaignDetail() {
     const voiceChanged = inlineVoice !== (campaign.voice || 'astra');
     const speedChanged = Math.abs(parseFloat(inlineVoiceSpeed) - parseFloat(campaign.voice_speed || 1.0)) > 0.01;
     const languageChanged = inlineLanguage !== (campaign.language || 'en-US');
-    const timeLimitChanged = parseInt(inlineTimeLimitSecs) !== parseInt(campaign.time_limit_secs || 1800);
+    const timeLimitChanged = parseInt(inlineTimeLimitSecs) !== parseInt(campaign.time_limit_secs || 600);
     const voicemailChanged = inlineVoicemailDetection !== !!campaign.voicemail_detection;
     const voicemailMsgChanged = inlineVoicemailMessage !== (campaign.voicemail_message || '');
 

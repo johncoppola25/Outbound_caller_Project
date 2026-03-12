@@ -20,7 +20,7 @@ export default function CreateCampaignModal({ onClose, onCreated }) {
   const [formData, setFormData] = useState({
     name: '', type: 'pre_foreclosure', description: '', ai_prompt: '',
     voice: 'astra', language: 'en-US', caller_id: '+17324028535',
-    greeting: 'Hello,', time_limit_secs: 1800, voicemail_detection: true, bot_name: 'Julia'
+    greeting: 'Hello,', time_limit_secs: 600, voicemail_detection: true, bot_name: 'Julia'
   });
   const [saving, setSaving] = useState(false);
 
