@@ -13,6 +13,7 @@ import Settings from './pages/Settings';
 import MeetingHistory from './pages/MeetingHistory';
 import UserManual from './pages/UserManual';
 import Billing from './pages/Billing';
+import Landing from './pages/Landing';
 import Login from './pages/Login';
 import Signup from './pages/Signup';
 import { WebSocketProvider } from './context/WebSocketContext';
@@ -24,6 +25,14 @@ function ProtectedRoute({ children }) {
     return <Navigate to="/login" replace />;
   }
   return children;
+}
+
+function HomeRoute() {
+  const { isAuthenticated } = useAuth();
+  if (isAuthenticated) {
+    return <Navigate to="/dashboard" replace />;
+  }
+  return <Landing />;
 }
 
 function LoginRoute() {
@@ -48,10 +57,10 @@ function App() {
       <WebSocketProvider>
         <BrowserRouter>
           <Routes>
+            <Route path="/" element={<HomeRoute />} />
             <Route path="/login" element={<LoginRoute />} />
             <Route path="/signup" element={<SignupRoute />} />
-            <Route path="/" element={<ProtectedRoute><Layout /></ProtectedRoute>}>
-              <Route index element={<Navigate to="/dashboard" replace />} />
+            <Route element={<ProtectedRoute><Layout /></ProtectedRoute>}>
               <Route path="dashboard" element={<Dashboard />} />
               <Route path="campaigns" element={<Campaigns />} />
               <Route path="campaigns/:id" element={<CampaignDetail />} />

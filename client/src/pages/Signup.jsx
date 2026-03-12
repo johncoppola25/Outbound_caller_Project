@@ -86,7 +86,7 @@ export default function Signup() {
               <div style={styles.logoIcon}>
                 <Zap size={32} color="#ffffff" />
               </div>
-              <span style={styles.logoText}>ESTATEREACH</span>
+              <span style={styles.logoText}>ESTATEREACH AI</span>
             </div>
             <div style={styles.divider} />
             <h2 style={styles.portalTitle}>AI Outbound Caller</h2>
@@ -131,12 +131,12 @@ export default function Signup() {
               <div style={{ ...styles.logoIcon, width: '40px', height: '40px', borderRadius: '10px' }}>
                 <Zap size={22} color="#ffffff" />
               </div>
-              <span style={{ fontSize: '20px', fontWeight: '700', color: '#111827', letterSpacing: '1px' }}>ESTATEREACH</span>
+              <span style={{ fontSize: '20px', fontWeight: '700', color: '#111827', letterSpacing: '1px' }}>ESTATEREACH AI</span>
             </div>
           )}
 
           <h1 style={styles.welcomeHeading}>Create your account</h1>
-          <p style={styles.welcomeSubtext}>Get started with EstateReach AI Outbound Caller</p>
+          <p style={styles.welcomeSubtext}>Get started with EstateReach AI</p>
 
           {/* Progress steps */}
           <div style={styles.progressBar}>
@@ -292,7 +292,7 @@ export default function Signup() {
             <Link to="/login" style={styles.switchLink}>Sign in</Link>
           </p>
 
-          <p style={styles.copyright}>EstateReach &copy; 2026</p>
+          <p style={styles.copyright}>EstateReach AI &copy; 2026</p>
         </div>
       </div>
     </div>

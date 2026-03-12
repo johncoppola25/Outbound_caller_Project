@@ -61,7 +61,7 @@ export default function Login() {
               <div style={styles.logoIcon}>
                 <Zap size={32} color="#ffffff" />
               </div>
-              <span style={styles.logoText}>ESTATEREACH</span>
+              <span style={styles.logoText}>ESTATEREACH AI</span>
             </div>
             <div style={styles.divider} />
             <h2 style={styles.portalTitle}>Outbound Caller</h2>
@@ -146,7 +146,7 @@ export default function Login() {
             <Link to="/signup" style={styles.switchLink}>Sign up</Link>
           </p>
 
-          <p style={styles.copyright}>EstateReach &copy; 2026</p>
+          <p style={styles.copyright}>EstateReach AI &copy; 2026</p>
         </div>
       </div>
     </div>
