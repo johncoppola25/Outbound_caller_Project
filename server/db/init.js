@@ -336,6 +336,21 @@ export async function initDatabase() {
     )
   `);
 
+  // Payments table - tracks all payments locally
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS payments (
+      id TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL,
+      type TEXT NOT NULL,
+      amount REAL NOT NULL,
+      stripe_payment_id TEXT,
+      status TEXT DEFAULT 'succeeded',
+      description TEXT,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    )
+  `);
+
   // Seed users
   const bcrypt = await import('bcryptjs');
   const { v4: uuidv4 } = await import('uuid');

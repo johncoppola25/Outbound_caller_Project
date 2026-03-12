@@ -48,14 +48,9 @@ const adminNavigation = [
   { name: 'Users', href: '/admin/users', icon: Users },
   { name: 'Revenue', href: '/admin/revenue', icon: DollarSign },
   { name: 'Campaigns', href: '/campaigns', icon: Megaphone },
-  { name: 'Contacts', href: '/contacts', icon: Users },
   { name: 'Calls', href: '/calls', icon: Phone },
-  { name: 'Callbacks', href: '/callbacks', icon: PhoneCall },
-  { name: 'Appointments', href: '/appointments', icon: Calendar, badge: true },
   { name: 'Analytics', href: '/analytics', icon: BarChart3 },
-  { name: 'Meeting History', href: '/meeting-history', icon: ClipboardCheck },
   { name: 'Settings', href: '/settings', icon: Settings },
-  { name: 'User Manual', href: '/user-manual', icon: BookOpen },
 ];
 
 export default function Layout() {
@@ -459,7 +454,7 @@ export default function Layout() {
               }}>{(user?.name || 'U')[0].toUpperCase()}</div>
               <div>
                 <p style={{ fontSize: '12px', fontWeight: '600', color: '#e5e7eb' }}>{user?.name || 'User'}</p>
-                <p style={{ fontSize: '10px', color: '#6b7280' }}>Admin</p>
+                <p style={{ fontSize: '10px', color: '#6b7280' }}>{isAdmin ? 'Admin' : 'User'}</p>
               </div>
             </div>
             <button

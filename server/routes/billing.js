@@ -1,5 +1,6 @@
 import express from 'express';
 import Stripe from 'stripe';
+import { v4 as uuidv4 } from 'uuid';
 import { getDb } from '../db/init.js';
 
 const router = express.Router();
@@ -256,6 +257,12 @@ router.post('/confirm-setup', async (req, res) => {
 
     if (setupSession) {
       db.prepare('UPDATE users SET setup_fee_paid = 1 WHERE id = ?').run(user.id);
+      // Record payment locally
+      const existing = db.prepare('SELECT id FROM payments WHERE user_id = ? AND type = ?').get(user.id, 'setup_fee');
+      if (!existing) {
+        db.prepare('INSERT INTO payments (id, user_id, type, amount, stripe_payment_id, status, description) VALUES (?, ?, ?, ?, ?, ?, ?)')
+          .run(uuidv4(), user.id, 'setup_fee', 1000, setupSession.payment_intent || setupSession.id, 'succeeded', 'Setup fee - platform onboarding');
+      }
       return res.json({ setupFeePaid: true });
     }
 
@@ -449,6 +456,10 @@ router.post('/confirm-funds', async (req, res) => {
         const currentBalance = user.calling_balance || 0;
         db.prepare('UPDATE users SET calling_balance = ? WHERE id = ?').run(currentBalance + Number(amount), user.id);
 
+        // Record payment locally
+        db.prepare('INSERT INTO payments (id, user_id, type, amount, stripe_payment_id, status, description) VALUES (?, ?, ?, ?, ?, ?, ?)')
+          .run(uuidv4(), user.id, 'add_funds', Number(amount), fundSession.payment_intent || fundSession.id, 'succeeded', `Added $${amount} calling credits`);
+
         // Mark session as credited
         await stripe.checkout.sessions.update(fundSession.id, {
           metadata: { ...fundSession.metadata, credited: 'true' }
@@ -504,6 +515,9 @@ export async function deductCallCost(userId, durationSeconds) {
           if (paymentIntent.status === 'succeeded') {
             const updatedBalance = newBalance + amount;
             db.prepare('UPDATE users SET calling_balance = ? WHERE id = ?').run(updatedBalance, userId);
+            // Record payment locally
+            db.prepare('INSERT INTO payments (id, user_id, type, amount, stripe_payment_id, status, description) VALUES (?, ?, ?, ?, ?, ?, ?)')
+              .run(uuidv4(), userId, 'auto_fund', amount, paymentIntent.id, 'succeeded', `Auto-fund: $${amount} calling credits`);
             console.log(`Auto-funded $${amount} for user ${userId}. New balance: $${updatedBalance.toFixed(2)}`);
           }
         } else {
