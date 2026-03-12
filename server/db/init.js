@@ -321,6 +321,21 @@ export async function initDatabase() {
     )
   `);
 
+  // User phone numbers table
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS user_phone_numbers (
+      id TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL,
+      phone_number TEXT NOT NULL,
+      telnyx_id TEXT,
+      friendly_name TEXT,
+      monthly_cost REAL DEFAULT 2.00,
+      status TEXT DEFAULT 'active',
+      purchased_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    )
+  `);
+
   // Seed users
   const bcrypt = await import('bcryptjs');
   const { v4: uuidv4 } = await import('uuid');

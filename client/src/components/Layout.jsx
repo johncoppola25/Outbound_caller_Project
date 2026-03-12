@@ -19,7 +19,8 @@ import {
   BookOpen,
   CreditCard,
   Crown,
-  DollarSign
+  DollarSign,
+  Smartphone
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useWebSocket } from '../context/WebSocketContext';
@@ -37,6 +38,7 @@ const userNavigation = [
   { name: 'Appointments', href: '/appointments', icon: Calendar, badge: true },
   { name: 'Analytics', href: '/analytics', icon: BarChart3 },
   { name: 'Meeting History', href: '/meeting-history', icon: ClipboardCheck },
+  { name: 'Phone Numbers', href: '/phone-numbers', icon: Smartphone },
   { name: 'Settings', href: '/settings', icon: Settings },
   { name: 'User Manual', href: '/user-manual', icon: BookOpen },
 ];
