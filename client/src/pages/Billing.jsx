@@ -58,9 +58,14 @@ export default function Billing() {
         body: JSON.stringify({ planId })
       });
       const data = await res.json();
-      if (data.url) window.location.href = data.url;
+      if (data.url) {
+        window.location.href = data.url;
+      } else {
+        alert(data.error || 'Failed to start checkout. Please try again.');
+      }
     } catch (err) {
       console.error('Error creating checkout:', err);
+      alert('Failed to connect to billing. Please try again.');
     } finally {
       setCheckoutLoading(null);
     }

@@ -51,10 +51,13 @@ async function ensureStripeProducts() {
       let product = existingProducts.data.find(p => p.name === productName && p.active);
 
       if (!product) {
+        const description = plan.oneTime ? 'One-time platform setup and onboarding'
+          : plan.perAppointment ? 'Per booked appointment charge'
+          : 'Monthly AI calling platform subscription';
         product = await stripe.products.create({
           name: productName,
-          description: `${plan.calls} AI calls per month`,
-          metadata: { plan_id: plan.id, calls: String(plan.calls) }
+          description,
+          metadata: { plan_id: plan.id }
         });
         console.log(`✅ Created Stripe product: ${productName}`);
       }
