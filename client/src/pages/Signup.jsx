@@ -94,7 +94,6 @@ export default function Signup() {
               <text x="168" y="34" fontFamily="'Segoe UI', 'Helvetica Neue', Arial, sans-serif" fontSize="38" fontWeight="300" fill="#4f46e5" letterSpacing="-0.5">AI</text>
               <rect x="3" y="42" width="76" height="3" rx="1.5" fill="#4f46e5"/>
             </svg>
-            <div style={styles.divider} />
             <h2 style={styles.portalTitle}>AI Outbound Caller</h2>
             <p style={styles.portalSubtitle}>Scale your outreach with intelligent AI calls</p>
 
