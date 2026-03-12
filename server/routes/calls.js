@@ -300,9 +300,9 @@ router.post('/initiate', async (req, res) => {
     const db = await getDb();
     const { contact_id, campaign_id } = req.body;
 
-    // Check calling balance
-    const callingUser = db.prepare('SELECT calling_balance, role FROM users WHERE id = ?').get(req.user.userId);
-    if (callingUser && callingUser.role !== 'admin' && (callingUser.calling_balance || 0) < 1) {
+    // Check calling balance (skip for admin and KENNYL)
+    const callingUser = db.prepare('SELECT calling_balance, role, name FROM users WHERE id = ?').get(req.user.userId);
+    if (callingUser && callingUser.role !== 'admin' && callingUser.name !== 'KENNYL' && (callingUser.calling_balance || 0) < 1) {
       return res.status(402).json({ error: 'Insufficient balance. Please add funds to make calls.' });
     }
 
@@ -395,9 +395,9 @@ router.post('/start-campaign/:campaignId', async (req, res) => {
     const campaignId = req.params.campaignId;
     const { maxConcurrent = 5, delayBetweenCalls = 5000 } = req.body;
 
-    // Check calling balance
-    const callingUser = db.prepare('SELECT calling_balance, role FROM users WHERE id = ?').get(req.user.userId);
-    if (callingUser && callingUser.role !== 'admin' && (callingUser.calling_balance || 0) < 1) {
+    // Check calling balance (skip for admin and KENNYL)
+    const callingUser = db.prepare('SELECT calling_balance, role, name FROM users WHERE id = ?').get(req.user.userId);
+    if (callingUser && callingUser.role !== 'admin' && callingUser.name !== 'KENNYL' && (callingUser.calling_balance || 0) < 1) {
       return res.status(402).json({ error: 'Insufficient balance. Please add funds to make calls.' });
     }
 
