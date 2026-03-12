@@ -14,6 +14,7 @@ import MeetingHistory from './pages/MeetingHistory';
 import UserManual from './pages/UserManual';
 import Billing from './pages/Billing';
 import Login from './pages/Login';
+import Signup from './pages/Signup';
 import { WebSocketProvider } from './context/WebSocketContext';
 import { AuthProvider, useAuth } from './context/AuthContext';
 
@@ -33,6 +34,14 @@ function LoginRoute() {
   return <Login />;
 }
 
+function SignupRoute() {
+  const { isAuthenticated } = useAuth();
+  if (isAuthenticated) {
+    return <Navigate to="/dashboard" replace />;
+  }
+  return <Signup />;
+}
+
 function App() {
   return (
     <AuthProvider>
@@ -40,6 +49,7 @@ function App() {
         <BrowserRouter>
           <Routes>
             <Route path="/login" element={<LoginRoute />} />
+            <Route path="/signup" element={<SignupRoute />} />
             <Route path="/" element={<ProtectedRoute><Layout /></ProtectedRoute>}>
               <Route index element={<Navigate to="/dashboard" replace />} />
               <Route path="dashboard" element={<Dashboard />} />

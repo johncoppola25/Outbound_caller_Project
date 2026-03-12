@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { Zap, Eye, EyeOff } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
@@ -140,6 +140,11 @@ export default function Login() {
               {loading ? 'Signing In...' : 'Sign In'}
             </button>
           </form>
+
+          <p style={styles.switchText}>
+            Don't have an account?{' '}
+            <Link to="/signup" style={styles.switchLink}>Sign up</Link>
+          </p>
 
           <p style={styles.copyright}>EstateReach &copy; 2026</p>
         </div>
@@ -324,10 +329,21 @@ const styles = {
     transition: 'background-color 0.2s',
     cursor: 'pointer',
   },
+  switchText: {
+    textAlign: 'center',
+    fontSize: '14px',
+    color: '#6b7280',
+    marginTop: '24px',
+  },
+  switchLink: {
+    color: '#4f46e5',
+    fontWeight: '600',
+    textDecoration: 'none',
+  },
   copyright: {
     textAlign: 'center',
     fontSize: '13px',
     color: '#9ca3af',
-    marginTop: '32px',
+    marginTop: '24px',
   },
 };
