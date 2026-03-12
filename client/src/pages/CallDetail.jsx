@@ -311,13 +311,34 @@ export default function CallDetail() {
                   {formatTranscript(call.transcript)}
                 </div>
               ) : (
-                <div style={{ background: '#f9fafb', borderRadius: '10px', padding: '20px', border: '1px dashed #e5e7eb', textAlign: 'center' }}>
-                  <p style={{ color: '#9ca3af', fontSize: '13px', marginBottom: '8px' }}>Transcript not yet available. It may take a moment after the call ends.</p>
-                  <button onClick={syncFromTelnyx} disabled={syncing}
-                    style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '8px 16px', background: '#4f46e5', color: 'white', border: 'none', borderRadius: '8px', cursor: syncing ? 'default' : 'pointer', fontSize: '12px', fontWeight: '600', opacity: syncing ? 0.7 : 1 }}>
-                    <RefreshCw style={{ width: '12px', height: '12px', animation: syncing ? 'spin 1s linear infinite' : 'none' }} />
-                    {syncing ? 'Fetching...' : 'Fetch Transcript'}
-                  </button>
+                <div style={{ background: '#f9fafb', borderRadius: '10px', padding: '14px', border: '1px solid #e5e7eb' }}>
+                  {/* Skeleton loading transcript bubbles */}
+                  {[
+                    { isAI: true, w1: '30%', w2: '80%' },
+                    { isAI: false, w1: '40%', w2: '55%' },
+                    { isAI: true, w1: '25%', w2: '70%' },
+                    { isAI: false, w1: '35%', w2: '45%' },
+                    { isAI: true, w1: '30%', w2: '90%' },
+                  ].map((s, i) => (
+                    <div key={i} style={{
+                      marginBottom: '8px', padding: '10px 12px', borderRadius: '10px',
+                      background: s.isAI ? '#eef2ff' : '#f9fafb',
+                      borderLeft: `3px solid ${s.isAI ? '#c7d2fe' : '#fde68a'}`,
+                      animation: 'pulse 1.5s ease-in-out infinite',
+                      animationDelay: `${i * 0.15}s`
+                    }}>
+                      <div style={{ height: '10px', width: s.w1, borderRadius: '4px', background: s.isAI ? '#c7d2fe' : '#fde68a', marginBottom: '8px', opacity: 0.6 }} />
+                      <div style={{ height: '12px', width: s.w2, borderRadius: '4px', background: s.isAI ? '#ddd6fe' : '#fef3c7', opacity: 0.5 }} />
+                    </div>
+                  ))}
+                  <div style={{ textAlign: 'center', marginTop: '14px' }}>
+                    <p style={{ color: '#9ca3af', fontSize: '12px', marginBottom: '10px' }}>Loading transcript...</p>
+                    <button onClick={syncFromTelnyx} disabled={syncing}
+                      style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '8px 16px', background: '#4f46e5', color: 'white', border: 'none', borderRadius: '8px', cursor: syncing ? 'default' : 'pointer', fontSize: '12px', fontWeight: '600', opacity: syncing ? 0.7 : 1 }}>
+                      <RefreshCw style={{ width: '12px', height: '12px', animation: syncing ? 'spin 1s linear infinite' : 'none' }} />
+                      {syncing ? 'Fetching...' : 'Fetch Transcript'}
+                    </button>
+                  </div>
                 </div>
               )}
             </div>
