@@ -114,7 +114,18 @@ export default function CallDetail() {
 
   function formatTranscript(transcript) {
     if (!transcript) return null;
-    const lines = transcript.split('\n').filter(l => l.trim());
+    let lines = transcript.split('\n').filter(l => l.trim());
+    // If transcript appears reversed (AI greeting at end), flip it
+    if (lines.length > 2) {
+      const first = lines[0].toLowerCase();
+      const last = lines[lines.length - 1].toLowerCase();
+      const greetings = ['hi,', 'hello', 'hi ', 'hey ', 'good morning', 'good afternoon', 'may i speak'];
+      const firstIsGreeting = greetings.some(g => first.includes(g));
+      const lastIsGreeting = greetings.some(g => last.includes(g));
+      if (lastIsGreeting && !firstIsGreeting) {
+        lines = lines.reverse();
+      }
+    }
     if (lines.length <= 1 && !transcript.includes(':')) return <p style={{ color: '#4b5563', whiteSpace: 'pre-wrap', lineHeight: '1.8' }}>
       <Helmet>
         <title>Call Details - OutReach AI</title>
