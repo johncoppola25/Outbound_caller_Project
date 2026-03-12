@@ -1,5 +1,6 @@
 import express from 'express';
 import { getDb } from '../db/init.js';
+import { telnyxRequest } from '../services/telnyx.js';
 
 const router = express.Router();
 
@@ -269,6 +270,104 @@ router.get('/analytics', async (req, res) => {
   } catch (error) {
     console.error('Error fetching analytics:', error);
     res.status(500).json({ error: 'Failed to fetch analytics' });
+  }
+});
+
+// Get real Telnyx AI call costs
+router.get('/telnyx-costs', async (req, res) => {
+  try {
+    const now = new Date();
+    const end = now.toISOString().split('.')[0] + 'Z';
+    const start30 = new Date(now - 30 * 24 * 60 * 60 * 1000).toISOString().split('.')[0] + 'Z';
+
+    // Get AI voice assistant costs for last 30 days
+    const aiUsage = await telnyxRequest(
+      `/usage_reports?product=ai-voice-assistant&dimensions=date&metrics=cost,duration_sec,billed_sec,connected,attempted&start_date=${start30}&end_date=${end}`,
+      'GET'
+    );
+
+    // Get call control costs for last 30 days
+    let callUsage = { data: [] };
+    try {
+      callUsage = await telnyxRequest(
+        `/usage_reports?product=call-control&dimensions=date&metrics=cost,connected,attempted,billed_sec&start_date=${start30}&end_date=${end}`,
+        'GET'
+      );
+    } catch (e) { /* ignore */ }
+
+    // Get current balance
+    let balance = null;
+    try {
+      const balanceData = await telnyxRequest('/balance', 'GET');
+      balance = balanceData?.data?.balance || null;
+    } catch (e) { /* ignore */ }
+
+    const aiData = aiUsage?.data || [];
+    const callData = callUsage?.data || [];
+
+    // Aggregate AI costs
+    let totalAiCost = 0;
+    let totalCalls = 0;
+    let totalDuration = 0;
+    let totalBilled = 0;
+    const dailyCosts = {};
+
+    aiData.forEach(row => {
+      totalAiCost += row.cost || 0;
+      totalCalls += row.connected || 0;
+      totalDuration += row.duration_sec || 0;
+      totalBilled += row.billed_sec || 0;
+      const date = row.date;
+      if (!dailyCosts[date]) dailyCosts[date] = { date, aiCost: 0, callCost: 0, calls: 0, duration: 0 };
+      dailyCosts[date].aiCost += row.cost || 0;
+      dailyCosts[date].calls += row.connected || 0;
+      dailyCosts[date].duration += row.duration_sec || 0;
+    });
+
+    // Aggregate call control costs
+    let totalCallCost = 0;
+    callData.forEach(row => {
+      totalCallCost += row.cost || 0;
+      const date = row.date;
+      if (!dailyCosts[date]) dailyCosts[date] = { date, aiCost: 0, callCost: 0, calls: 0, duration: 0 };
+      dailyCosts[date].callCost += row.cost || 0;
+    });
+
+    // Today's costs
+    const today = now.toISOString().split('T')[0];
+    const todayData = dailyCosts[today] || { aiCost: 0, callCost: 0, calls: 0, duration: 0 };
+
+    // Sort daily data
+    const dailyBreakdown = Object.values(dailyCosts)
+      .sort((a, b) => a.date.localeCompare(b.date))
+      .map(d => ({
+        ...d,
+        totalCost: +(d.aiCost + d.callCost).toFixed(4),
+        aiCost: +d.aiCost.toFixed(4),
+        callCost: +d.callCost.toFixed(4)
+      }));
+
+    const totalCost = totalAiCost + totalCallCost;
+    const avgCostPerCall = totalCalls > 0 ? totalCost / totalCalls : 0;
+    const avgDuration = totalCalls > 0 ? totalDuration / totalCalls : 0;
+
+    res.json({
+      totalCost: +totalCost.toFixed(2),
+      totalAiCost: +totalAiCost.toFixed(2),
+      totalCallCost: +totalCallCost.toFixed(2),
+      totalCalls,
+      totalDurationMin: +(totalDuration / 60).toFixed(1),
+      totalBilledMin: +(totalBilled / 60).toFixed(1),
+      avgCostPerCall: +avgCostPerCall.toFixed(4),
+      avgDurationSec: +avgDuration.toFixed(0),
+      todayCost: +(todayData.aiCost + todayData.callCost).toFixed(2),
+      todayCalls: todayData.calls,
+      balance: balance ? +parseFloat(balance).toFixed(2) : null,
+      dailyBreakdown
+    });
+  } catch (err) {
+    console.error('Error fetching Telnyx costs:', err.message);
+    res.status(500).json({ error: 'Failed to fetch cost data' });
   }
 });
 

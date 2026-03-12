@@ -10,6 +10,7 @@ import { apiFetch } from '../utils/api';
 export default function Dashboard() {
   const [stats, setStats] = useState(null);
   const [recentCalls, setRecentCalls] = useState([]);
+  const [telnyxCosts, setTelnyxCosts] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
@@ -36,7 +37,7 @@ export default function Dashboard() {
   }, [subscribe]);
 
   async function fetchDashboardData() {
-    try { await Promise.all([fetchStats(), fetchRecentCalls()]); }
+    try { await Promise.all([fetchStats(), fetchRecentCalls(), fetchTelnyxCosts()]); }
     catch (err) { setError(err.message); }
     finally { setLoading(false); }
   }
@@ -56,6 +57,13 @@ export default function Dashboard() {
       const data = await res.json();
       setRecentCalls(data.calls || []);
     } catch (err) { console.error('Error fetching calls:', err); }
+  }
+
+  async function fetchTelnyxCosts() {
+    try {
+      const res = await apiFetch('/api/stats/telnyx-costs');
+      if (res.ok) setTelnyxCosts(await res.json());
+    } catch (err) { console.error('Error fetching Telnyx costs:', err); }
   }
 
   if (loading) {
@@ -115,49 +123,116 @@ export default function Dashboard() {
         ))}
       </div>
 
-      {/* Lead Scores + Cost Row */}
-      {(leadScores || costs) && (
-        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(4, 1fr)', gap: '14px', marginBottom: '24px' }}>
-          {leadScores && <>
-            <div style={{ background: '#fff', borderRadius: '12px', padding: '16px 20px', border: '1px solid #e5e7eb', display: 'flex', alignItems: 'center', gap: '14px' }}>
-              <div style={{ width: '36px', height: '36px', borderRadius: '9px', background: '#fef2f2', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <Flame style={{ width: '18px', height: '18px', color: '#dc2626' }} />
+      {/* Lead Scores Row */}
+      {leadScores && (
+        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? 'repeat(3, 1fr)' : 'repeat(3, 1fr)', gap: '14px', marginBottom: '14px' }}>
+          <div style={{ background: '#fff', borderRadius: '12px', padding: '16px 20px', border: '1px solid #e5e7eb', display: 'flex', alignItems: 'center', gap: '14px' }}>
+            <div style={{ width: '36px', height: '36px', borderRadius: '9px', background: '#fef2f2', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <Flame style={{ width: '18px', height: '18px', color: '#dc2626' }} />
+            </div>
+            <div>
+              <p style={{ fontSize: '20px', fontWeight: '800', color: '#111827' }}>{leadScores.hot}</p>
+              <p style={{ fontSize: '11px', color: '#6b7280', fontWeight: '500' }}>Hot Leads</p>
+            </div>
+          </div>
+          <div style={{ background: '#fff', borderRadius: '12px', padding: '16px 20px', border: '1px solid #e5e7eb', display: 'flex', alignItems: 'center', gap: '14px' }}>
+            <div style={{ width: '36px', height: '36px', borderRadius: '9px', background: '#fffbeb', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <Thermometer style={{ width: '18px', height: '18px', color: '#d97706' }} />
+            </div>
+            <div>
+              <p style={{ fontSize: '20px', fontWeight: '800', color: '#111827' }}>{leadScores.warm}</p>
+              <p style={{ fontSize: '11px', color: '#6b7280', fontWeight: '500' }}>Warm Leads</p>
+            </div>
+          </div>
+          <div style={{ background: '#fff', borderRadius: '12px', padding: '16px 20px', border: '1px solid #e5e7eb', display: 'flex', alignItems: 'center', gap: '14px' }}>
+            <div style={{ width: '36px', height: '36px', borderRadius: '9px', background: '#eef2ff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <Snowflake style={{ width: '18px', height: '18px', color: '#4f46e5' }} />
+            </div>
+            <div>
+              <p style={{ fontSize: '20px', fontWeight: '800', color: '#111827' }}>{leadScores.cold}</p>
+              <p style={{ fontSize: '11px', color: '#6b7280', fontWeight: '500' }}>Cold Leads</p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Telnyx Cost Tracker */}
+      {telnyxCosts && (
+        <div style={{
+          background: 'linear-gradient(135deg, #111827 0%, #1e293b 100%)',
+          borderRadius: '14px', padding: isMobile ? '18px' : '22px 28px',
+          marginBottom: '24px', position: 'relative', overflow: 'hidden'
+        }}>
+          <div style={{
+            position: 'absolute', top: '-40px', right: '-40px', width: '150px', height: '150px',
+            background: 'radial-gradient(circle, rgba(79,70,229,0.15) 0%, transparent 70%)', borderRadius: '50%'
+          }} />
+          <div style={{
+            position: 'absolute', bottom: '-30px', left: '30%', width: '100px', height: '100px',
+            background: 'radial-gradient(circle, rgba(16,185,129,0.1) 0%, transparent 70%)', borderRadius: '50%'
+          }} />
+
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '18px', flexWrap: 'wrap', gap: '10px', position: 'relative' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <div style={{
+                width: '34px', height: '34px', borderRadius: '9px',
+                background: 'linear-gradient(135deg, #10b981, #059669)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                boxShadow: '0 2px 8px rgba(16,185,129,0.3)'
+              }}>
+                <DollarSign style={{ width: '17px', height: '17px', color: 'white' }} />
               </div>
               <div>
-                <p style={{ fontSize: '20px', fontWeight: '800', color: '#111827' }}>{leadScores.hot}</p>
-                <p style={{ fontSize: '11px', color: '#6b7280', fontWeight: '500' }}>Hot Leads</p>
+                <h2 style={{ fontSize: '15px', fontWeight: '700', color: '#f9fafb', margin: 0 }}>Call Cost Tracker</h2>
+                <p style={{ fontSize: '11px', color: '#6b7280', margin: '1px 0 0' }}>Last 30 days from Telnyx</p>
               </div>
             </div>
-            <div style={{ background: '#fff', borderRadius: '12px', padding: '16px 20px', border: '1px solid #e5e7eb', display: 'flex', alignItems: 'center', gap: '14px' }}>
-              <div style={{ width: '36px', height: '36px', borderRadius: '9px', background: '#fffbeb', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <Thermometer style={{ width: '18px', height: '18px', color: '#d97706' }} />
+            {telnyxCosts.balance !== null && (
+              <div style={{
+                padding: '6px 14px', background: 'rgba(16,185,129,0.12)',
+                border: '1px solid rgba(16,185,129,0.25)', borderRadius: '20px',
+                display: 'flex', alignItems: 'center', gap: '6px'
+              }}>
+                <div style={{ width: '6px', height: '6px', borderRadius: '3px', background: '#10b981' }} />
+                <span style={{ fontSize: '12px', color: '#6ee7b7', fontWeight: '600' }}>Balance: ${telnyxCosts.balance}</span>
               </div>
-              <div>
-                <p style={{ fontSize: '20px', fontWeight: '800', color: '#111827' }}>{leadScores.warm}</p>
-                <p style={{ fontSize: '11px', color: '#6b7280', fontWeight: '500' }}>Warm Leads</p>
-              </div>
+            )}
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(4, 1fr)', gap: '12px', position: 'relative' }}>
+            <div style={{ background: 'rgba(255,255,255,0.06)', borderRadius: '10px', padding: '14px 16px', border: '1px solid rgba(255,255,255,0.08)' }}>
+              <p style={{ fontSize: '22px', fontWeight: '800', color: '#f9fafb', letterSpacing: '-0.02em' }}>${telnyxCosts.totalCost}</p>
+              <p style={{ fontSize: '11px', color: '#9ca3af', fontWeight: '500', marginTop: '2px' }}>Total Spent</p>
             </div>
-            <div style={{ background: '#fff', borderRadius: '12px', padding: '16px 20px', border: '1px solid #e5e7eb', display: 'flex', alignItems: 'center', gap: '14px' }}>
-              <div style={{ width: '36px', height: '36px', borderRadius: '9px', background: '#eef2ff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <Snowflake style={{ width: '18px', height: '18px', color: '#4f46e5' }} />
-              </div>
-              <div>
-                <p style={{ fontSize: '20px', fontWeight: '800', color: '#111827' }}>{leadScores.cold}</p>
-                <p style={{ fontSize: '11px', color: '#6b7280', fontWeight: '500' }}>Cold Leads</p>
-              </div>
+            <div style={{ background: 'rgba(255,255,255,0.06)', borderRadius: '10px', padding: '14px 16px', border: '1px solid rgba(255,255,255,0.08)' }}>
+              <p style={{ fontSize: '22px', fontWeight: '800', color: '#f9fafb', letterSpacing: '-0.02em' }}>{telnyxCosts.totalCalls}</p>
+              <p style={{ fontSize: '11px', color: '#9ca3af', fontWeight: '500', marginTop: '2px' }}>Calls Made</p>
             </div>
-          </>}
-          {costs && (
-            <div style={{ background: '#fff', borderRadius: '12px', padding: '16px 20px', border: '1px solid #e5e7eb', display: 'flex', alignItems: 'center', gap: '14px' }}>
-              <div style={{ width: '36px', height: '36px', borderRadius: '9px', background: '#ecfdf5', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <DollarSign style={{ width: '18px', height: '18px', color: '#059669' }} />
-              </div>
-              <div>
-                <p style={{ fontSize: '20px', fontWeight: '800', color: '#111827' }}>${(costs.total || 0).toFixed(2)}</p>
-                <p style={{ fontSize: '11px', color: '#6b7280', fontWeight: '500' }}>Total Spend</p>
-              </div>
+            <div style={{ background: 'rgba(255,255,255,0.06)', borderRadius: '10px', padding: '14px 16px', border: '1px solid rgba(255,255,255,0.08)' }}>
+              <p style={{ fontSize: '22px', fontWeight: '800', color: '#f9fafb', letterSpacing: '-0.02em' }}>${telnyxCosts.avgCostPerCall}</p>
+              <p style={{ fontSize: '11px', color: '#9ca3af', fontWeight: '500', marginTop: '2px' }}>Avg Cost/Call</p>
             </div>
-          )}
+            <div style={{ background: 'rgba(255,255,255,0.06)', borderRadius: '10px', padding: '14px 16px', border: '1px solid rgba(255,255,255,0.08)' }}>
+              <p style={{ fontSize: '22px', fontWeight: '800', color: '#f9fafb', letterSpacing: '-0.02em' }}>{telnyxCosts.totalDurationMin}m</p>
+              <p style={{ fontSize: '11px', color: '#9ca3af', fontWeight: '500', marginTop: '2px' }}>Total Talk Time</p>
+            </div>
+          </div>
+
+          {/* Today's mini stats */}
+          <div style={{
+            display: 'flex', gap: '16px', marginTop: '14px', paddingTop: '14px',
+            borderTop: '1px solid rgba(255,255,255,0.06)', flexWrap: 'wrap', position: 'relative'
+          }}>
+            <span style={{ fontSize: '12px', color: '#6b7280' }}>
+              Today: <span style={{ color: '#6ee7b7', fontWeight: '600' }}>${telnyxCosts.todayCost}</span> spent
+            </span>
+            <span style={{ fontSize: '12px', color: '#6b7280' }}>
+              <span style={{ color: '#a5b4fc', fontWeight: '600' }}>{telnyxCosts.todayCalls}</span> calls today
+            </span>
+            <span style={{ fontSize: '12px', color: '#6b7280' }}>
+              Avg call: <span style={{ color: '#fbbf24', fontWeight: '600' }}>{telnyxCosts.avgDurationSec}s</span>
+            </span>
+          </div>
         </div>
       )}
 
