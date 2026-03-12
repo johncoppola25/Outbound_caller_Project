@@ -3,7 +3,7 @@ import { useParams, Link } from 'react-router-dom';
 import {
   ArrowLeft, Phone, User, Calendar, Clock, Mail, Volume2, RefreshCw,
   CheckCircle, XCircle, AlertCircle, PhoneOff, Voicemail, MessageSquare,
-  FileText, Activity, Loader
+  FileText, Activity, Loader, DollarSign, Download, Mic
 } from 'lucide-react';
 import { useWebSocket } from '../context/WebSocketContext';
 import { apiFetch } from '../utils/api';
@@ -282,17 +282,6 @@ export default function CallDetail() {
             </div>
           )}
 
-          {call.recording_url && (
-            <div style={cardStyle}>
-              <h2 style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '15px', fontWeight: '700', color: '#111827', marginBottom: '14px' }}>
-                <Volume2 style={{ width: '16px', height: '16px', color: '#4f46e5' }} /> Recording
-              </h2>
-              <div style={{ background: '#f9fafb', borderRadius: '10px', padding: '14px', border: '1px solid #e5e7eb' }}>
-                <audio controls style={{ width: '100%' }} src={call.recording_url}>Your browser does not support audio.</audio>
-              </div>
-            </div>
-          )}
-
           {call.summary && (
             <div style={cardStyle}>
               <h2 style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '15px', fontWeight: '700', color: '#111827', marginBottom: '14px' }}>
@@ -378,12 +367,13 @@ export default function CallDetail() {
               {[
                 { icon: Calendar, label: 'Started', value: formatDateTime(call.started_at || call.created_at) },
                 { icon: Clock, label: 'Duration', value: formatDuration(call.duration_seconds) },
+                ...(call.estimated_cost ? [{ icon: DollarSign, label: 'Call Cost', value: `$${parseFloat(call.estimated_cost).toFixed(4)}`, highlight: true }] : []),
                 ...(call.ended_at ? [{ icon: PhoneOff, label: 'Ended', value: formatDateTime(call.ended_at) }] : []),
                 ...(call.telnyx_call_id ? [{ icon: Activity, label: 'Telnyx ID', value: call.telnyx_call_id, mono: true }] : [])
-              ].map(({ icon: Icon, label, value, mono }) => (
+              ].map(({ icon: Icon, label, value, mono, highlight }) => (
                 <div key={label} style={{ display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
-                  <Icon style={{ width: '16px', height: '16px', color: '#9ca3af', marginTop: '2px' }} />
-                  <div><p style={{ fontSize: '11px', color: '#9ca3af' }}>{label}</p><p style={{ fontWeight: '600', color: '#111827', fontSize: mono ? '11px' : '14px', wordBreak: mono ? 'break-all' : 'normal', fontFamily: mono ? 'monospace' : 'inherit' }}>{value}</p></div>
+                  <Icon style={{ width: '16px', height: '16px', color: highlight ? '#059669' : '#9ca3af', marginTop: '2px' }} />
+                  <div><p style={{ fontSize: '11px', color: highlight ? '#059669' : '#9ca3af' }}>{label}</p><p style={{ fontWeight: '700', color: highlight ? '#059669' : '#111827', fontSize: mono ? '11px' : '14px', wordBreak: mono ? 'break-all' : 'normal', fontFamily: mono ? 'monospace' : 'inherit' }}>{value}</p></div>
                 </div>
               ))}
             </div>
@@ -402,6 +392,47 @@ export default function CallDetail() {
               View Campaign <ArrowLeft style={{ width: '14px', height: '14px', transform: 'rotate(180deg)' }} />
             </Link>
           </div>
+
+          {/* Recording Section - under Campaign */}
+          {call.recording_url && (
+            <div style={{
+              background: 'linear-gradient(135deg, #faf5ff, #f5f3ff)',
+              borderRadius: '12px', padding: '22px',
+              border: '1px solid #ddd6fe',
+              boxShadow: '0 1px 3px rgba(0,0,0,0.03)'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '14px' }}>
+                <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: '#7c3aed', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <Mic style={{ width: '16px', height: '16px', color: '#ffffff' }} />
+                </div>
+                <h2 style={{ fontSize: '15px', fontWeight: '700', color: '#111827' }}>Recording</h2>
+              </div>
+              <div style={{ background: '#ffffff', borderRadius: '10px', padding: '12px', border: '1px solid #e5e7eb' }}>
+                <audio controls style={{ width: '100%', height: '36px' }} src={call.recording_url}>
+                  Your browser does not support audio.
+                </audio>
+              </div>
+              <a
+                href={call.recording_url}
+                download={`call-${call.first_name}-${call.last_name}-${(call.started_at || call.created_at || '').slice(0, 10)}.mp3`}
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{
+                  display: 'inline-flex', alignItems: 'center', gap: '6px',
+                  marginTop: '12px', padding: '8px 16px',
+                  background: '#7c3aed', color: '#ffffff',
+                  borderRadius: '8px', fontSize: '13px', fontWeight: '600',
+                  textDecoration: 'none', cursor: 'pointer',
+                  transition: 'background 0.15s'
+                }}
+                onMouseEnter={e => e.currentTarget.style.background = '#6d28d9'}
+                onMouseLeave={e => e.currentTarget.style.background = '#7c3aed'}
+              >
+                <Download style={{ width: '14px', height: '14px' }} />
+                Download MP3
+              </a>
+            </div>
+          )}
         </div>
       </div>
     </div>

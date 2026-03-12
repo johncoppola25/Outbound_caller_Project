@@ -275,6 +275,12 @@ RULES:
         }
       },
 
+      // Recording settings - dual channel stereo, MP3 format
+      recording: {
+        channels: 'dual',
+        format: 'mp3'
+      },
+
       // Voicemail detection (if enabled)
       ...(campaign.voicemail_detection ? {
         voicemail_detection: {
@@ -345,6 +351,10 @@ RULES:
         start_speaking_plan: {
           wait_seconds: 0.8
         }
+      },
+      recording: {
+        channels: 'dual',
+        format: 'mp3'
       }
     };
 
@@ -554,6 +564,10 @@ RULES:
             start_speaking_plan: {
               wait_seconds: 0.8
             }
+          },
+          recording: {
+            channels: 'dual',
+            format: 'mp3'
           }
         });
 

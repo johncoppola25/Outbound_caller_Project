@@ -1021,6 +1021,15 @@ router.post('/:id/sync', async (req, res) => {
       }
     }
 
+    // 7) Calculate estimated cost based on duration (~$0.06/min, 60s billing minimum)
+    const finalDuration = updates.duration_seconds || call.duration_seconds;
+    if (finalDuration && !call.estimated_cost) {
+      const billedSeconds = Math.max(finalDuration, 60); // 60s minimum
+      const costPerMinute = 0.06;
+      updates.estimated_cost = +(billedSeconds / 60 * costPerMinute).toFixed(4);
+      debugInfo.push(`Estimated cost: $${updates.estimated_cost} (${billedSeconds}s billed)`);
+    }
+
     // Apply updates to database
     const updateKeys = Object.keys(updates);
     if (updateKeys.length > 0) {
