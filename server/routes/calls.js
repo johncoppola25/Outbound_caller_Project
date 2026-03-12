@@ -626,6 +626,19 @@ router.put('/:id/outcome', async (req, res) => {
 router.get('/', async (req, res) => {
   try {
     const db = await getDb();
+
+    // Auto-fix all stuck ringing/queued calls that have outcome or transcript
+    db.prepare(`
+      UPDATE calls SET status = 'completed', ended_at = COALESCE(ended_at, CURRENT_TIMESTAMP)
+      WHERE status IN ('ringing', 'queued') AND (outcome IS NOT NULL OR transcript IS NOT NULL)
+    `).run();
+    // Auto-calculate missing costs for completed calls
+    db.prepare(`
+      UPDATE calls SET estimated_cost = ROUND(MAX(COALESCE(duration_seconds, 60), 60) / 60.0 * 0.06, 4)
+      WHERE estimated_cost IS NULL OR estimated_cost = 0
+      AND (status = 'completed' OR outcome IS NOT NULL OR transcript IS NOT NULL)
+    `).run();
+
     const { status, page = 1, limit = 50 } = req.query;
     const offset = (page - 1) * limit;
     
