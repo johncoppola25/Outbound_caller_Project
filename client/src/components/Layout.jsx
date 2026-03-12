@@ -135,21 +135,6 @@ export default function Layout() {
     fetchNotifications();
   }, [fetchNotifications, location.pathname]);
 
-  useEffect(() => {
-    return subscribe((msg) => {
-      if (msg.type === 'call_update' || msg.type === 'call_ended') {
-        fetchNotifications();
-        fetchBalance(); // Refresh balance after call ends
-      }
-      if (msg.type === 'balance_low') {
-        setCallingBalance(msg.balance);
-        setLowBalanceAlert(msg.message);
-        // Auto-dismiss after 10 seconds
-        setTimeout(() => setLowBalanceAlert(null), 10000);
-      }
-    });
-  }, [subscribe, fetchNotifications, fetchBalance]);
-
   // Fetch calling balance (users only)
   const fetchBalance = useCallback(async () => {
     if (isAdmin) return;
@@ -164,6 +149,21 @@ export default function Layout() {
   }, [isAdmin]);
 
   useEffect(() => { fetchBalance(); }, [fetchBalance, location.pathname]);
+
+  useEffect(() => {
+    return subscribe((msg) => {
+      if (msg.type === 'call_update' || msg.type === 'call_ended') {
+        fetchNotifications();
+        fetchBalance(); // Refresh balance after call ends
+      }
+      if (msg.type === 'balance_low') {
+        setCallingBalance(msg.balance);
+        setLowBalanceAlert(msg.message);
+        // Auto-dismiss after 10 seconds
+        setTimeout(() => setLowBalanceAlert(null), 10000);
+      }
+    });
+  }, [subscribe, fetchNotifications, fetchBalance]);
 
   // Check for funds_added in URL
   useEffect(() => {
