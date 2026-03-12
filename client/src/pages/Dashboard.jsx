@@ -133,8 +133,8 @@ export default function Dashboard() {
 
       {/* Lead Scores Row */}
       {leadScores && (
-        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? 'repeat(3, 1fr)' : 'repeat(3, 1fr)', gap: '14px', marginBottom: '14px' }}>
-          <div style={{ background: '#fff', borderRadius: '12px', padding: '16px 20px', border: '1px solid #e5e7eb', display: 'flex', alignItems: 'center', gap: '14px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: isMobile ? '8px' : '14px', marginBottom: '14px' }}>
+          <div style={{ background: '#fff', borderRadius: '12px', padding: isMobile ? '12px' : '16px 20px', border: '1px solid #e5e7eb', display: 'flex', alignItems: 'center', gap: isMobile ? '8px' : '14px' }}>
             <div style={{ width: '36px', height: '36px', borderRadius: '9px', background: '#fef2f2', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <Flame style={{ width: '18px', height: '18px', color: '#dc2626' }} />
             </div>

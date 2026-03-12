@@ -29,6 +29,13 @@ export default function Analytics() {
   const [dashboardStats, setDashboardStats] = useState(null);
   const [loading, setLoading] = useState(true);
   const [syncing, setSyncing] = useState(false);
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth < 768);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   useEffect(() => {
     fetchAnalytics();
@@ -178,7 +185,7 @@ export default function Analytics() {
       </div>
 
       {/* Top Metrics */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '12px', marginBottom: '16px' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(auto-fit, minmax(160px, 1fr))', gap: '12px', marginBottom: '16px' }}>
         {[
           { label: 'Total Calls', value: totalCalls, icon: Phone, color: '#4f46e5', bg: '#eef2ff' },
           { label: 'Answer Rate', value: `${answerRate}%`, icon: PhoneCall, color: '#059669', bg: '#ecfdf5' },
@@ -200,7 +207,7 @@ export default function Analytics() {
       </div>
 
       {/* Call Outcomes Breakdown + Today/This Week */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '16px', marginBottom: '16px' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fit, minmax(300px, 1fr))', gap: '16px', marginBottom: '16px' }}>
         {/* Call Outcomes */}
         <div style={cardStyle}>
           <h2 style={{ fontSize: '15px', fontWeight: '700', color: '#111827', marginBottom: '16px' }}>Call Outcomes</h2>
@@ -293,7 +300,7 @@ export default function Analytics() {
       </div>
 
       {/* Contact Pipeline + Cost */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '16px', marginBottom: '16px' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fit, minmax(300px, 1fr))', gap: '16px', marginBottom: '16px' }}>
         <div style={cardStyle}>
           <h2 style={{ fontSize: '15px', fontWeight: '700', color: '#111827', marginBottom: '16px' }}>Contact Pipeline</h2>
           <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '16px' }}>

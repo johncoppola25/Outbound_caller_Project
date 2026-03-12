@@ -18,6 +18,13 @@ export default function Campaigns() {
   const [loading, setLoading] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth < 768);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   useEffect(() => {
     fetchCampaigns();
@@ -103,7 +110,7 @@ export default function Campaigns() {
 
       {/* Search */}
       <div style={{ marginBottom: '24px' }}>
-        <div style={{ position: 'relative', maxWidth: '400px' }}>
+        <div style={{ position: 'relative', maxWidth: isMobile ? '100%' : '400px' }}>
           <Search style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', width: '18px', height: '18px', color: '#9ca3af' }} />
           <input
             type="text"
@@ -161,7 +168,7 @@ export default function Campaigns() {
           )}
         </div>
       ) : (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '16px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fill, minmax(280px, 1fr))', gap: '16px' }}>
           {filteredCampaigns.map((campaign, i) => {
             const colors = typeColors[campaign.type] || { bg: '#f3f4f6', color: '#6b7280', border: '#e5e7eb' };
             return (

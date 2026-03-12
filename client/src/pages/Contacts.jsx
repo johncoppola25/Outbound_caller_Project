@@ -167,12 +167,12 @@ export default function Contacts() {
               onFocus={e => e.target.style.borderColor = '#4f46e5'} onBlur={e => e.target.style.borderColor = '#d1d5db'} />
           </div>
           <select value={selectedCampaign} onChange={(e) => setSelectedCampaign(e.target.value)}
-            style={{ ...inputStyle, width: 'auto', minWidth: '180px' }}>
+            style={{ ...inputStyle, width: 'auto', minWidth: window.innerWidth < 768 ? '0' : '180px', flex: window.innerWidth < 768 ? '1 1 100%' : 'none' }}>
             <option value="all">All Campaigns</option>
             {campaigns.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
           </select>
           <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}
-            style={{ ...inputStyle, width: 'auto', minWidth: '130px' }}>
+            style={{ ...inputStyle, width: 'auto', minWidth: window.innerWidth < 768 ? '0' : '130px', flex: window.innerWidth < 768 ? '1 1 45%' : 'none' }}>
             <option value="all">All Statuses</option>
             {['pending', 'queued', 'called', 'callback', 'converted', 'not_interested'].map(s => <option key={s} value={s}>{s.replace('_', ' ')}</option>)}
           </select>

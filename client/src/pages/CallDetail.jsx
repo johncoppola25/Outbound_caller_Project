@@ -37,9 +37,16 @@ export default function CallDetail() {
   const [showOutcomeSelector, setShowOutcomeSelector] = useState(false);
   const [savingOutcome, setSavingOutcome] = useState(false);
   const [lastSyncDebug, setLastSyncDebug] = useState(null);
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
   const { subscribe } = useWebSocket();
   const pollRef = useRef(null);
   const hasSyncedRef = useRef(false);
+
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth < 768);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   const fetchCall = useCallback(async () => {
     try { const res = await apiFetch(`/api/calls/${id}`); const data = await res.json(); setCall(data); return data; }
@@ -164,7 +171,7 @@ export default function CallDetail() {
         </div>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '16px' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '2fr 1fr', gap: '16px' }}>
         {/* Main Content */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
           {isLoadingData && (

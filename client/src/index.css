@@ -213,7 +213,9 @@ tr:hover td {
   h1 { font-size: 22px !important; }
   h2 { font-size: 18px !important; }
   h3 { font-size: 16px !important; }
-  button { min-height: 44px; min-width: 44px; -webkit-tap-highlight-color: transparent; user-select: none; }
+  button { min-height: 44px; -webkit-tap-highlight-color: transparent; user-select: none; }
+  input, select, textarea { font-size: 16px !important; } /* Prevent iOS zoom on focus */
+  .card { padding: 16px !important; }
 }
 
 /* ===== Selection ===== */
