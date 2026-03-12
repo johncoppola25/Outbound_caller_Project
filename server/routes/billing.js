@@ -77,32 +77,6 @@ async function ensureStripeProducts() {
       stripePrices[plan.id] = { priceId: price.id, productId: product.id };
     }
 
-    // Create metered appointment price (separate product)
-    const apptProductName = 'EstateReach Appointment Fee';
-    let apptProduct = existingProducts.data.find(p => p.name === apptProductName && p.active);
-    if (!apptProduct) {
-      apptProduct = await stripe.products.create({
-        name: apptProductName,
-        description: '$100 per booked appointment',
-        metadata: { plan_id: 'appointment_metered' }
-      });
-      console.log(`Created Stripe product: ${apptProductName}`);
-    }
-
-    const apptPrices = await stripe.prices.list({ product: apptProduct.id, active: true, limit: 10 });
-    let apptPrice = apptPrices.data.find(p => p.unit_amount === 10000 && p.recurring?.usage_type === 'metered');
-    if (!apptPrice) {
-      apptPrice = await stripe.prices.create({
-        product: apptProduct.id,
-        unit_amount: 10000, // $100
-        currency: 'usd',
-        recurring: { interval: 'month', usage_type: 'metered' },
-        metadata: { plan_id: 'appointment_metered' }
-      });
-      console.log(`Created Stripe metered price: Appointment Fee - $100/each`);
-    }
-    stripePrices['appointment_metered'] = { priceId: apptPrice.id, productId: apptProduct.id };
-
     console.log('Stripe products ready:', Object.keys(stripePrices));
     return stripePrices;
   } catch (error) {
@@ -116,7 +90,7 @@ router.get('/plans', async (req, res) => {
   try {
     const prices = await ensureStripeProducts();
     const db = await getDb();
-    const user = db.prepare('SELECT * FROM users WHERE id = ?').get(req.user.id);
+    const user = db.prepare('SELECT * FROM users WHERE id = ?').get(req.user.userId);
     const setupFeePaid = !!user?.setup_fee_paid;
 
     const plans = PLANS.map(plan => ({
@@ -134,7 +108,7 @@ router.get('/plans', async (req, res) => {
 router.get('/subscription', async (req, res) => {
   try {
     const db = await getDb();
-    const user = db.prepare('SELECT * FROM users WHERE id = ?').get(req.user.id);
+    const user = db.prepare('SELECT * FROM users WHERE id = ?').get(req.user.userId);
 
     if (!user?.stripe_customer_id) {
       return res.json({ subscription: null, plan: null, setupFeePaid: !!user?.setup_fee_paid });
@@ -154,6 +128,8 @@ router.get('/subscription', async (req, res) => {
         user.setup_fee_paid = 1;
       }
     }
+
+    await ensureStripeProducts();
 
     // Get active subscription from Stripe
     const subscriptions = await stripe.subscriptions.list({
@@ -196,7 +172,7 @@ router.post('/create-checkout-session', async (req, res) => {
   try {
     const { planId } = req.body;
     const db = await getDb();
-    const user = db.prepare('SELECT * FROM users WHERE id = ?').get(req.user.id);
+    const user = db.prepare('SELECT * FROM users WHERE id = ?').get(req.user.userId);
 
     // Require setup fee before monthly subscription
     if (planId === 'monthly' && !user?.setup_fee_paid) {
@@ -227,18 +203,10 @@ router.post('/create-checkout-session', async (req, res) => {
     const plan = PLANS.find(p => p.id === planId);
     const mode = plan?.interval ? 'subscription' : 'payment';
 
-    // Build line items
-    const lineItems = [{ price: priceData.priceId, quantity: 1 }];
-
-    // For monthly subscription, also add the metered appointment price
-    if (planId === 'monthly' && prices['appointment_metered']) {
-      lineItems.push({ price: prices['appointment_metered'].priceId });
-    }
-
     const sessionConfig = {
       customer: customerId,
       payment_method_types: ['card'],
-      line_items: lineItems,
+      line_items: [{ price: priceData.priceId, quantity: 1 }],
       mode,
       success_url: `${baseUrl}/billing?success=true&plan=${planId}`,
       cancel_url: `${baseUrl}/billing?canceled=true`,
@@ -265,7 +233,7 @@ router.post('/create-checkout-session', async (req, res) => {
 router.post('/confirm-setup', async (req, res) => {
   try {
     const db = await getDb();
-    const user = db.prepare('SELECT * FROM users WHERE id = ?').get(req.user.id);
+    const user = db.prepare('SELECT * FROM users WHERE id = ?').get(req.user.userId);
 
     if (!user?.stripe_customer_id) {
       return res.status(400).json({ error: 'No billing account found' });
@@ -297,7 +265,7 @@ router.post('/confirm-setup', async (req, res) => {
 router.post('/create-portal-session', async (req, res) => {
   try {
     const db = await getDb();
-    const user = db.prepare('SELECT * FROM users WHERE id = ?').get(req.user.id);
+    const user = db.prepare('SELECT * FROM users WHERE id = ?').get(req.user.userId);
 
     if (!user?.stripe_customer_id) {
       return res.status(400).json({ error: 'No billing account found' });
@@ -321,7 +289,7 @@ router.post('/create-portal-session', async (req, res) => {
 router.get('/invoices', async (req, res) => {
   try {
     const db = await getDb();
-    const user = db.prepare('SELECT * FROM users WHERE id = ?').get(req.user.id);
+    const user = db.prepare('SELECT * FROM users WHERE id = ?').get(req.user.userId);
 
     if (!user?.stripe_customer_id) {
       return res.json([]);
@@ -348,7 +316,7 @@ router.get('/invoices', async (req, res) => {
   }
 });
 
-// Report appointment usage to Stripe (called when AI books an appointment)
+// Report appointment charge to Stripe (adds $100 to next invoice)
 export async function reportAppointmentUsage(userId) {
   try {
     const db = await getDb();
@@ -373,30 +341,22 @@ export async function reportAppointmentUsage(userId) {
 
     const sub = subscriptions.data[0];
 
-    // Find the metered subscription item (appointment fee)
-    const meteredItem = sub.items.data.find(item =>
-      item.price.recurring?.usage_type === 'metered'
-    );
-
-    if (!meteredItem) {
-      console.log('No metered item on subscription, skipping appointment billing');
-      return;
-    }
-
-    // Report 1 appointment usage
-    await stripe.subscriptionItems.createUsageRecord(meteredItem.id, {
-      quantity: 1,
-      timestamp: Math.floor(Date.now() / 1000),
-      action: 'increment'
+    // Add a $100 invoice item to the customer's upcoming invoice
+    await stripe.invoiceItems.create({
+      customer: user.stripe_customer_id,
+      subscription: sub.id,
+      amount: 10000, // $100 in cents
+      currency: 'usd',
+      description: 'Appointment booked by AI'
     });
 
-    console.log(`Reported 1 appointment usage for user ${userId} (Stripe item: ${meteredItem.id})`);
+    console.log(`Added $100 appointment charge for user ${userId} to next invoice`);
   } catch (error) {
-    console.error('Error reporting appointment usage to Stripe:', error.message);
+    console.error('Error adding appointment charge to Stripe:', error.message);
   }
 }
 
-// Helper: find user ID from campaign (for webhook usage)
+// Helper: find user ID for billing (for webhook usage)
 export async function findUserForBilling() {
   try {
     const db = await getDb();
@@ -404,21 +364,10 @@ export async function findUserForBilling() {
     const user = db.prepare(`
       SELECT id FROM users
       WHERE stripe_customer_id IS NOT NULL
-      AND subscription_status != 'none'
       LIMIT 1
     `).get();
 
-    // Fallback: any user with a Stripe customer ID
-    if (!user) {
-      const fallback = db.prepare(`
-        SELECT id FROM users
-        WHERE stripe_customer_id IS NOT NULL
-        LIMIT 1
-      `).get();
-      return fallback?.id || null;
-    }
-
-    return user.id;
+    return user?.id || null;
   } catch (error) {
     console.error('Error finding user for billing:', error);
     return null;
