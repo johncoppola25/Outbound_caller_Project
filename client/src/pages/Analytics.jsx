@@ -18,8 +18,11 @@ import {
   PhoneForwarded
 } from 'lucide-react';
 import { apiFetch } from '../utils/api';
+import { useAuth } from '../context/AuthContext';
 
 export default function Analytics() {
+  const { user } = useAuth();
+  const isAdmin = user?.role === 'admin';
   const [period, setPeriod] = useState('7d');
   const [analytics, setAnalytics] = useState(null);
   const [dashboardStats, setDashboardStats] = useState(null);
@@ -239,7 +242,7 @@ export default function Analytics() {
                 <p style={{ fontSize: '11px', color: '#6b7280', fontWeight: '500', marginTop: '2px' }}>Appts</p>
               </div>
             </div>
-            {todayCost > 0 && (
+            {isAdmin && todayCost > 0 && (
               <p style={{ fontSize: '12px', color: '#6b7280', marginTop: '10px' }}>Est. cost today: ${todayCost.toFixed(2)}</p>
             )}
           </div>
@@ -328,32 +331,42 @@ export default function Analytics() {
           )}
         </div>
 
-        {/* Cost Tracking */}
-        <div style={cardStyle}>
-          <h2 style={{ fontSize: '15px', fontWeight: '700', color: '#111827', marginBottom: '16px' }}>Cost Tracking</h2>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-            <div style={{ padding: '16px', background: '#f9fafb', borderRadius: '10px', textAlign: 'center' }}>
-              <p style={{ fontSize: '28px', fontWeight: '800', color: '#111827' }}>${totalCost.toFixed(2)}</p>
-              <p style={{ fontSize: '11px', color: '#6b7280', fontWeight: '500', marginTop: '4px' }}>Total Spend</p>
+        {/* Cost Tracking - Admin only */}
+        {isAdmin ? (
+          <div style={cardStyle}>
+            <h2 style={{ fontSize: '15px', fontWeight: '700', color: '#111827', marginBottom: '16px' }}>Cost Tracking</h2>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+              <div style={{ padding: '16px', background: '#f9fafb', borderRadius: '10px', textAlign: 'center' }}>
+                <p style={{ fontSize: '28px', fontWeight: '800', color: '#111827' }}>${totalCost.toFixed(2)}</p>
+                <p style={{ fontSize: '11px', color: '#6b7280', fontWeight: '500', marginTop: '4px' }}>Total Spend</p>
+              </div>
+              <div style={{ padding: '16px', background: '#f9fafb', borderRadius: '10px', textAlign: 'center' }}>
+                <p style={{ fontSize: '28px', fontWeight: '800', color: '#111827' }}>
+                  ${totalCalls > 0 ? (totalCost / totalCalls).toFixed(2) : '0.00'}
+                </p>
+                <p style={{ fontSize: '11px', color: '#6b7280', fontWeight: '500', marginTop: '4px' }}>Cost Per Call</p>
+              </div>
+              <div style={{ padding: '16px', background: '#ecfdf5', borderRadius: '10px', textAlign: 'center' }}>
+                <p style={{ fontSize: '28px', fontWeight: '800', color: '#059669' }}>
+                  ${appointmentsSet > 0 ? (totalCost / appointmentsSet).toFixed(2) : '--'}
+                </p>
+                <p style={{ fontSize: '11px', color: '#6b7280', fontWeight: '500', marginTop: '4px' }}>Cost Per Appointment</p>
+              </div>
+              <div style={{ padding: '16px', background: '#eef2ff', borderRadius: '10px', textAlign: 'center' }}>
+                <p style={{ fontSize: '28px', fontWeight: '800', color: '#4f46e5' }}>{conversionRate}%</p>
+                <p style={{ fontSize: '11px', color: '#6b7280', fontWeight: '500', marginTop: '4px' }}>Conversion Rate</p>
+              </div>
             </div>
-            <div style={{ padding: '16px', background: '#f9fafb', borderRadius: '10px', textAlign: 'center' }}>
-              <p style={{ fontSize: '28px', fontWeight: '800', color: '#111827' }}>
-                ${totalCalls > 0 ? (totalCost / totalCalls).toFixed(2) : '0.00'}
-              </p>
-              <p style={{ fontSize: '11px', color: '#6b7280', fontWeight: '500', marginTop: '4px' }}>Cost Per Call</p>
-            </div>
-            <div style={{ padding: '16px', background: '#ecfdf5', borderRadius: '10px', textAlign: 'center' }}>
-              <p style={{ fontSize: '28px', fontWeight: '800', color: '#059669' }}>
-                ${appointmentsSet > 0 ? (totalCost / appointmentsSet).toFixed(2) : '--'}
-              </p>
-              <p style={{ fontSize: '11px', color: '#6b7280', fontWeight: '500', marginTop: '4px' }}>Cost Per Appointment</p>
-            </div>
+          </div>
+        ) : (
+          <div style={cardStyle}>
+            <h2 style={{ fontSize: '15px', fontWeight: '700', color: '#111827', marginBottom: '16px' }}>Performance</h2>
             <div style={{ padding: '16px', background: '#eef2ff', borderRadius: '10px', textAlign: 'center' }}>
               <p style={{ fontSize: '28px', fontWeight: '800', color: '#4f46e5' }}>{conversionRate}%</p>
               <p style={{ fontSize: '11px', color: '#6b7280', fontWeight: '500', marginTop: '4px' }}>Conversion Rate</p>
             </div>
           </div>
-        </div>
+        )}
       </div>
 
       {/* Campaign Performance */}

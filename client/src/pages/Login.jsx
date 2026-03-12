@@ -57,7 +57,7 @@ export default function Login() {
       {!isMobile && (
         <div style={styles.leftPanel}>
           <div style={styles.brandingContent}>
-            <img src="/logo.png" alt="EstateReach AI" style={{ height: '52px', marginBottom: '24px' }} />
+            <img src="/logo.svg" alt="EstateReach AI" style={{ width: '380px', maxWidth: '100%', marginBottom: '24px' }} />
             <div style={styles.divider} />
             <h2 style={styles.portalTitle}>Outbound Caller</h2>
             <p style={styles.portalSubtitle}>AI-Powered Calling Platform</p>

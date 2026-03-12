@@ -5,9 +5,12 @@ import {
   ArrowUpRight, BarChart3, Upload, Activity, TrendingUp, Flame, Thermometer, Snowflake, DollarSign
 } from 'lucide-react';
 import { useWebSocket } from '../context/WebSocketContext';
+import { useAuth } from '../context/AuthContext';
 import { apiFetch } from '../utils/api';
 
 export default function Dashboard() {
+  const { user } = useAuth();
+  const isAdmin = user?.role === 'admin';
   const [stats, setStats] = useState(null);
   const [recentCalls, setRecentCalls] = useState([]);
   const [telnyxCosts, setTelnyxCosts] = useState(null);
@@ -156,8 +159,8 @@ export default function Dashboard() {
         </div>
       )}
 
-      {/* Telnyx Cost Tracker */}
-      {telnyxCosts && (
+      {/* Telnyx Cost Tracker - Admin only */}
+      {isAdmin && telnyxCosts && (
         <div style={{
           background: 'linear-gradient(135deg, #111827 0%, #1e293b 100%)',
           borderRadius: '14px', padding: isMobile ? '18px' : '22px 28px',

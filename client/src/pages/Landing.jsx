@@ -7,11 +7,9 @@ export default function Landing() {
       {/* Nav */}
       <nav style={{
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        padding: '16px 40px', position: 'fixed', top: 0, left: 0, right: 0,
-        background: 'rgba(255,255,255,0.95)', backdropFilter: 'blur(12px)',
-        zIndex: 100, borderBottom: '1px solid #f3f4f6'
+        padding: '16px 40px', background: '#ffffff'
       }}>
-        <img src="/logo.png" alt="EstateReach AI" style={{ height: '36px' }} />
+        <img src="/logo.svg" alt="EstateReach AI" style={{ height: '50px' }} />
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           <Link to="/login" style={{
             padding: '9px 20px', fontSize: '14px', fontWeight: '600', color: '#374151',
@@ -31,17 +29,10 @@ export default function Landing() {
 
       {/* Hero */}
       <section style={{
-        paddingTop: '140px', paddingBottom: '80px', textAlign: 'center',
-        background: 'linear-gradient(180deg, #f8faff 0%, #ffffff 100%)',
-        position: 'relative', overflow: 'hidden'
+        paddingTop: '40px', paddingBottom: '60px', textAlign: 'center',
+        background: '#ffffff'
       }}>
-        <div style={{
-          position: 'absolute', top: '60px', left: '50%', transform: 'translateX(-50%)',
-          width: '600px', height: '600px', borderRadius: '50%',
-          background: 'radial-gradient(circle, rgba(79,70,229,0.06) 0%, transparent 70%)',
-          pointerEvents: 'none'
-        }} />
-        <div style={{ maxWidth: '800px', margin: '0 auto', padding: '0 24px', position: 'relative' }}>
+        <div style={{ maxWidth: '800px', margin: '0 auto', padding: '0 24px' }}>
           <div style={{
             display: 'inline-flex', alignItems: 'center', gap: '8px',
             padding: '6px 16px', background: '#eef2ff', borderRadius: '20px',
@@ -321,7 +312,7 @@ export default function Landing() {
         textAlign: 'center', fontSize: '13px'
       }}>
         <div style={{ marginBottom: '16px' }}>
-          <img src="/logo.png" alt="EstateReach AI" style={{ height: '28px' }} />
+          <img src="/logo.svg" alt="EstateReach AI" style={{ width: '220px' }} />
         </div>
         <p style={{ margin: '0 0 8px 0' }}>AI-Powered Outbound Calling Platform</p>
         <p style={{ margin: 0 }}>&copy; 2026 EstateReach AI. All rights reserved.</p>

@@ -290,6 +290,9 @@ export async function initDatabase() {
   try {
     db.exec(`ALTER TABLE users ADD COLUMN setup_fee_paid INTEGER DEFAULT 0`);
   } catch (e) { /* column may already exist */ }
+  try {
+    db.exec(`ALTER TABLE users ADD COLUMN calling_balance REAL DEFAULT 0`);
+  } catch (e) { /* column may already exist */ }
 
   // Meeting history table - completed meetings
   db.exec(`
@@ -309,18 +312,32 @@ export async function initDatabase() {
     )
   `);
 
-  // Seed default admin user (KENNYL) - always ensure correct password
+  // Seed users
   const bcrypt = await import('bcryptjs');
   const { v4: uuidv4 } = await import('uuid');
-  const existingAdmin = db.prepare('SELECT id FROM users WHERE name = ?').get('KENNYL');
-  const hash = await bcrypt.default.hash('KENNYL123', 10);
+
+  // KENNYL - regular user
+  const existingKenny = db.prepare('SELECT id FROM users WHERE name = ?').get('KENNYL');
+  const kennyHash = await bcrypt.default.hash('KENNYL123', 10);
+  if (!existingKenny) {
+    db.prepare('INSERT INTO users (id, email, password_hash, name, role) VALUES (?, ?, ?, ?, ?)').run(
+      uuidv4(), 'kenny@estatereach.com', kennyHash, 'KENNYL', 'user'
+    );
+    console.log('👤 Default user created (KENNYL)');
+  } else {
+    db.prepare('UPDATE users SET password_hash = ?, role = ? WHERE name = ?').run(kennyHash, 'user', 'KENNYL');
+  }
+
+  // Admin account
+  const existingAdmin = db.prepare('SELECT id FROM users WHERE name = ?').get('EstateAdmin');
+  const adminHash = await bcrypt.default.hash('SPARTANS14!', 10);
   if (!existingAdmin) {
     db.prepare('INSERT INTO users (id, email, password_hash, name, role) VALUES (?, ?, ?, ?, ?)').run(
-      uuidv4(), 'kenny@estatereach.com', hash, 'KENNYL', 'admin'
+      uuidv4(), 'admin@estatereach.com', adminHash, 'EstateAdmin', 'admin'
     );
-    console.log('👤 Default admin user created (KENNYL)');
+    console.log('👤 Admin user created (EstateAdmin)');
   } else {
-    db.prepare('UPDATE users SET password_hash = ? WHERE name = ?').run(hash, 'KENNYL');
+    db.prepare('UPDATE users SET password_hash = ?, role = ? WHERE name = ?').run(adminHash, 'admin', 'EstateAdmin');
   }
 
   saveDatabase();

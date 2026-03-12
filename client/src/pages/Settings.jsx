@@ -1,8 +1,11 @@
 import { useState, useEffect } from 'react';
 import { Phone, CheckCircle, XCircle, RefreshCw, AlertCircle, Sparkles, Settings as SettingsIcon, CreditCard, ShieldOff } from 'lucide-react';
 import { apiFetch } from '../utils/api';
+import { useAuth } from '../context/AuthContext';
 
 export default function Settings() {
+  const { user } = useAuth();
+  const isAdmin = user?.role === 'admin';
   const [phoneNumbers, setPhoneNumbers] = useState([]);
   const [assistants, setAssistants] = useState([]);
   const [dncList, setDncList] = useState([]);
@@ -111,7 +114,7 @@ export default function Settings() {
             </p>
           </div>
         </div>
-        {connectionStatus?.success && balance && (
+        {isAdmin && connectionStatus?.success && balance && (
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 14px', background: '#ecfdf5', border: '1px solid #a7f3d0', borderRadius: '10px' }}>
             <CreditCard style={{ width: '16px', height: '16px', color: '#059669' }} />
             <span style={{ color: '#059669', fontWeight: '600', fontSize: '14px' }}>Balance: ${parseFloat(balance).toFixed(2)}</span>

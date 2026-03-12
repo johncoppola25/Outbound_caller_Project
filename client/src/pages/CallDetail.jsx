@@ -6,6 +6,7 @@ import {
   FileText, Activity, Loader, DollarSign, Download, Mic
 } from 'lucide-react';
 import { useWebSocket } from '../context/WebSocketContext';
+import { useAuth } from '../context/AuthContext';
 import { apiFetch } from '../utils/api';
 
 const outcomeConfig = {
@@ -25,6 +26,8 @@ const defaultOutcome = { label: 'Unknown', color: '#9ca3af', bg: '#f9fafb', bord
 const cardStyle = { background: '#ffffff', borderRadius: '12px', padding: '22px', border: '1px solid #e5e7eb', boxShadow: '0 1px 3px rgba(0,0,0,0.03)' };
 
 export default function CallDetail() {
+  const { user } = useAuth();
+  const isAdmin = user?.role === 'admin';
   const { id } = useParams();
   const [call, setCall] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -389,7 +392,7 @@ export default function CallDetail() {
               {[
                 { icon: Calendar, label: 'Started', value: formatDateTime(call.started_at || call.created_at) },
                 { icon: Clock, label: 'Duration', value: formatDuration(call.duration_seconds) },
-                ...(call.estimated_cost ? [{ icon: DollarSign, label: 'Call Cost', value: `$${parseFloat(call.estimated_cost).toFixed(4)}`, highlight: true }] : []),
+                ...(isAdmin && call.estimated_cost ? [{ icon: DollarSign, label: 'Call Cost', value: `$${parseFloat(call.estimated_cost).toFixed(4)}`, highlight: true }] : []),
                 ...(call.ended_at ? [{ icon: PhoneOff, label: 'Ended', value: formatDateTime(call.ended_at) }] : []),
                 ...(call.telnyx_call_id ? [{ icon: Activity, label: 'Telnyx ID', value: call.telnyx_call_id, mono: true }] : [])
               ].map(({ icon: Icon, label, value, mono, highlight }) => (

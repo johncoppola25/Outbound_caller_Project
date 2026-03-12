@@ -17,7 +17,9 @@ import {
   ClipboardCheck,
   LogOut,
   BookOpen,
-  CreditCard
+  CreditCard,
+  Crown,
+  DollarSign
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useWebSocket } from '../context/WebSocketContext';
@@ -26,7 +28,7 @@ import { apiFetch } from '../utils/api';
 
 const API_BASE = '';
 
-const navigation = [
+const userNavigation = [
   { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
   { name: 'Campaigns', href: '/campaigns', icon: Megaphone },
   { name: 'Contacts', href: '/contacts', icon: Users },
@@ -36,7 +38,21 @@ const navigation = [
   { name: 'Analytics', href: '/analytics', icon: BarChart3 },
   { name: 'Meeting History', href: '/meeting-history', icon: ClipboardCheck },
   { name: 'Settings', href: '/settings', icon: Settings },
-  { name: 'Billing', href: '/billing', icon: CreditCard },
+  { name: 'User Manual', href: '/user-manual', icon: BookOpen },
+];
+
+const adminNavigation = [
+  { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
+  { name: 'Users', href: '/admin/users', icon: Users },
+  { name: 'Revenue', href: '/admin/revenue', icon: DollarSign },
+  { name: 'Campaigns', href: '/campaigns', icon: Megaphone },
+  { name: 'Contacts', href: '/contacts', icon: Users },
+  { name: 'Calls', href: '/calls', icon: Phone },
+  { name: 'Callbacks', href: '/callbacks', icon: PhoneCall },
+  { name: 'Appointments', href: '/appointments', icon: Calendar, badge: true },
+  { name: 'Analytics', href: '/analytics', icon: BarChart3 },
+  { name: 'Meeting History', href: '/meeting-history', icon: ClipboardCheck },
+  { name: 'Settings', href: '/settings', icon: Settings },
   { name: 'User Manual', href: '/user-manual', icon: BookOpen },
 ];
 
@@ -46,6 +62,10 @@ export default function Layout() {
   const { user, logout } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+  const [callingBalance, setCallingBalance] = useState(null);
+  const [showAddFunds, setShowAddFunds] = useState(false);
+  const [addingFunds, setAddingFunds] = useState(false);
+  const isAdmin = user?.role === 'admin';
   const [appointmentCount, setAppointmentCount] = useState(0);
   const [notifications, setNotifications] = useState([]);
   const [showNotifications, setShowNotifications] = useState(false);
@@ -123,6 +143,50 @@ export default function Layout() {
     });
   }, [subscribe, fetchNotifications]);
 
+  // Fetch calling balance (users only)
+  const fetchBalance = useCallback(async () => {
+    if (isAdmin) return;
+    try {
+      const res = await apiFetch('/api/billing/balance');
+      if (res.ok) {
+        const data = await res.json();
+        setCallingBalance(data.balance);
+      }
+    } catch (e) { /* ignore */ }
+  }, [isAdmin]);
+
+  useEffect(() => { fetchBalance(); }, [fetchBalance, location.pathname]);
+
+  // Check for funds_added in URL
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const fundsAdded = params.get('funds_added');
+    if (fundsAdded) {
+      apiFetch('/api/billing/confirm-funds', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ amount: Number(fundsAdded) })
+      }).then(res => res.json()).then(data => {
+        if (data.balance !== undefined) setCallingBalance(data.balance);
+      }).catch(() => {});
+      window.history.replaceState({}, '', window.location.pathname);
+    }
+  }, []);
+
+  const handleAddFunds = async (amount) => {
+    setAddingFunds(true);
+    try {
+      const res = await apiFetch('/api/billing/add-funds', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ amount })
+      });
+      const data = await res.json();
+      if (data.url) window.location.href = data.url;
+    } catch (e) { /* ignore */ }
+    setAddingFunds(false);
+  };
+
   const unreadCount = notifications.filter(n => !readIds.includes(n.id)).length;
 
   const markAllRead = () => {
@@ -174,8 +238,13 @@ export default function Layout() {
         {/* Logo + Bell */}
         <div style={{ padding: '22px 18px', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '11px' }}>
-            <img src="/logo.png" alt="EstateReach AI" style={{ height: '32px' }} />
-            <div style={{ flex: 1 }}></div>
+            <svg viewBox="0 0 340 50" style={{ width: '190px' }} xmlns="http://www.w3.org/2000/svg">
+              <text x="0" y="34" fontFamily="'Segoe UI', 'Helvetica Neue', Arial, sans-serif" fontSize="38" fontWeight="700" letterSpacing="-0.5">
+                <tspan fill="#ffffff">Estate</tspan><tspan fill="#4f46e5">Reach</tspan>
+              </text>
+              <text x="220" y="34" fontFamily="'Segoe UI', 'Helvetica Neue', Arial, sans-serif" fontSize="38" fontWeight="300" fill="#4f46e5" letterSpacing="-0.5">AI</text>
+              <rect x="0" y="42" width="50" height="3" rx="1.5" fill="#4f46e5"/>
+            </svg>
             {/* Bell icon */}
             <div style={{ position: 'relative' }}>
               <button
@@ -298,8 +367,15 @@ export default function Layout() {
 
         {/* Nav */}
         <nav style={{ flex: 1, padding: '12px 10px', overflowY: 'auto' }}>
-          <p style={{ fontSize: '10px', fontWeight: '600', color: '#4b5563', letterSpacing: '0.1em', textTransform: 'uppercase', padding: '10px 10px 6px', marginBottom: '2px' }}>Menu</p>
-          {navigation.map((item) => {
+          {user?.role === 'admin' && (
+            <p style={{ fontSize: '10px', fontWeight: '600', color: '#8b5cf6', letterSpacing: '0.1em', textTransform: 'uppercase', padding: '10px 10px 6px', marginBottom: '2px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+              <Crown size={10} /> Admin
+            </p>
+          )}
+          {user?.role !== 'admin' && (
+            <p style={{ fontSize: '10px', fontWeight: '600', color: '#4b5563', letterSpacing: '0.1em', textTransform: 'uppercase', padding: '10px 10px 6px', marginBottom: '2px' }}>Menu</p>
+          )}
+          {(user?.role === 'admin' ? adminNavigation : userNavigation).map((item) => {
             const isActive = location.pathname.startsWith(item.href);
             return (
               <NavLink
@@ -389,10 +465,96 @@ export default function Layout() {
 
       {/* Main */}
       <main style={{ flex: 1, marginLeft: isMobile ? '0' : '240px', width: isMobile ? '100%' : 'calc(100% - 240px)' }}>
+        {/* Top bar with balance */}
+        {!isAdmin && callingBalance !== null && (
+          <div style={{
+            display: 'flex', justifyContent: 'flex-end', alignItems: 'center',
+            padding: isMobile ? '12px 16px' : '12px 28px',
+            paddingTop: isMobile ? '60px' : '12px',
+            position: 'sticky', top: 0, zIndex: 50,
+            background: 'rgba(243,244,246,0.95)', backdropFilter: 'blur(8px)'
+          }}>
+            <div style={{ position: 'relative' }}>
+              <button
+                onClick={() => setShowAddFunds(!showAddFunds)}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: '8px',
+                  padding: '8px 16px', borderRadius: '10px', border: '1px solid #e5e7eb',
+                  background: callingBalance < 20 ? '#fef2f2' : callingBalance < 50 ? '#fffbeb' : '#ecfdf5',
+                  cursor: 'pointer', fontSize: '13px', fontWeight: '600',
+                  color: callingBalance < 20 ? '#dc2626' : callingBalance < 50 ? '#b45309' : '#059669',
+                  boxShadow: '0 1px 3px rgba(0,0,0,0.06)'
+                }}
+              >
+                <DollarSign size={15} color={callingBalance < 20 ? '#dc2626' : callingBalance < 50 ? '#d97706' : '#059669'} />
+                Balance: ${callingBalance.toFixed(2)}
+                {callingBalance < 20 && (
+                  <span style={{
+                    background: '#dc2626', color: '#fff', fontSize: '9px', fontWeight: '700',
+                    padding: '1px 6px', borderRadius: '8px', marginLeft: '4px'
+                  }}>LOW</span>
+                )}
+                {callingBalance >= 20 && callingBalance < 50 && (
+                  <span style={{
+                    background: '#d97706', color: '#fff', fontSize: '9px', fontWeight: '700',
+                    padding: '1px 6px', borderRadius: '8px', marginLeft: '4px'
+                  }}>LOW</span>
+                )}
+              </button>
+
+              {/* Add Funds dropdown */}
+              {showAddFunds && (
+                <>
+                  <div onClick={() => setShowAddFunds(false)} style={{ position: 'fixed', inset: 0, zIndex: 51 }} />
+                  <div style={{
+                    position: 'absolute', top: '44px', right: 0, zIndex: 52,
+                    width: '240px', background: '#fff', borderRadius: '12px',
+                    boxShadow: '0 10px 40px rgba(0,0,0,0.15)', border: '1px solid #e5e7eb',
+                    overflow: 'hidden'
+                  }}>
+                    <div style={{ padding: '14px 16px', borderBottom: '1px solid #f3f4f6' }}>
+                      <p style={{ fontSize: '13px', fontWeight: '700', color: '#111827', margin: 0 }}>Add Calling Credits</p>
+                      <p style={{ fontSize: '11px', color: '#6b7280', margin: '2px 0 0' }}>$0.15/min per call</p>
+                    </div>
+                    <div style={{ padding: '8px' }}>
+                      {[25, 50, 100, 200].map(amount => (
+                        <button
+                          key={amount}
+                          onClick={() => { setShowAddFunds(false); handleAddFunds(amount); }}
+                          disabled={addingFunds}
+                          style={{
+                            display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                            width: '100%', padding: '10px 12px', borderRadius: '8px',
+                            border: 'none', background: 'transparent', cursor: 'pointer',
+                            fontSize: '13px', color: '#111827', fontWeight: '500',
+                            transition: 'background 0.1s'
+                          }}
+                          onMouseEnter={e => e.currentTarget.style.background = '#f3f4f6'}
+                          onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                        >
+                          <span>Add ${amount}</span>
+                          <span style={{ fontSize: '11px', color: '#6b7280' }}>~{Math.floor(amount / 0.15)} min</span>
+                        </button>
+                      ))}
+                    </div>
+                    {callingBalance < 50 && (
+                      <div style={{ padding: '10px 16px', borderTop: '1px solid #f3f4f6', background: callingBalance < 20 ? '#fef2f2' : '#fffbeb' }}>
+                        <p style={{ fontSize: '11px', color: callingBalance < 20 ? '#dc2626' : '#b45309', margin: 0, fontWeight: '600' }}>
+                          {callingBalance < 1 ? 'No balance! Add funds to make calls.' : callingBalance < 20 ? 'Low balance! Add funds to continue making calls.' : 'Balance getting low. Consider adding funds.'}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+        )}
+
         <div style={{
           minHeight: '100vh',
           padding: isMobile ? '16px' : '24px 28px',
-          paddingTop: isMobile ? '68px' : '24px'
+          paddingTop: (!isAdmin && callingBalance !== null) ? '0' : (isMobile ? '68px' : '24px')
         }}>
           <Outlet />
         </div>

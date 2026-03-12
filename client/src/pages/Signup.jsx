@@ -82,7 +82,7 @@ export default function Signup() {
       {!isMobile && (
         <div style={styles.leftPanel}>
           <div style={styles.brandingContent}>
-            <img src="/logo.png" alt="EstateReach AI" style={{ height: '52px', marginBottom: '24px' }} />
+            <img src="/logo.svg" alt="EstateReach AI" style={{ width: '380px', maxWidth: '100%', marginBottom: '24px' }} />
             <div style={styles.divider} />
             <h2 style={styles.portalTitle}>AI Outbound Caller</h2>
             <p style={styles.portalSubtitle}>Scale your outreach with intelligent AI calls</p>
@@ -98,14 +98,6 @@ export default function Signup() {
               ))}
             </div>
 
-            <div style={styles.pricingPreview}>
-              <p style={styles.pricingLabel}>Starting at</p>
-              <div style={styles.pricingRow}>
-                <span style={styles.pricingAmount}>$1,000</span>
-                <span style={styles.pricingInterval}>/month</span>
-              </div>
-              <p style={styles.pricingNote}>+ $100 per booked appointment</p>
-            </div>
           </div>
           <p style={styles.poweredBy}>Powered by EstateReach</p>
         </div>
@@ -123,7 +115,7 @@ export default function Signup() {
           {/* Mobile logo */}
           {isMobile && (
             <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '24px' }}>
-              <img src="/logo.png" alt="EstateReach AI" style={{ height: '36px' }} />
+              <img src="/logo.svg" alt="EstateReach AI" style={{ width: '220px' }} />
             </div>
           )}
 

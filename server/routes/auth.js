@@ -28,18 +28,18 @@ router.post('/register', async (req, res) => {
     const password_hash = await bcrypt.hash(password, 10);
 
     db.prepare(
-      'INSERT INTO users (id, email, password_hash, name, company) VALUES (?, ?, ?, ?, ?)'
-    ).run(id, email, password_hash, name, company || null);
+      'INSERT INTO users (id, email, password_hash, name, company, role) VALUES (?, ?, ?, ?, ?, ?)'
+    ).run(id, email, password_hash, name, company || null, 'user');
 
     const token = jwt.sign(
-      { userId: id, email, name },
+      { userId: id, email, name, role: 'user' },
       getJwtSecret(),
       { expiresIn: '7d' }
     );
 
     res.status(201).json({
       token,
-      user: { id, email, name, company: company || null, role: 'agent' }
+      user: { id, email, name, company: company || null, role: 'user' }
     });
   } catch (err) {
     console.error('Registration error:', err);
@@ -71,7 +71,7 @@ router.post('/login', async (req, res) => {
     }
 
     const token = jwt.sign(
-      { userId: user.id, email: user.email, name: user.name },
+      { userId: user.id, email: user.email, name: user.name, role: user.role },
       getJwtSecret(),
       { expiresIn: '7d' }
     );

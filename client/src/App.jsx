@@ -13,6 +13,8 @@ import Settings from './pages/Settings';
 import MeetingHistory from './pages/MeetingHistory';
 import UserManual from './pages/UserManual';
 import Billing from './pages/Billing';
+import AdminUsers from './pages/AdminUsers';
+import AdminRevenue from './pages/AdminRevenue';
 import Landing from './pages/Landing';
 import Login from './pages/Login';
 import Signup from './pages/Signup';
@@ -73,6 +75,8 @@ function App() {
               <Route path="meeting-history" element={<MeetingHistory />} />
               <Route path="settings" element={<Settings />} />
               <Route path="billing" element={<Billing />} />
+              <Route path="admin/users" element={<AdminUsers />} />
+              <Route path="admin/revenue" element={<AdminRevenue />} />
               <Route path="user-manual" element={<UserManual />} />
             </Route>
           </Routes>

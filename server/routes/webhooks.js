@@ -4,7 +4,7 @@ import { broadcast } from '../index.js';
 import { startAIConversation, telnyxRequest } from '../services/telnyx.js';
 import { calculateLeadScore } from '../services/leadScoring.js';
 import { checkConflicts } from './calls.js';
-import { reportAppointmentUsage, findUserForBilling } from './billing.js';
+import { reportAppointmentUsage, findUserForBilling, deductCallCost } from './billing.js';
 
 const router = express.Router();
 
@@ -79,10 +79,16 @@ router.post('/telnyx', async (req, res) => {
           WHERE id = ?
         `).run(duration, callId);
 
-        // Estimate cost: ~$0.02/min for Telnyx outbound calls
+        // Estimate cost: $0.15/min for user billing
         const durationMins = Math.ceil(duration / 60);
-        const estimatedCost = durationMins * 0.02;
+        const estimatedCost = durationMins * 0.15;
         db.prepare('UPDATE calls SET estimated_cost = ? WHERE id = ?').run(estimatedCost, callId);
+
+        // Deduct from user's calling balance
+        const billingUser = await findUserForBilling();
+        if (billingUser) {
+          deductCallCost(billingUser, duration);
+        }
 
         // Update contact status (only if not already a better status from function calls during the call)
         const callRecord = db.prepare('SELECT * FROM calls WHERE id = ?').get(callId);

@@ -4,7 +4,7 @@ import { getDb } from '../db/init.js';
 
 const router = express.Router();
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+const stripe = process.env.STRIPE_SECRET_KEY ? new Stripe(process.env.STRIPE_SECRET_KEY) : null;
 
 // Plan definitions
 const PLANS = [
@@ -320,6 +320,140 @@ router.get('/invoices', async (req, res) => {
     res.status(500).json({ error: 'Failed to fetch invoices' });
   }
 });
+
+// Get calling balance
+router.get('/balance', async (req, res) => {
+  try {
+    const db = await getDb();
+    const user = db.prepare('SELECT calling_balance FROM users WHERE id = ?').get(req.user.userId);
+    res.json({ balance: user?.calling_balance || 0 });
+  } catch (error) {
+    console.error('Error fetching balance:', error);
+    res.status(500).json({ error: 'Failed to fetch balance' });
+  }
+});
+
+// Add funds - create Stripe checkout
+const FUND_AMOUNTS = [25, 50, 100, 200];
+
+router.post('/add-funds', async (req, res) => {
+  try {
+    const { amount } = req.body;
+    if (!FUND_AMOUNTS.includes(amount)) {
+      return res.status(400).json({ error: 'Invalid amount. Choose $25, $50, $100, or $200.' });
+    }
+
+    const db = await getDb();
+    const user = db.prepare('SELECT * FROM users WHERE id = ?').get(req.user.userId);
+
+    // Get or create Stripe customer
+    let customerId = user.stripe_customer_id;
+    if (!customerId) {
+      const customer = await stripe.customers.create({
+        email: user.email,
+        name: user.name || user.email,
+        metadata: { user_id: user.id }
+      });
+      customerId = customer.id;
+      db.prepare('UPDATE users SET stripe_customer_id = ? WHERE id = ?').run(customerId, user.id);
+    }
+
+    const baseUrl = process.env.RENDER_EXTERNAL_URL || process.env.WEBHOOK_BASE_URL || 'https://outboundcaller.ai';
+
+    const session = await stripe.checkout.sessions.create({
+      customer: customerId,
+      payment_method_types: ['card'],
+      line_items: [{
+        price_data: {
+          currency: 'usd',
+          product_data: { name: `Add $${amount} Calling Credits` },
+          unit_amount: amount * 100,
+        },
+        quantity: 1
+      }],
+      mode: 'payment',
+      success_url: `${baseUrl}/dashboard?funds_added=${amount}`,
+      cancel_url: `${baseUrl}/dashboard?funds_canceled=true`,
+      metadata: { user_id: user.id, type: 'add_funds', amount: String(amount) },
+      payment_intent_data: {
+        metadata: { user_id: user.id, type: 'add_funds', amount: String(amount) }
+      }
+    });
+
+    res.json({ url: session.url });
+  } catch (error) {
+    console.error('Error creating add-funds session:', error);
+    res.status(500).json({ error: 'Failed to create payment session' });
+  }
+});
+
+// Confirm funds added (called after successful redirect)
+router.post('/confirm-funds', async (req, res) => {
+  try {
+    const { amount } = req.body;
+    const db = await getDb();
+    const user = db.prepare('SELECT * FROM users WHERE id = ?').get(req.user.userId);
+
+    if (!user?.stripe_customer_id) {
+      return res.status(400).json({ error: 'No billing account found' });
+    }
+
+    // Verify payment in Stripe
+    const sessions = await stripe.checkout.sessions.list({
+      customer: user.stripe_customer_id,
+      limit: 5
+    });
+
+    const fundSession = sessions.data.find(s =>
+      s.metadata?.type === 'add_funds' &&
+      s.metadata?.amount === String(amount) &&
+      s.payment_status === 'paid'
+    );
+
+    if (fundSession) {
+      // Check if already credited (prevent double-credit)
+      const alreadyCredited = fundSession.metadata?.credited === 'true';
+      if (!alreadyCredited) {
+        const currentBalance = user.calling_balance || 0;
+        db.prepare('UPDATE users SET calling_balance = ? WHERE id = ?').run(currentBalance + Number(amount), user.id);
+
+        // Mark session as credited
+        await stripe.checkout.sessions.update(fundSession.id, {
+          metadata: { ...fundSession.metadata, credited: 'true' }
+        });
+
+        return res.json({ balance: currentBalance + Number(amount), added: true });
+      }
+      // Already credited
+      const updatedUser = db.prepare('SELECT calling_balance FROM users WHERE id = ?').get(user.id);
+      return res.json({ balance: updatedUser?.calling_balance || 0, added: false });
+    }
+
+    res.json({ balance: user.calling_balance || 0, added: false });
+  } catch (error) {
+    console.error('Error confirming funds:', error);
+    res.status(500).json({ error: 'Failed to confirm payment' });
+  }
+});
+
+// Deduct calling balance after a call (called from webhooks)
+export async function deductCallCost(userId, durationSeconds) {
+  try {
+    const db = await getDb();
+    const minutes = Math.ceil(durationSeconds / 60);
+    const cost = minutes * 0.15; // $0.15 per minute
+
+    const user = db.prepare('SELECT calling_balance FROM users WHERE id = ?').get(userId);
+    const newBalance = Math.max(0, (user?.calling_balance || 0) - cost);
+    db.prepare('UPDATE users SET calling_balance = ? WHERE id = ?').run(newBalance, userId);
+
+    console.log(`Deducted $${cost.toFixed(2)} (${minutes}min) from user ${userId}. Balance: $${newBalance.toFixed(2)}`);
+    return { cost, newBalance };
+  } catch (error) {
+    console.error('Error deducting call cost:', error.message);
+    return null;
+  }
+}
 
 // Report appointment charge to Stripe (adds $100 to next invoice)
 export async function reportAppointmentUsage(userId) {
