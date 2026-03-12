@@ -70,7 +70,7 @@ export default function AdminRevenue() {
   return (
     <div>
       <Helmet>
-        <title>Revenue - EstateReach AI Admin</title>
+        <title>Revenue - OutReach AI Admin</title>
         <meta name="description" content="Track platform revenue, payments, and Stripe balance." />
       </Helmet>
       <div style={{ marginBottom: '24px' }}>

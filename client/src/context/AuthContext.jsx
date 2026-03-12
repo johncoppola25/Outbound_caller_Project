@@ -9,23 +9,23 @@ export function AuthProvider({ children }) {
 
   useEffect(() => {
     // Check localStorage first (remember me), then sessionStorage
-    let savedToken = localStorage.getItem('estatereach_token');
-    let savedUser = localStorage.getItem('estatereach_user');
-    let savedExpiry = localStorage.getItem('estatereach_token_expiry');
+    let savedToken = localStorage.getItem('outreach_token');
+    let savedUser = localStorage.getItem('outreach_user');
+    let savedExpiry = localStorage.getItem('outreach_token_expiry');
 
     // If remembered, check if the 30-day expiry has passed
     if (savedToken && savedExpiry && Date.now() > Number(savedExpiry)) {
-      localStorage.removeItem('estatereach_token');
-      localStorage.removeItem('estatereach_user');
-      localStorage.removeItem('estatereach_token_expiry');
+      localStorage.removeItem('outreach_token');
+      localStorage.removeItem('outreach_user');
+      localStorage.removeItem('outreach_token_expiry');
       savedToken = null;
       savedUser = null;
     }
 
     // Fall back to session storage
     if (!savedToken) {
-      savedToken = sessionStorage.getItem('estatereach_token');
-      savedUser = sessionStorage.getItem('estatereach_user');
+      savedToken = sessionStorage.getItem('outreach_token');
+      savedUser = sessionStorage.getItem('outreach_user');
     }
 
     if (savedToken && savedUser) {
@@ -33,11 +33,11 @@ export function AuthProvider({ children }) {
         setToken(savedToken);
         setUser(JSON.parse(savedUser));
       } catch (e) {
-        localStorage.removeItem('estatereach_token');
-        localStorage.removeItem('estatereach_user');
-        localStorage.removeItem('estatereach_token_expiry');
-        sessionStorage.removeItem('estatereach_token');
-        sessionStorage.removeItem('estatereach_user');
+        localStorage.removeItem('outreach_token');
+        localStorage.removeItem('outreach_user');
+        localStorage.removeItem('outreach_token_expiry');
+        sessionStorage.removeItem('outreach_token');
+        sessionStorage.removeItem('outreach_user');
       }
     }
     setLoading(false);
@@ -48,28 +48,28 @@ export function AuthProvider({ children }) {
     setUser(newUser);
     if (rememberMe) {
       const thirtyDays = 30 * 24 * 60 * 60 * 1000;
-      localStorage.setItem('estatereach_token', newToken);
-      localStorage.setItem('estatereach_user', JSON.stringify(newUser));
-      localStorage.setItem('estatereach_token_expiry', String(Date.now() + thirtyDays));
-      sessionStorage.removeItem('estatereach_token');
-      sessionStorage.removeItem('estatereach_user');
+      localStorage.setItem('outreach_token', newToken);
+      localStorage.setItem('outreach_user', JSON.stringify(newUser));
+      localStorage.setItem('outreach_token_expiry', String(Date.now() + thirtyDays));
+      sessionStorage.removeItem('outreach_token');
+      sessionStorage.removeItem('outreach_user');
     } else {
-      sessionStorage.setItem('estatereach_token', newToken);
-      sessionStorage.setItem('estatereach_user', JSON.stringify(newUser));
-      localStorage.removeItem('estatereach_token');
-      localStorage.removeItem('estatereach_user');
-      localStorage.removeItem('estatereach_token_expiry');
+      sessionStorage.setItem('outreach_token', newToken);
+      sessionStorage.setItem('outreach_user', JSON.stringify(newUser));
+      localStorage.removeItem('outreach_token');
+      localStorage.removeItem('outreach_user');
+      localStorage.removeItem('outreach_token_expiry');
     }
   };
 
   const logout = () => {
     setToken(null);
     setUser(null);
-    localStorage.removeItem('estatereach_token');
-    localStorage.removeItem('estatereach_user');
-    localStorage.removeItem('estatereach_token_expiry');
-    sessionStorage.removeItem('estatereach_token');
-    sessionStorage.removeItem('estatereach_user');
+    localStorage.removeItem('outreach_token');
+    localStorage.removeItem('outreach_user');
+    localStorage.removeItem('outreach_token_expiry');
+    sessionStorage.removeItem('outreach_token');
+    sessionStorage.removeItem('outreach_user');
   };
 
   const isAuthenticated = !!token && !!user;

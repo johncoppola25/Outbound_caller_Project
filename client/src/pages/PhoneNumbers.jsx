@@ -111,7 +111,7 @@ export default function PhoneNumbers() {
   return (
     <div style={{ maxWidth: '900px', margin: '0 auto' }}>
       <Helmet>
-        <title>Phone Numbers - EstateReach AI</title>
+        <title>Phone Numbers - OutReach AI</title>
         <meta name="description" content="Search and purchase phone numbers for your AI calling campaigns." />
       </Helmet>
       <div style={{ marginBottom: '28px' }}>

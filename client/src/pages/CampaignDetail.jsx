@@ -97,7 +97,7 @@ function PreviewPromptWithHighlights({ prompt, contact, botName, campaign }) {
   return (
     <>
       <Helmet>
-        <title>Campaign Details - EstateReach AI</title>
+        <title>Campaign Details - OutReach AI</title>
         <meta name="description" content="View campaign performance, contacts, and call results." />
       </Helmet>
       {parts.map((part, i) => 

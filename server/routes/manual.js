@@ -11,9 +11,9 @@ const router = express.Router();
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
 
 // All the manual content as context for the AI
-const MANUAL_CONTEXT = `You are a helpful assistant for the EstateReach AI Outreach platform. Answer the user's question based ONLY on the information below. Keep answers concise and actionable. Use numbered steps when explaining how to do something. If you don't know the answer from the manual content, say so.
+const MANUAL_CONTEXT = `You are a helpful assistant for the OutReach AI Outreach platform. Answer the user's question based ONLY on the information below. Keep answers concise and actionable. Use numbered steps when explaining how to do something. If you don't know the answer from the manual content, say so.
 
-# EstateReach User Manual
+# OutReach User Manual
 
 ## GETTING STARTED
 1. Log in with your admin credentials on the Login page.

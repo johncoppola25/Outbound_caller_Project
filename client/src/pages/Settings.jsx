@@ -72,7 +72,7 @@ export default function Settings() {
     return (
       <div style={{ padding: '32px', textAlign: 'center', background: '#f3f4f6', minHeight: '100vh' }}>
       <Helmet>
-        <title>Settings - EstateReach AI</title>
+        <title>Settings - OutReach AI</title>
         <meta name="description" content="Configure your account settings, Telnyx connection, and platform preferences." />
       </Helmet>
         <RefreshCw style={{ width: '32px', height: '32px', color: '#4f46e5', animation: 'spin 1s linear infinite' }} />

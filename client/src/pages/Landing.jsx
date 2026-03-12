@@ -6,7 +6,7 @@ export default function Landing() {
   return (
     <div style={{ fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif", color: '#111827' }}>
       <Helmet>
-        <title>EstateReach AI - AI-Powered Real Estate Outbound Calling Platform</title>
+        <title>OutReach AI - AI-Powered Real Estate Outbound Calling Platform</title>
         <meta name="description" content="Automate outbound calls for real estate with AI. Book appointments, detect voicemail, and scale your outreach 10x. 24/7 intelligent calling platform." />
       </Helmet>
       {/* Nav */}
@@ -14,7 +14,7 @@ export default function Landing() {
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         padding: '16px 40px', background: '#ffffff'
       }}>
-        <img src="/logo.svg" alt="EstateReach AI" style={{ height: '50px' }} />
+        <img src="/logo.svg" alt="OutReach AI" style={{ height: '50px' }} />
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           <Link to="/login" style={{
             padding: '9px 20px', fontSize: '14px', fontWeight: '600', color: '#374151',
@@ -56,7 +56,7 @@ export default function Landing() {
             fontSize: '18px', color: '#6b7280', maxWidth: '580px', margin: '0 auto 36px',
             lineHeight: '1.7'
           }}>
-            EstateReach AI makes thousands of intelligent outbound calls, books appointments,
+            OutReach AI makes thousands of intelligent outbound calls, books appointments,
             and follows up with leads — all on autopilot, 24/7.
           </p>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px', flexWrap: 'wrap' }}>
@@ -101,7 +101,7 @@ export default function Landing() {
       <section style={{ padding: '80px 24px', background: '#ffffff' }}>
         <div style={{ maxWidth: '1100px', margin: '0 auto' }}>
           <div style={{ textAlign: 'center', marginBottom: '48px' }}>
-            <p style={{ fontSize: '13px', fontWeight: '700', color: '#4f46e5', textTransform: 'uppercase', letterSpacing: '0.1em', margin: '0 0 8px 0' }}>What EstateReach AI Does</p>
+            <p style={{ fontSize: '13px', fontWeight: '700', color: '#4f46e5', textTransform: 'uppercase', letterSpacing: '0.1em', margin: '0 0 8px 0' }}>What OutReach AI Does</p>
             <h2 style={{ fontSize: '36px', fontWeight: '800', margin: '0 0 12px 0', letterSpacing: '-0.02em' }}>
               One Platform. Unlimited AI Calls.
             </h2>
@@ -290,7 +290,7 @@ export default function Landing() {
             Ready to Scale Your Outreach?
           </h2>
           <p style={{ fontSize: '16px', color: '#6b7280', marginBottom: '32px', lineHeight: '1.7' }}>
-            Join businesses using EstateReach AI to book more appointments, close more deals, and spend less on outbound calling.
+            Join businesses using OutReach AI to book more appointments, close more deals, and spend less on outbound calling.
           </p>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px', flexWrap: 'wrap' }}>
             <Link to="/signup" style={{
@@ -317,10 +317,10 @@ export default function Landing() {
         textAlign: 'center', fontSize: '13px'
       }}>
         <div style={{ marginBottom: '16px' }}>
-          <img src="/logo.svg" alt="EstateReach AI" style={{ width: '220px' }} />
+          <img src="/logo.svg" alt="OutReach AI" style={{ width: '220px' }} />
         </div>
         <p style={{ margin: '0 0 8px 0' }}>AI-Powered Outbound Calling Platform</p>
-        <p style={{ margin: 0 }}>&copy; 2026 EstateReach AI. All rights reserved.</p>
+        <p style={{ margin: 0 }}>&copy; 2026 OutReach AI. All rights reserved.</p>
       </footer>
     </div>
   );

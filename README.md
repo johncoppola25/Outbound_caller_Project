@@ -1,8 +1,8 @@
-# EstateReach - AI-Powered Real Estate Outbound Calling Platform
+# OutReach - AI-Powered Real Estate Outbound Calling Platform
 
 A comprehensive outbound calling platform for real estate agents using Telnyx AI Assistant for automated client outreach, appointment scheduling, and follow-up calls.
 
-![EstateReach Dashboard](https://via.placeholder.com/800x400?text=EstateReach+Dashboard)
+![OutReach Dashboard](https://via.placeholder.com/800x400?text=OutReach+Dashboard)
 
 ## Features
 

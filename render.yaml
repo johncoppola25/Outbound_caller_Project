@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: estatereach
+    name: outreach
     runtime: node
     plan: free
     buildCommand: npm run render-build
@@ -21,6 +21,6 @@ services:
       - key: WEBHOOK_BASE_URL
         sync: false
     disk:
-      name: estatereach-data
+      name: outreach-data
       mountPath: /data
       sizeGB: 1

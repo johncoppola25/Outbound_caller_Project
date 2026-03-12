@@ -121,7 +121,7 @@ export default function AdminUsers() {
   return (
     <div>
       <Helmet>
-        <title>User Management - EstateReach AI Admin</title>
+        <title>User Management - OutReach AI Admin</title>
         <meta name="description" content="Manage users, balances, and account statuses." />
       </Helmet>
       <div style={{ marginBottom: '24px' }}>
@@ -285,7 +285,7 @@ export default function AdminUsers() {
                       </button>
                     </>
                   )}
-                  {user.role === 'admin' && user.email !== 'admin@estatereach.com' && (
+                  {user.role === 'admin' && user.email !== 'admin@outreach.com' && (
                     <button
                       onClick={(e) => { e.stopPropagation(); handleRoleChange(user.id, 'user'); }}
                       title="Remove Admin"

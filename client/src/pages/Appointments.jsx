@@ -91,7 +91,7 @@ export default function Appointments() {
     return (
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '256px' }}>
       <Helmet>
-        <title>Appointments - EstateReach AI</title>
+        <title>Appointments - OutReach AI</title>
         <meta name="description" content="View and manage appointments booked by your AI calling assistant." />
       </Helmet>
         <div style={{ width: '36px', height: '36px', border: '3px solid #e5e7eb', borderTopColor: '#4f46e5', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />

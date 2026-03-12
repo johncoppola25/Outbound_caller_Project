@@ -129,7 +129,7 @@ export default function Contacts() {
     return (
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '256px' }}>
       <Helmet>
-        <title>Contacts - EstateReach AI</title>
+        <title>Contacts - OutReach AI</title>
         <meta name="description" content="Manage your contact lists and lead database for AI outbound campaigns." />
       </Helmet>
         <div style={{ width: '36px', height: '36px', border: '3px solid rgba(79,70,229,0.2)', borderTopColor: '#4f46e5', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />

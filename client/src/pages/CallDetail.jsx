@@ -110,7 +110,7 @@ export default function CallDetail() {
     const lines = transcript.split('\n').filter(l => l.trim());
     if (lines.length <= 1 && !transcript.includes(':')) return <p style={{ color: '#4b5563', whiteSpace: 'pre-wrap', lineHeight: '1.8' }}>
       <Helmet>
-        <title>Call Details - EstateReach AI</title>
+        <title>Call Details - OutReach AI</title>
         <meta name="description" content="Review call recording, transcript, and AI conversation details." />
       </Helmet>{transcript}</p>;
     return lines.map((line, i) => {

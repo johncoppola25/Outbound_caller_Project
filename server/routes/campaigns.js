@@ -369,15 +369,15 @@ router.post('/setup-telnyx', async (req, res) => {
     let apps = await listCallControlApps();
     let appId = null;
     
-    // Find existing EstateReach app or create new one
-    const existingApp = apps.find(app => app.application_name?.includes('EstateReach'));
+    // Find existing OutReach app or create new one
+    const existingApp = apps.find(app => app.application_name?.includes('OutReach'));
     
     if (existingApp) {
       appId = existingApp.id;
       console.log('✅ Found existing Call Control App:', appId);
     } else {
       // Create new Call Control App
-      const newApp = await createCallControlApp('EstateReach Outbound', webhookUrl || 'https://example.com/webhook');
+      const newApp = await createCallControlApp('OutReach Outbound', webhookUrl || 'https://example.com/webhook');
       appId = newApp.data?.id;
       console.log('✅ Created new Call Control App:', appId);
     }

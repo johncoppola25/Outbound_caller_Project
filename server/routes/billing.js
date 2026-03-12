@@ -39,7 +39,7 @@ async function ensureStripeProducts() {
     const existingProducts = await stripe.products.list({ limit: 100 });
 
     for (const plan of PLANS) {
-      const productName = `EstateReach ${plan.name}`;
+      const productName = `OutReach ${plan.name}`;
       let product = existingProducts.data.find(p => p.name === productName && p.active);
 
       const correctDescription = plan.oneTime

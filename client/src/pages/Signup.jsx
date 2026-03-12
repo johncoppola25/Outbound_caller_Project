@@ -80,14 +80,14 @@ export default function Signup() {
   return (
     <div style={styles.page}>
       <Helmet>
-        <title>Sign Up - EstateReach AI</title>
-        <meta name="description" content="Create your EstateReach AI account and start automating outbound calls with AI-powered technology." />
+        <title>Sign Up - OutReach AI</title>
+        <meta name="description" content="Create your OutReach AI account and start automating outbound calls with AI-powered technology." />
       </Helmet>
       {/* Left Panel */}
       {!isMobile && (
         <div style={styles.leftPanel}>
           <div style={styles.brandingContent}>
-            <img src="/logo.svg" alt="EstateReach AI" style={{ width: '380px', maxWidth: '100%', marginBottom: '24px' }} />
+            <img src="/logo.svg" alt="OutReach AI" style={{ width: '380px', maxWidth: '100%', marginBottom: '24px' }} />
             <div style={styles.divider} />
             <h2 style={styles.portalTitle}>AI Outbound Caller</h2>
             <p style={styles.portalSubtitle}>Scale your outreach with intelligent AI calls</p>
@@ -104,7 +104,7 @@ export default function Signup() {
             </div>
 
           </div>
-          <p style={styles.poweredBy}>Powered by EstateReach</p>
+          <p style={styles.poweredBy}>Powered by OutReach</p>
         </div>
       )}
 
@@ -120,12 +120,12 @@ export default function Signup() {
           {/* Mobile logo */}
           {isMobile && (
             <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '24px' }}>
-              <img src="/logo.svg" alt="EstateReach AI" style={{ width: '220px' }} />
+              <img src="/logo.svg" alt="OutReach AI" style={{ width: '220px' }} />
             </div>
           )}
 
           <h1 style={styles.welcomeHeading}>Create your account</h1>
-          <p style={styles.welcomeSubtext}>Get started with EstateReach AI</p>
+          <p style={styles.welcomeSubtext}>Get started with OutReach AI</p>
 
           {/* Progress steps */}
           <div style={styles.progressBar}>
@@ -281,7 +281,7 @@ export default function Signup() {
             <Link to="/login" style={styles.switchLink}>Sign in</Link>
           </p>
 
-          <p style={styles.copyright}>EstateReach AI &copy; 2026</p>
+          <p style={styles.copyright}>OutReach AI &copy; 2026</p>
         </div>
       </div>
     </div>

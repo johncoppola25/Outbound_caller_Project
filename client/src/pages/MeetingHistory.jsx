@@ -94,7 +94,7 @@ export default function MeetingHistory() {
     return (
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '256px' }}>
       <Helmet>
-        <title>Meeting History - EstateReach AI</title>
+        <title>Meeting History - OutReach AI</title>
         <meta name="description" content="Review past meetings and appointment outcomes." />
       </Helmet>
         <div style={{ width: '36px', height: '36px', border: '3px solid #e5e7eb', borderTopColor: '#4f46e5', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />

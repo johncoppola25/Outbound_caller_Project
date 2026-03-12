@@ -1,6 +1,6 @@
 {
-  "name": "EstateReach AI",
-  "short_name": "EstateReach",
+  "name": "OutReach AI",
+  "short_name": "OutReach",
   "description": "AI-Powered Outbound Calling Platform for Real Estate",
   "start_url": "/",
   "display": "standalone",

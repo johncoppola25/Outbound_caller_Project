@@ -621,8 +621,8 @@ export default function UserManual() {
   return (
     <div style={{ maxWidth: '900px', margin: '0 auto', animation: 'fadeIn 0.3s ease-out' }}>
       <Helmet>
-        <title>User Manual - EstateReach AI</title>
-        <meta name="description" content="Learn how to use EstateReach AI platform features and best practices." />
+        <title>User Manual - OutReach AI</title>
+        <meta name="description" content="Learn how to use OutReach AI platform features and best practices." />
       </Helmet>
       {/* Header */}
       <div style={{ marginBottom: '24px' }}>
@@ -640,7 +640,7 @@ export default function UserManual() {
               User Manual
             </h1>
             <p style={{ color: '#4b5563', marginTop: '2px', fontSize: '14px' }}>
-              Everything you need to know about EstateReach AI Outreach
+              Everything you need to know about OutReach AI Outreach
             </p>
           </div>
         </div>
@@ -683,7 +683,7 @@ export default function UserManual() {
               AI Help Assistant
             </h2>
             <p style={{ fontSize: '12px', color: '#a5b4fc', margin: '2px 0 0' }}>
-              Ask me anything about EstateReach
+              Ask me anything about OutReach
             </p>
           </div>
         </div>
@@ -1003,7 +1003,7 @@ export default function UserManual() {
       }}>
         <p style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
           <Zap style={{ width: '13px', height: '13px', color: '#4f46e5' }} />
-          EstateReach AI Outreach Platform
+          OutReach AI Outreach Platform
         </p>
       </div>
     </div>

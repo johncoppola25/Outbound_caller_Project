@@ -251,7 +251,7 @@ export default function Layout() {
           <div style={{ display: 'flex', alignItems: 'center', gap: '11px' }}>
             <svg viewBox="0 0 340 50" style={{ width: '190px' }} xmlns="http://www.w3.org/2000/svg">
               <text x="0" y="34" fontFamily="'Segoe UI', 'Helvetica Neue', Arial, sans-serif" fontSize="38" fontWeight="700" letterSpacing="-0.5">
-                <tspan fill="#ffffff">Estate</tspan><tspan fill="#4f46e5">Reach</tspan>
+                <tspan fill="#ffffff">Out</tspan><tspan fill="#4f46e5">Reach</tspan>
               </text>
               <text x="220" y="34" fontFamily="'Segoe UI', 'Helvetica Neue', Arial, sans-serif" fontSize="38" fontWeight="300" fill="#4f46e5" letterSpacing="-0.5">AI</text>
               <rect x="0" y="42" width="50" height="3" rx="1.5" fill="#4f46e5"/>

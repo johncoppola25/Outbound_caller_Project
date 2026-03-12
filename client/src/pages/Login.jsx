@@ -55,19 +55,19 @@ export default function Login() {
   return (
     <div style={styles.page}>
       <Helmet>
-        <title>Log In - EstateReach AI</title>
-        <meta name="description" content="Log in to your EstateReach AI dashboard to manage campaigns, track calls, and monitor appointments." />
+        <title>Log In - OutReach AI</title>
+        <meta name="description" content="Log in to your OutReach AI dashboard to manage campaigns, track calls, and monitor appointments." />
       </Helmet>
       {/* Left Panel - Blue Gradient Branding (hidden on mobile) */}
       {!isMobile && (
         <div style={styles.leftPanel}>
           <div style={styles.brandingContent}>
-            <img src="/logo.svg" alt="EstateReach AI" style={{ width: '380px', maxWidth: '100%', marginBottom: '24px' }} />
+            <img src="/logo.svg" alt="OutReach AI" style={{ width: '380px', maxWidth: '100%', marginBottom: '24px' }} />
             <div style={styles.divider} />
             <h2 style={styles.portalTitle}>Outbound Caller</h2>
             <p style={styles.portalSubtitle}>AI-Powered Calling Platform</p>
           </div>
-          <p style={styles.poweredBy}>Powered by EstateReach</p>
+          <p style={styles.poweredBy}>Powered by OutReach</p>
         </div>
       )}
 
@@ -146,7 +146,7 @@ export default function Login() {
             <Link to="/signup" style={styles.switchLink}>Sign up</Link>
           </p>
 
-          <p style={styles.copyright}>EstateReach AI &copy; 2026</p>
+          <p style={styles.copyright}>OutReach AI &copy; 2026</p>
         </div>
       </div>
     </div>
