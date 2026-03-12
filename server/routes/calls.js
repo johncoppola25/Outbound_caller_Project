@@ -632,6 +632,13 @@ router.get('/', async (req, res) => {
       UPDATE calls SET status = 'completed', ended_at = COALESCE(ended_at, CURRENT_TIMESTAMP)
       WHERE status IN ('ringing', 'queued') AND (outcome IS NOT NULL OR transcript IS NOT NULL)
     `).run();
+    // Auto-fix old ringing/queued calls with no data (never answered) — mark as failed after 30 min
+    db.prepare(`
+      UPDATE calls SET status = 'failed', outcome = 'no_answer', ended_at = COALESCE(ended_at, CURRENT_TIMESTAMP)
+      WHERE status IN ('ringing', 'queued', 'in_progress')
+      AND outcome IS NULL AND transcript IS NULL
+      AND created_at < datetime('now', '-30 minutes')
+    `).run();
     // Auto-calculate missing costs for completed calls
     db.prepare(`
       UPDATE calls SET estimated_cost = ROUND(MAX(COALESCE(duration_seconds, 60), 60) / 60.0 * 0.06, 4)
