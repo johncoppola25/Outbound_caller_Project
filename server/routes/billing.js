@@ -321,15 +321,47 @@ router.get('/invoices', async (req, res) => {
   }
 });
 
-// Get calling balance
+// Get calling balance + auto-fund settings
 router.get('/balance', async (req, res) => {
   try {
     const db = await getDb();
-    const user = db.prepare('SELECT calling_balance FROM users WHERE id = ?').get(req.user.userId);
-    res.json({ balance: user?.calling_balance || 0 });
+    const user = db.prepare('SELECT calling_balance, auto_fund_enabled, auto_fund_amount, auto_fund_threshold FROM users WHERE id = ?').get(req.user.userId);
+    res.json({
+      balance: user?.calling_balance || 0,
+      autoFund: {
+        enabled: !!user?.auto_fund_enabled,
+        amount: user?.auto_fund_amount || 50,
+        threshold: user?.auto_fund_threshold || 20
+      }
+    });
   } catch (error) {
     console.error('Error fetching balance:', error);
     res.status(500).json({ error: 'Failed to fetch balance' });
+  }
+});
+
+// Update auto-fund settings
+router.post('/auto-fund', async (req, res) => {
+  try {
+    const { enabled, amount, threshold } = req.body;
+    const validAmounts = [25, 50, 100, 200];
+    const validThresholds = [10, 20, 30, 50];
+
+    if (amount !== undefined && !validAmounts.includes(amount)) {
+      return res.status(400).json({ error: 'Invalid amount.' });
+    }
+    if (threshold !== undefined && !validThresholds.includes(threshold)) {
+      return res.status(400).json({ error: 'Invalid threshold.' });
+    }
+
+    const db = await getDb();
+    db.prepare('UPDATE users SET auto_fund_enabled = ?, auto_fund_amount = ?, auto_fund_threshold = ? WHERE id = ?')
+      .run(enabled ? 1 : 0, amount || 50, threshold || 20, req.user.userId);
+
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Error updating auto-fund:', error);
+    res.status(500).json({ error: 'Failed to update auto-fund settings' });
   }
 });
 
@@ -443,11 +475,45 @@ export async function deductCallCost(userId, durationSeconds) {
     const minutes = Math.ceil(durationSeconds / 60);
     const cost = minutes * 0.15; // $0.15 per minute
 
-    const user = db.prepare('SELECT calling_balance FROM users WHERE id = ?').get(userId);
+    const user = db.prepare('SELECT calling_balance, auto_fund_enabled, auto_fund_amount, auto_fund_threshold, stripe_customer_id FROM users WHERE id = ?').get(userId);
     const newBalance = Math.max(0, (user?.calling_balance || 0) - cost);
     db.prepare('UPDATE users SET calling_balance = ? WHERE id = ?').run(newBalance, userId);
 
     console.log(`Deducted $${cost.toFixed(2)} (${minutes}min) from user ${userId}. Balance: $${newBalance.toFixed(2)}`);
+
+    // Auto-fund: if balance dropped below threshold, charge saved payment method
+    if (user?.auto_fund_enabled && stripe && user?.stripe_customer_id && newBalance < (user.auto_fund_threshold || 20)) {
+      try {
+        const amount = user.auto_fund_amount || 50;
+        // Get customer's default payment method
+        const customer = await stripe.customers.retrieve(user.stripe_customer_id);
+        const paymentMethod = customer.invoice_settings?.default_payment_method || customer.default_source;
+
+        if (paymentMethod) {
+          const paymentIntent = await stripe.paymentIntents.create({
+            amount: amount * 100,
+            currency: 'usd',
+            customer: user.stripe_customer_id,
+            payment_method: paymentMethod,
+            off_session: true,
+            confirm: true,
+            description: `Auto-fund: $${amount} calling credits`,
+            metadata: { user_id: userId, type: 'auto_fund' }
+          });
+
+          if (paymentIntent.status === 'succeeded') {
+            const updatedBalance = newBalance + amount;
+            db.prepare('UPDATE users SET calling_balance = ? WHERE id = ?').run(updatedBalance, userId);
+            console.log(`Auto-funded $${amount} for user ${userId}. New balance: $${updatedBalance.toFixed(2)}`);
+          }
+        } else {
+          console.log(`Auto-fund: No saved payment method for user ${userId}`);
+        }
+      } catch (autoFundErr) {
+        console.error('Auto-fund failed:', autoFundErr.message);
+      }
+    }
+
     return { cost, newBalance };
   } catch (error) {
     console.error('Error deducting call cost:', error.message);

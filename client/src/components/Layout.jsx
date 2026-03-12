@@ -65,6 +65,8 @@ export default function Layout() {
   const [callingBalance, setCallingBalance] = useState(null);
   const [showAddFunds, setShowAddFunds] = useState(false);
   const [addingFunds, setAddingFunds] = useState(false);
+  const [autoFund, setAutoFund] = useState({ enabled: false, amount: 50, threshold: 20 });
+  const [showAutoFundSettings, setShowAutoFundSettings] = useState(false);
   const isAdmin = user?.role === 'admin';
   const [appointmentCount, setAppointmentCount] = useState(0);
   const [notifications, setNotifications] = useState([]);
@@ -151,6 +153,7 @@ export default function Layout() {
       if (res.ok) {
         const data = await res.json();
         setCallingBalance(data.balance);
+        if (data.autoFund) setAutoFund(data.autoFund);
       }
     } catch (e) { /* ignore */ }
   }, [isAdmin]);
@@ -185,6 +188,17 @@ export default function Layout() {
       if (data.url) window.location.href = data.url;
     } catch (e) { /* ignore */ }
     setAddingFunds(false);
+  };
+
+  const saveAutoFund = async (settings) => {
+    setAutoFund(settings);
+    try {
+      await apiFetch('/api/billing/auto-fund', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(settings)
+      });
+    } catch (e) { /* ignore */ }
   };
 
   const unreadCount = notifications.filter(n => !readIds.includes(n.id)).length;
@@ -537,6 +551,85 @@ export default function Layout() {
                         </button>
                       ))}
                     </div>
+                    {/* Auto-fund settings */}
+                    <div style={{ padding: '10px 16px', borderTop: '1px solid #f3f4f6' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: showAutoFundSettings && autoFund.enabled ? '10px' : '0' }}>
+                        <span style={{ fontSize: '12px', fontWeight: '600', color: '#111827' }}>Auto-fund</span>
+                        <button
+                          onClick={() => {
+                            const newEnabled = !autoFund.enabled;
+                            saveAutoFund({ ...autoFund, enabled: newEnabled });
+                            if (newEnabled) setShowAutoFundSettings(true);
+                          }}
+                          style={{
+                            width: '36px', height: '20px', borderRadius: '10px', border: 'none',
+                            background: autoFund.enabled ? '#4f46e5' : '#d1d5db', cursor: 'pointer',
+                            position: 'relative', transition: 'background 0.2s'
+                          }}
+                        >
+                          <div style={{
+                            width: '16px', height: '16px', borderRadius: '8px', background: '#fff',
+                            position: 'absolute', top: '2px',
+                            left: autoFund.enabled ? '18px' : '2px',
+                            transition: 'left 0.2s', boxShadow: '0 1px 2px rgba(0,0,0,0.2)'
+                          }} />
+                        </button>
+                      </div>
+                      {autoFund.enabled && (
+                        <>
+                          <button
+                            onClick={() => setShowAutoFundSettings(!showAutoFundSettings)}
+                            style={{ fontSize: '11px', color: '#4f46e5', background: 'none', border: 'none', cursor: 'pointer', padding: 0, fontWeight: '500' }}
+                          >
+                            {showAutoFundSettings ? 'Hide settings' : 'Configure'}
+                          </button>
+                          {showAutoFundSettings && (
+                            <div style={{ marginTop: '8px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                              <div>
+                                <label style={{ fontSize: '11px', color: '#6b7280', display: 'block', marginBottom: '3px' }}>Add this amount:</label>
+                                <div style={{ display: 'flex', gap: '4px' }}>
+                                  {[25, 50, 100, 200].map(amt => (
+                                    <button
+                                      key={amt}
+                                      onClick={() => saveAutoFund({ ...autoFund, amount: amt })}
+                                      style={{
+                                        flex: 1, padding: '5px', borderRadius: '6px', fontSize: '11px', fontWeight: '600',
+                                        border: autoFund.amount === amt ? '1.5px solid #4f46e5' : '1px solid #e5e7eb',
+                                        background: autoFund.amount === amt ? '#eef2ff' : '#fff',
+                                        color: autoFund.amount === amt ? '#4f46e5' : '#6b7280',
+                                        cursor: 'pointer'
+                                      }}
+                                    >${amt}</button>
+                                  ))}
+                                </div>
+                              </div>
+                              <div>
+                                <label style={{ fontSize: '11px', color: '#6b7280', display: 'block', marginBottom: '3px' }}>When balance drops below:</label>
+                                <div style={{ display: 'flex', gap: '4px' }}>
+                                  {[10, 20, 30, 50].map(thr => (
+                                    <button
+                                      key={thr}
+                                      onClick={() => saveAutoFund({ ...autoFund, threshold: thr })}
+                                      style={{
+                                        flex: 1, padding: '5px', borderRadius: '6px', fontSize: '11px', fontWeight: '600',
+                                        border: autoFund.threshold === thr ? '1.5px solid #4f46e5' : '1px solid #e5e7eb',
+                                        background: autoFund.threshold === thr ? '#eef2ff' : '#fff',
+                                        color: autoFund.threshold === thr ? '#4f46e5' : '#6b7280',
+                                        cursor: 'pointer'
+                                      }}
+                                    >${thr}</button>
+                                  ))}
+                                </div>
+                              </div>
+                              <p style={{ fontSize: '10px', color: '#9ca3af', margin: 0 }}>
+                                Auto-adds ${autoFund.amount} when balance falls below ${autoFund.threshold}
+                              </p>
+                            </div>
+                          )}
+                        </>
+                      )}
+                    </div>
+
                     {callingBalance < 50 && (
                       <div style={{ padding: '10px 16px', borderTop: '1px solid #f3f4f6', background: callingBalance < 20 ? '#fef2f2' : '#fffbeb' }}>
                         <p style={{ fontSize: '11px', color: callingBalance < 20 ? '#dc2626' : '#b45309', margin: 0, fontWeight: '600' }}>

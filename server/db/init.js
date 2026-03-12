@@ -293,6 +293,15 @@ export async function initDatabase() {
   try {
     db.exec(`ALTER TABLE users ADD COLUMN calling_balance REAL DEFAULT 0`);
   } catch (e) { /* column may already exist */ }
+  try {
+    db.exec(`ALTER TABLE users ADD COLUMN auto_fund_enabled INTEGER DEFAULT 0`);
+  } catch (e) { /* column may already exist */ }
+  try {
+    db.exec(`ALTER TABLE users ADD COLUMN auto_fund_amount INTEGER DEFAULT 50`);
+  } catch (e) { /* column may already exist */ }
+  try {
+    db.exec(`ALTER TABLE users ADD COLUMN auto_fund_threshold INTEGER DEFAULT 20`);
+  } catch (e) { /* column may already exist */ }
 
   // Meeting history table - completed meetings
   db.exec(`
