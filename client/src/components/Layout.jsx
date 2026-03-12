@@ -254,7 +254,7 @@ export default function Layout() {
                 <tspan fill="#ffffff">Out</tspan><tspan fill="#4f46e5">Reach</tspan>
               </text>
               <text x="168" y="34" fontFamily="'Segoe UI', 'Helvetica Neue', Arial, sans-serif" fontSize="38" fontWeight="300" fill="#4f46e5" letterSpacing="-0.5">AI</text>
-              <rect x="3" y="42" width="152" height="3" rx="1.5" fill="#4f46e5"/>
+              <rect x="3" y="42" width="152" height="1.5" rx="0.75" fill="#4f46e5"/>
             </svg>
             {/* Bell icon */}
             <div style={{ position: 'relative' }}>
