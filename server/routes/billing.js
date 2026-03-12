@@ -2,7 +2,10 @@ import express from 'express';
 import Stripe from 'stripe';
 import { v4 as uuidv4 } from 'uuid';
 import { getDb } from '../db/init.js';
-import { broadcast } from '../index.js';
+
+// Broadcast function set by index.js to avoid circular import
+let _broadcast = () => {};
+export function setBroadcast(fn) { _broadcast = fn; }
 
 const router = express.Router();
 
@@ -495,7 +498,7 @@ export async function deductCallCost(userId, durationSeconds) {
 
     // Alert user if balance dropped below $20
     if (newBalance < 20) {
-      broadcast({
+      _broadcast({
         type: 'balance_low',
         userId,
         balance: newBalance,

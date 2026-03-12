@@ -20,7 +20,7 @@ import dncRouter from './routes/dnc.js';
 import authRouter from './routes/auth.js';
 import meetingsRouter from './routes/meetings.js';
 import manualRouter from './routes/manual.js';
-import billingRouter from './routes/billing.js';
+import billingRouter, { setBroadcast } from './routes/billing.js';
 import adminRouter from './routes/admin.js';
 import phoneNumbersRouter from './routes/phoneNumbers.js';
 import { initDatabase } from './db/init.js';
@@ -84,6 +84,9 @@ export const broadcast = (data) => {
     }
   });
 };
+
+// Wire broadcast to billing (avoids circular import)
+setBroadcast(broadcast);
 
 // General rate limiter for all API routes
 app.use('/api/', generalLimiter);
