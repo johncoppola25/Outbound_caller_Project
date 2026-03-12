@@ -259,12 +259,34 @@ router.get('/:id', async (req, res) => {
     if (!call) {
       return res.status(404).json({ error: 'Call not found' });
     }
-    
+
+    // Auto-fix on read: calculate cost if missing, fix stuck status
+    const fixes = {};
+    const isCompleted = call.status === 'completed' || call.outcome || call.transcript;
+
+    if (!call.estimated_cost && isCompleted) {
+      if (call.duration_seconds) {
+        fixes.estimated_cost = +(Math.max(call.duration_seconds, 60) / 60 * 0.06).toFixed(4);
+      } else {
+        fixes.estimated_cost = 0.06; // minimum billing
+      }
+    }
+    if ((call.status === 'ringing' || call.status === 'queued') && isCompleted) {
+      fixes.status = 'completed';
+      if (!call.ended_at) fixes.ended_at = new Date().toISOString();
+    }
+
+    if (Object.keys(fixes).length > 0) {
+      const setClause = Object.keys(fixes).map(k => `${k} = ?`).join(', ');
+      db.prepare(`UPDATE calls SET ${setClause} WHERE id = ?`).run(...Object.values(fixes), call.id);
+      Object.assign(call, fixes);
+    }
+
     // Get call events
     const events = db.prepare(`
       SELECT * FROM call_events WHERE call_id = ? ORDER BY created_at ASC
     `).all(req.params.id);
-    
+
     res.json({ ...call, events });
   } catch (error) {
     console.error('Error fetching call:', error);
