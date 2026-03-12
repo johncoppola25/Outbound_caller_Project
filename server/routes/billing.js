@@ -2,6 +2,7 @@ import express from 'express';
 import Stripe from 'stripe';
 import { v4 as uuidv4 } from 'uuid';
 import { getDb } from '../db/init.js';
+import { broadcast } from '../index.js';
 
 const router = express.Router();
 
@@ -491,6 +492,18 @@ export async function deductCallCost(userId, durationSeconds) {
     db.prepare('UPDATE users SET calling_balance = ? WHERE id = ?').run(newBalance, userId);
 
     console.log(`Deducted $${cost.toFixed(2)} (${minutes}min) from user ${userId}. Balance: $${newBalance.toFixed(2)}`);
+
+    // Alert user if balance dropped below $20
+    if (newBalance < 20) {
+      broadcast({
+        type: 'balance_low',
+        userId,
+        balance: newBalance,
+        message: newBalance < 1
+          ? 'Your calling balance is empty! Add funds to continue making calls.'
+          : `Your calling balance is low ($${newBalance.toFixed(2)}). Add funds to avoid interruptions.`
+      });
+    }
 
     // Auto-fund: if balance dropped below threshold, charge saved payment method
     if (user?.auto_fund_enabled && stripe && user?.stripe_customer_id && newBalance < (user.auto_fund_threshold || 20)) {

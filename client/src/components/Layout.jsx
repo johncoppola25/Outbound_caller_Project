@@ -64,6 +64,7 @@ export default function Layout() {
   const [addingFunds, setAddingFunds] = useState(false);
   const [autoFund, setAutoFund] = useState({ enabled: false, amount: 50, threshold: 20 });
   const [showAutoFundSettings, setShowAutoFundSettings] = useState(false);
+  const [lowBalanceAlert, setLowBalanceAlert] = useState(null);
   const isAdmin = user?.role === 'admin';
   const [appointmentCount, setAppointmentCount] = useState(0);
   const [notifications, setNotifications] = useState([]);
@@ -138,9 +139,16 @@ export default function Layout() {
     return subscribe((msg) => {
       if (msg.type === 'call_update' || msg.type === 'call_ended') {
         fetchNotifications();
+        fetchBalance(); // Refresh balance after call ends
+      }
+      if (msg.type === 'balance_low') {
+        setCallingBalance(msg.balance);
+        setLowBalanceAlert(msg.message);
+        // Auto-dismiss after 10 seconds
+        setTimeout(() => setLowBalanceAlert(null), 10000);
       }
     });
-  }, [subscribe, fetchNotifications]);
+  }, [subscribe, fetchNotifications, fetchBalance]);
 
   // Fetch calling balance (users only)
   const fetchBalance = useCallback(async () => {
@@ -638,6 +646,49 @@ export default function Layout() {
                 </>
               )}
             </div>
+          </div>
+        )}
+
+        {/* Low Balance Alert Toast */}
+        {lowBalanceAlert && (
+          <div style={{
+            margin: isMobile ? '8px 16px' : '8px 28px',
+            padding: '12px 16px',
+            background: '#fef2f2',
+            border: '1px solid #fecaca',
+            borderRadius: '10px',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '10px',
+            boxShadow: '0 4px 12px rgba(220,38,38,0.15)',
+            animation: 'slideDown 0.3s ease'
+          }}>
+            <div style={{
+              width: '32px', height: '32px', borderRadius: '8px',
+              background: '#dc2626', display: 'flex', alignItems: 'center',
+              justifyContent: 'center', flexShrink: 0
+            }}>
+              <DollarSign size={16} color="#fff" />
+            </div>
+            <div style={{ flex: 1 }}>
+              <p style={{ fontSize: '13px', fontWeight: '700', color: '#dc2626', margin: 0 }}>Low Balance Alert</p>
+              <p style={{ fontSize: '12px', color: '#991b1b', margin: '2px 0 0' }}>{lowBalanceAlert}</p>
+            </div>
+            <button
+              onClick={() => { setLowBalanceAlert(null); setShowAddFunds(true); }}
+              style={{
+                padding: '6px 14px', borderRadius: '7px', border: 'none',
+                background: '#dc2626', color: '#fff', fontSize: '12px',
+                fontWeight: '600', cursor: 'pointer', whiteSpace: 'nowrap'
+              }}
+            >Add Funds</button>
+            <button
+              onClick={() => setLowBalanceAlert(null)}
+              style={{
+                background: 'none', border: 'none', cursor: 'pointer',
+                padding: '4px', color: '#9ca3af', fontSize: '16px', lineHeight: 1
+              }}
+            >&times;</button>
           </div>
         )}
 
