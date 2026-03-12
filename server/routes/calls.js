@@ -660,66 +660,91 @@ router.post('/:id/sync', async (req, res) => {
     const updates = {};
     const debugInfo = [];
 
-    // 1) Fetch call details from Telnyx - log everything we get back
+    // Run independent Telnyx API calls in PARALLEL for speed
+    const campaign = db.prepare('SELECT telnyx_assistant_id FROM campaigns WHERE id = ?').get(call.campaign_id);
+    const contact = db.prepare('SELECT phone FROM contacts WHERE id = ?').get(call.contact_id);
+
+    const parallelTasks = [];
+
+    // Task 1: Fetch call details
     if (call.telnyx_call_id) {
-      try {
-        const callDetails = await getCallDetails(call.telnyx_call_id);
-        if (callDetails?.data) {
-          const d = callDetails.data;
-          console.log('📋 Full call details from Telnyx:', JSON.stringify(d, null, 2));
-          debugInfo.push(`Call state: ${d.state || d.status || 'unknown'}, is_alive: ${d.is_alive}`);
-          
-          // Get duration from call_duration or duration_seconds
-          const dur = d.call_duration || d.duration_seconds;
-          if (dur && !call.duration_seconds) {
-            updates.duration_seconds = dur;
-            debugInfo.push(`Duration from Telnyx: ${dur}s`);
-          }
-          
-          if (d.state === 'hangup' || d.is_alive === false) {
-            if (call.status !== 'completed' && call.status !== 'voicemail') {
-              updates.status = 'completed';
-              updates.ended_at = d.end_time || new Date().toISOString();
-            }
-          }
-        }
-      } catch (e) {
-        debugInfo.push(`Call details error: ${e.message}`);
-      }
+      parallelTasks.push(
+        getCallDetails(call.telnyx_call_id).catch(e => ({ _error: e.message, _task: 'callDetails' }))
+      );
+    } else {
+      parallelTasks.push(null);
     }
 
-    // 2) List ALL recent recordings from Telnyx account and match by time
+    // Task 2: Fetch recordings list
     if (!call.recording_url) {
-      try {
-        const allRecs = await telnyxRequest('/recordings', 'GET');
-        console.log('🎙️ All recordings count:', allRecs?.data?.length || 0);
-        if (allRecs?.data?.length > 0) {
-          const callTimeStr = call.started_at || call.created_at;
-          const callTime = callTimeStr ? (() => {
-            let s = String(callTimeStr).trim().replace(' ', 'T');
-            if (!s.endsWith('Z') && !/[-+]\d{2}:?\d{0,2}$/.test(s)) s += 'Z';
-            return new Date(s).getTime();
-          })() : 0;
-          // Find recording within 20 minutes (recordings can take a few min to process)
-          const matchRec = allRecs.data.find(r => {
-            const recTime = new Date(r.created_at).getTime();
-            return callTime && Math.abs(recTime - callTime) < 1200000;
-          });
-          if (matchRec) {
-            const url = matchRec.download_urls?.mp3 || matchRec.public_recording_urls?.mp3 || matchRec.recording_urls?.mp3;
-            if (url) {
-              updates.recording_url = url;
-              debugInfo.push('Found recording by time match');
-            }
-          } else {
-            debugInfo.push(`${allRecs.data.length} recordings found but none match call time`);
-          }
-        } else {
-          debugInfo.push('No recordings in Telnyx account');
-        }
-      } catch (e) {
-        debugInfo.push(`Recordings list error: ${e.message}`);
+      parallelTasks.push(
+        telnyxRequest('/recordings', 'GET').catch(e => ({ _error: e.message, _task: 'recordings' }))
+      );
+    } else {
+      parallelTasks.push(null);
+    }
+
+    // Task 3: Fetch AI conversation transcript
+    if (call.telnyx_call_id) {
+      parallelTasks.push(
+        getConversationTranscript(
+          call.telnyx_call_id,
+          contact?.phone,
+          campaign?.telnyx_assistant_id,
+          call.started_at || call.created_at
+        ).catch(e => ({ _error: e.message, _task: 'transcript' }))
+      );
+    } else {
+      parallelTasks.push(null);
+    }
+
+    const [callDetailsResult, recordingsResult, transcriptResult] = await Promise.all(parallelTasks);
+
+    // Process call details
+    if (callDetailsResult && !callDetailsResult._error && callDetailsResult.data) {
+      const d = callDetailsResult.data;
+      debugInfo.push(`Call state: ${d.state || d.status || 'unknown'}, is_alive: ${d.is_alive}`);
+      const dur = d.call_duration || d.duration_seconds;
+      if (dur && !call.duration_seconds) {
+        updates.duration_seconds = dur;
+        debugInfo.push(`Duration from Telnyx: ${dur}s`);
       }
+      if (d.state === 'hangup' || d.is_alive === false) {
+        if (call.status !== 'completed' && call.status !== 'voicemail') {
+          updates.status = 'completed';
+          updates.ended_at = d.end_time || new Date().toISOString();
+        }
+      }
+    } else if (callDetailsResult?._error) {
+      debugInfo.push(`Call details error: ${callDetailsResult._error}`);
+    }
+
+    // Process recordings
+    if (recordingsResult && !recordingsResult._error && recordingsResult.data?.length > 0) {
+      const callTimeStr = call.started_at || call.created_at;
+      const callTime = callTimeStr ? (() => {
+        let s = String(callTimeStr).trim().replace(' ', 'T');
+        if (!s.endsWith('Z') && !/[-+]\d{2}:?\d{0,2}$/.test(s)) s += 'Z';
+        return new Date(s).getTime();
+      })() : 0;
+      const matchRec = recordingsResult.data.find(r => {
+        const recTime = new Date(r.created_at).getTime();
+        return callTime && Math.abs(recTime - callTime) < 1200000;
+      });
+      if (matchRec) {
+        const url = matchRec.download_urls?.mp3 || matchRec.public_recording_urls?.mp3 || matchRec.recording_urls?.mp3;
+        if (url) { updates.recording_url = url; debugInfo.push('Found recording by time match'); }
+      } else {
+        debugInfo.push(`${recordingsResult.data.length} recordings found but none match call time`);
+      }
+    } else if (!call.recording_url) {
+      debugInfo.push(recordingsResult?._error ? `Recordings error: ${recordingsResult._error}` : 'No recordings in Telnyx account');
+    }
+
+    // Process AI conversation transcript (best quality - has speaker labels)
+    if (transcriptResult && !transcriptResult._error && transcriptResult.transcript) {
+      updates.transcript = transcriptResult.transcript;
+      debugInfo.push(`AI conversation transcript: ${transcriptResult.messageCount} messages`);
     }
 
     // 3) Check call_events table for locally stored webhook data
@@ -767,10 +792,9 @@ router.post('/:id/sync', async (req, res) => {
     // 4) Fetch Telnyx call events - filter by call_leg_id (UUID format) for accuracy
     if (call.telnyx_call_id) {
       try {
-        // First get the call_leg_id from call details (already fetched above)
-        const callDetails = await getCallDetails(call.telnyx_call_id);
-        const legId = callDetails?.data?.call_leg_id;
-        const sessionId = callDetails?.data?.call_session_id;
+        // Use call details already fetched in parallel above
+        const legId = callDetailsResult?.data?.call_leg_id;
+        const sessionId = callDetailsResult?.data?.call_session_id;
         
         // Filter by call_leg_id and add date filter for recent events
         let allTelnyxEvents = [];
@@ -977,31 +1001,7 @@ router.post('/:id/sync', async (req, res) => {
       }
     }
 
-    // 5) Fetch AI conversation transcript (who said what)
-    // Always try this - it gives the best formatted transcript with speaker labels
-    if (!updates.transcript || !updates.transcript.includes('AI:')) {
-      try {
-        const campaign = db.prepare('SELECT telnyx_assistant_id FROM campaigns WHERE id = ?').get(call.campaign_id);
-        const contact = db.prepare('SELECT phone FROM contacts WHERE id = ?').get(call.contact_id);
-
-        const result = await getConversationTranscript(
-          call.telnyx_call_id,
-          contact?.phone,
-          campaign?.telnyx_assistant_id,
-          call.started_at || call.created_at
-        );
-
-        if (result?.transcript) {
-          // Prefer the AI conversation transcript since it has speaker labels (AI: / Contact:)
-          updates.transcript = result.transcript;
-          debugInfo.push(`AI conversation transcript: ${result.messageCount} messages`);
-        } else if (!call.transcript && !updates.transcript) {
-          debugInfo.push('No AI conversation transcript found');
-        }
-      } catch (e) {
-        debugInfo.push(`AI transcript error: ${e.message}`);
-      }
-    }
+    // 5) (Moved to parallel above)
 
     // 6) Try to get call recording directly - call_control_id, then call_sid (TeXML AI uses call_sid)
     if (call.telnyx_call_id && !call.recording_url && !updates.recording_url) {

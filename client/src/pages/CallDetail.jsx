@@ -56,16 +56,17 @@ export default function CallDetail() {
     fetchCall().then(data => {
       if (!data) return;
       const isActive = data.status === 'ringing' || data.status === 'in_progress' || data.status === 'queued';
-      const missingData = !data.transcript && !data.summary && !data.outcome;
+      // If call already has data from DB, show it immediately and mark as synced
+      const hasExistingData = data.transcript || data.summary || data.outcome || data.estimated_cost;
+      if (hasExistingData) setAutoSynced(true);
       if (isActive) {
         pollRef.current = setInterval(async () => { const res = await apiFetch(`/api/calls/${id}/sync`, { method: 'POST' }); const sd = await res.json(); if (sd.call) setCall(prev => ({ ...prev, ...sd.call })); }, 5000);
       } else if (!hasSyncedRef.current) {
         hasSyncedRef.current = true;
-        // Always sync completed calls to get the latest transcript with speaker labels
+        // Sync in background - don't block if we already have data
         syncFromTelnyx().then(sd => {
           const noTranscript = !sd?.call?.transcript;
-          // Retry more aggressively if no transcript found
-          if (noTranscript) {
+          if (noTranscript && !data.transcript) {
             [10000, 30000, 60000, 120000, 300000].forEach(d => setTimeout(() => syncFromTelnyx(), d));
           }
         });
