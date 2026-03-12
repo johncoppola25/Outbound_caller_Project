@@ -1023,11 +1023,26 @@ router.post('/:id/sync', async (req, res) => {
 
     // 7) Calculate estimated cost based on duration (~$0.06/min, 60s billing minimum)
     const finalDuration = updates.duration_seconds || call.duration_seconds;
-    if (finalDuration && !call.estimated_cost) {
-      const billedSeconds = Math.max(finalDuration, 60); // 60s minimum
-      const costPerMinute = 0.06;
-      updates.estimated_cost = +(billedSeconds / 60 * costPerMinute).toFixed(4);
-      debugInfo.push(`Estimated cost: $${updates.estimated_cost} (${billedSeconds}s billed)`);
+    const isCompleted = (updates.status || call.status) === 'completed' || (updates.outcome || call.outcome) || (updates.transcript || call.transcript);
+    if (!call.estimated_cost && !updates.estimated_cost) {
+      if (finalDuration) {
+        const billedSeconds = Math.max(finalDuration, 60); // 60s minimum
+        const costPerMinute = 0.06;
+        updates.estimated_cost = +(billedSeconds / 60 * costPerMinute).toFixed(4);
+        debugInfo.push(`Estimated cost: $${updates.estimated_cost} (${billedSeconds}s billed)`);
+      } else if (isCompleted) {
+        // Call completed but no duration - use 60s minimum billing
+        updates.estimated_cost = 0.06;
+        debugInfo.push('Estimated cost: $0.06 (minimum billing, no duration available)');
+      }
+    }
+
+    // Fix stuck status - if call has transcript/outcome but still shows ringing/queued
+    const currentStatus = updates.status || call.status;
+    if (isCompleted && (currentStatus === 'ringing' || currentStatus === 'queued')) {
+      updates.status = 'completed';
+      if (!call.ended_at && !updates.ended_at) updates.ended_at = new Date().toISOString();
+      debugInfo.push('Fixed stuck status: was ' + currentStatus + ', now completed');
     }
 
     // Apply updates to database
