@@ -87,7 +87,13 @@ export default function Signup() {
       {!isMobile && (
         <div style={styles.leftPanel}>
           <div style={styles.brandingContent}>
-            <img src="/logo.svg" alt="OutReach AI" style={{ width: '380px', maxWidth: '100%', marginBottom: '24px' }} />
+            <svg viewBox="0 0 250 50" style={{ width: '380px', maxWidth: '100%', marginBottom: '24px' }} xmlns="http://www.w3.org/2000/svg">
+              <text x="0" y="34" fontFamily="'Segoe UI', 'Helvetica Neue', Arial, sans-serif" fontSize="38" fontWeight="700" letterSpacing="-0.5">
+                <tspan fill="#ffffff">Out</tspan><tspan fill="#4f46e5">Reach</tspan>
+              </text>
+              <text x="168" y="34" fontFamily="'Segoe UI', 'Helvetica Neue', Arial, sans-serif" fontSize="38" fontWeight="300" fill="#4f46e5" letterSpacing="-0.5">AI</text>
+              <rect x="1" y="42" width="153" height="3" rx="1.5" fill="#4f46e5"/>
+            </svg>
             <div style={styles.divider} />
             <h2 style={styles.portalTitle}>AI Outbound Caller</h2>
             <p style={styles.portalSubtitle}>Scale your outreach with intelligent AI calls</p>
