@@ -352,13 +352,20 @@ export default function Landing() {
             </p>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(3, 1fr)', gap: '20px', maxWidth: '900px', margin: '0 auto' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(2, 1fr)', gap: '20px', maxWidth: '700px', margin: '0 auto' }}>
             {/* Setup Fee */}
             <div style={{
-              padding: isMobile ? '24px' : '32px', borderRadius: '16px', border: '1px solid #e5e7eb',
-              background: '#ffffff', textAlign: 'center'
+              padding: isMobile ? '24px' : '32px', borderRadius: '16px', border: '2px solid #4f46e5',
+              background: '#ffffff', textAlign: 'center', position: 'relative',
+              boxShadow: '0 4px 20px rgba(79,70,229,0.15)'
             }}>
-              <div style={{ width: '48px', height: '48px', borderRadius: '12px', background: '#eef2ff', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
+              <div style={{
+                position: 'absolute', top: '-12px', left: '50%', transform: 'translateX(-50%)',
+                background: '#4f46e5', color: '#fff', padding: '4px 16px',
+                borderRadius: '20px', fontSize: '11px', fontWeight: '700',
+                textTransform: 'uppercase', letterSpacing: '0.05em'
+              }}>Required First</div>
+              <div style={{ width: '48px', height: '48px', borderRadius: '12px', background: '#eef2ff', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '8px auto 16px' }}>
                 <Zap size={22} color="#4f46e5" />
               </div>
               <p style={{ fontSize: '13px', fontWeight: '600', color: '#6b7280', margin: '0 0 4px 0' }}>One-Time</p>
@@ -371,41 +378,19 @@ export default function Landing() {
 
             {/* Monthly */}
             <div style={{
-              padding: isMobile ? '24px' : '32px', borderRadius: '16px', border: '2px solid #4f46e5',
-              background: '#ffffff', textAlign: 'center', position: 'relative',
-              boxShadow: '0 4px 20px rgba(79,70,229,0.15)'
+              padding: isMobile ? '24px' : '32px', borderRadius: '16px', border: '1px solid #e5e7eb',
+              background: '#ffffff', textAlign: 'center'
             }}>
-              <div style={{
-                position: 'absolute', top: '-12px', left: '50%', transform: 'translateX(-50%)',
-                background: '#4f46e5', color: '#fff', padding: '4px 16px',
-                borderRadius: '20px', fontSize: '11px', fontWeight: '700',
-                textTransform: 'uppercase', letterSpacing: '0.05em'
-              }}>Most Popular</div>
-              <div style={{ width: '48px', height: '48px', borderRadius: '12px', background: '#eef2ff', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '8px auto 16px' }}>
+              <div style={{ width: '48px', height: '48px', borderRadius: '12px', background: '#eef2ff', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
                 <Phone size={22} color="#4f46e5" />
               </div>
               <p style={{ fontSize: '13px', fontWeight: '600', color: '#6b7280', margin: '0 0 4px 0' }}>Monthly</p>
               <h3 style={{ fontSize: '18px', fontWeight: '700', margin: '0 0 8px 0' }}>Subscription</h3>
               <p style={{ fontSize: isMobile ? '36px' : '42px', fontWeight: '800', margin: '0', color: '#0f172a' }}>$1,000</p>
-              <p style={{ fontSize: '14px', color: '#6b7280', margin: '0 0 8px 0' }}>/month</p>
+              <p style={{ fontSize: '14px', color: '#6b7280', margin: '0 0 4px 0' }}>/month</p>
+              <p style={{ fontSize: '14px', color: '#4f46e5', fontWeight: '600', margin: '0 0 8px 0' }}>+ $100 per booked appointment</p>
               <p style={{ fontSize: '13px', color: '#6b7280', lineHeight: '1.6', margin: 0 }}>
                 Unlimited AI calls, recordings, transcripts, analytics, voicemail detection, priority support
-              </p>
-            </div>
-
-            {/* Per Appointment */}
-            <div style={{
-              padding: isMobile ? '24px' : '32px', borderRadius: '16px', border: '1px solid #e5e7eb',
-              background: '#ffffff', textAlign: 'center'
-            }}>
-              <div style={{ width: '48px', height: '48px', borderRadius: '12px', background: '#ecfdf5', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
-                <Calendar size={22} color="#059669" />
-              </div>
-              <p style={{ fontSize: '13px', fontWeight: '600', color: '#6b7280', margin: '0 0 4px 0' }}>Per Result</p>
-              <h3 style={{ fontSize: '18px', fontWeight: '700', margin: '0 0 8px 0' }}>Per Appointment</h3>
-              <p style={{ fontSize: isMobile ? '36px' : '42px', fontWeight: '800', margin: '0 0 8px 0', color: '#059669' }}>$100</p>
-              <p style={{ fontSize: '13px', color: '#6b7280', lineHeight: '1.6', margin: 0 }}>
-                Only charged when AI actually books an appointment. Pay for results, not promises.
               </p>
             </div>
           </div>
