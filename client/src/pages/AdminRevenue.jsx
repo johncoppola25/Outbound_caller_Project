@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { Helmet } from 'react-helmet-async';
 import {
   DollarSign, TrendingUp, Clock, CreditCard, AlertCircle, Users,
   ArrowUpRight, ArrowDownRight, Calendar, Wallet
@@ -68,6 +69,10 @@ export default function AdminRevenue() {
 
   return (
     <div>
+      <Helmet>
+        <title>Revenue - EstateReach AI Admin</title>
+        <meta name="description" content="Track platform revenue, payments, and Stripe balance." />
+      </Helmet>
       <div style={{ marginBottom: '24px' }}>
         <h1 style={{ fontSize: '24px', fontWeight: '700', color: '#111827', margin: '0 0 4px 0' }}>Revenue & Payments</h1>
         <p style={{ fontSize: '14px', color: '#6b7280', margin: 0 }}>Track all payments, revenue trends, and Stripe balance</p>

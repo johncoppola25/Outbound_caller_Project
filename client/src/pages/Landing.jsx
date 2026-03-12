@@ -1,9 +1,14 @@
 import { Link } from 'react-router-dom';
+import { Helmet } from 'react-helmet-async';
 import { Phone, BarChart3, Calendar, Shield, Mic, Bot, ArrowRight, Check, Star, Clock, DollarSign, Users, ChevronRight, PhoneCall, MessageSquare, Target, TrendingUp } from 'lucide-react';
 
 export default function Landing() {
   return (
     <div style={{ fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif", color: '#111827' }}>
+      <Helmet>
+        <title>EstateReach AI - AI-Powered Real Estate Outbound Calling Platform</title>
+        <meta name="description" content="Automate outbound calls for real estate with AI. Book appointments, detect voicemail, and scale your outreach 10x. 24/7 intelligent calling platform." />
+      </Helmet>
       {/* Nav */}
       <nav style={{
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',

@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { Helmet } from 'react-helmet-async';
 import { Phone, Search, Plus, Trash2, Loader2, CheckCircle, AlertCircle } from 'lucide-react';
 import { apiFetch } from '../utils/api';
 
@@ -109,6 +110,10 @@ export default function PhoneNumbers() {
 
   return (
     <div style={{ maxWidth: '900px', margin: '0 auto' }}>
+      <Helmet>
+        <title>Phone Numbers - EstateReach AI</title>
+        <meta name="description" content="Search and purchase phone numbers for your AI calling campaigns." />
+      </Helmet>
       <div style={{ marginBottom: '28px' }}>
         <h1 style={{ fontSize: '24px', fontWeight: '700', color: '#111827', margin: 0 }}>Phone Numbers</h1>
         <p style={{ fontSize: '14px', color: '#6b7280', marginTop: '4px' }}>Search and purchase phone numbers for your campaigns</p>

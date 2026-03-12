@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { Helmet } from 'react-helmet-async';
 import { Phone, CheckCircle, XCircle, RefreshCw, AlertCircle, Sparkles, Settings as SettingsIcon, CreditCard, ShieldOff } from 'lucide-react';
 import { apiFetch } from '../utils/api';
 import { useAuth } from '../context/AuthContext';
@@ -70,6 +71,10 @@ export default function Settings() {
   if (loading) {
     return (
       <div style={{ padding: '32px', textAlign: 'center', background: '#f3f4f6', minHeight: '100vh' }}>
+      <Helmet>
+        <title>Settings - EstateReach AI</title>
+        <meta name="description" content="Configure your account settings, Telnyx connection, and platform preferences." />
+      </Helmet>
         <RefreshCw style={{ width: '32px', height: '32px', color: '#4f46e5', animation: 'spin 1s linear infinite' }} />
         <p style={{ marginTop: '16px', color: '#4b5563' }}>Loading settings...</p>
       </div>

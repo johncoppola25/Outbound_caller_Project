@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { Helmet } from 'react-helmet-async';
 import {
   Users, Shield, Trash2, Crown, UserCheck, AlertCircle, ChevronDown, ChevronUp,
   DollarSign, Phone, Clock, CreditCard, Plus, Minus, X, CheckCircle, Smartphone
@@ -119,6 +120,10 @@ export default function AdminUsers() {
 
   return (
     <div>
+      <Helmet>
+        <title>User Management - EstateReach AI Admin</title>
+        <meta name="description" content="Manage users, balances, and account statuses." />
+      </Helmet>
       <div style={{ marginBottom: '24px' }}>
         <h1 style={{ fontSize: '24px', fontWeight: '700', color: '#111827', margin: '0 0 4px 0' }}>User Management</h1>
         <p style={{ fontSize: '14px', color: '#6b7280', margin: 0 }}>Monitor users, payments, balances, and account status</p>

@@ -1,5 +1,6 @@
 import React from 'react'
 import ReactDOM from 'react-dom/client'
+import { HelmetProvider } from 'react-helmet-async'
 import { ErrorBoundary } from './components/ErrorBoundary.jsx'
 import './index.css'
 
@@ -15,9 +16,11 @@ if (!root) {
       const { default: App } = await import('./App.jsx')
       ReactDOM.createRoot(root).render(
         <React.StrictMode>
-          <ErrorBoundary>
-            <App />
-          </ErrorBoundary>
+          <HelmetProvider>
+            <ErrorBoundary>
+              <App />
+            </ErrorBoundary>
+          </HelmetProvider>
         </React.StrictMode>,
       )
     } catch (err) {

@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { Helmet } from 'react-helmet-async';
 import { useNavigate, Link } from 'react-router-dom';
 import { Eye, EyeOff } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
@@ -53,6 +54,10 @@ export default function Login() {
 
   return (
     <div style={styles.page}>
+      <Helmet>
+        <title>Log In - EstateReach AI</title>
+        <meta name="description" content="Log in to your EstateReach AI dashboard to manage campaigns, track calls, and monitor appointments." />
+      </Helmet>
       {/* Left Panel - Blue Gradient Branding (hidden on mobile) */}
       {!isMobile && (
         <div style={styles.leftPanel}>

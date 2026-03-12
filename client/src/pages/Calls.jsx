@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { Helmet } from 'react-helmet-async';
 import { Link } from 'react-router-dom';
 import {
   Phone,
@@ -120,6 +121,10 @@ export default function Calls() {
   if (loading) {
     return (
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '256px' }}>
+      <Helmet>
+        <title>Calls - EstateReach AI</title>
+        <meta name="description" content="View all AI outbound calls, recordings, transcripts, and outcomes." />
+      </Helmet>
         <div style={{ width: '36px', height: '36px', border: '3px solid #e5e7eb', borderTopColor: '#4f46e5', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
       </div>
     );

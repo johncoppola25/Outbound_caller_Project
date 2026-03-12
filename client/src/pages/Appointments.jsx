@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { Helmet } from 'react-helmet-async';
 import { Link } from 'react-router-dom';
 import { Calendar, Phone, Mail, MapPin, User, Clock, FileText, CheckCircle, Copy, ExternalLink, X, ClipboardCheck, AlertTriangle } from 'lucide-react';
 import { apiFetch } from '../utils/api';
@@ -89,6 +90,10 @@ export default function Appointments() {
   if (loading) {
     return (
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '256px' }}>
+      <Helmet>
+        <title>Appointments - EstateReach AI</title>
+        <meta name="description" content="View and manage appointments booked by your AI calling assistant." />
+      </Helmet>
         <div style={{ width: '36px', height: '36px', border: '3px solid #e5e7eb', borderTopColor: '#4f46e5', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
       </div>
     );

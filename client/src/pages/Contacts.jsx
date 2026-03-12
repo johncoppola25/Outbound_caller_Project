@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { Helmet } from 'react-helmet-async';
 import { Link } from 'react-router-dom';
 import {
   Search, Upload, Users, Phone, Mail, Trash2, Edit3, X, UserPlus, Eye, MapPin, FileText
@@ -127,6 +128,10 @@ export default function Contacts() {
   if (loading) {
     return (
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '256px' }}>
+      <Helmet>
+        <title>Contacts - EstateReach AI</title>
+        <meta name="description" content="Manage your contact lists and lead database for AI outbound campaigns." />
+      </Helmet>
         <div style={{ width: '36px', height: '36px', border: '3px solid rgba(79,70,229,0.2)', borderTopColor: '#4f46e5', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
       </div>
     );

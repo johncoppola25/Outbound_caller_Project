@@ -1,0 +1,18 @@
+User-agent: *
+Allow: /
+Disallow: /dashboard
+Disallow: /campaigns
+Disallow: /contacts
+Disallow: /calls
+Disallow: /callbacks
+Disallow: /appointments
+Disallow: /analytics
+Disallow: /settings
+Disallow: /billing
+Disallow: /admin
+Disallow: /meeting-history
+Disallow: /phone-numbers
+Disallow: /user-manual
+Disallow: /api/
+
+Sitemap: https://outboundcaller.ai/sitemap.xml

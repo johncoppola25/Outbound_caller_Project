@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { Helmet } from 'react-helmet-async';
 import { CreditCard, Check, Zap, ArrowRight, Download, Loader, AlertCircle, CheckCircle, ExternalLink, Lock, Shield } from 'lucide-react';
 import { apiFetch } from '../utils/api';
 
@@ -105,6 +106,10 @@ export default function Billing() {
   if (loading) {
     return (
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '256px' }}>
+      <Helmet>
+        <title>Billing - EstateReach AI</title>
+        <meta name="description" content="Manage your subscription, setup fee, and payment methods." />
+      </Helmet>
         <Loader style={{ width: '36px', height: '36px', color: '#4f46e5', animation: 'spin 1s linear infinite' }} />
       </div>
     );

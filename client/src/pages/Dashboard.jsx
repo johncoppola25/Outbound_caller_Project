@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { Helmet } from 'react-helmet-async';
 import { Link } from 'react-router-dom';
 import {
   Phone, Users, Megaphone, Calendar, CheckCircle2,
@@ -72,6 +73,10 @@ export default function Dashboard() {
   if (loading) {
     return (
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '300px' }}>
+      <Helmet>
+        <title>Dashboard - EstateReach AI</title>
+        <meta name="description" content="Monitor your AI calling campaigns, track performance, and view real-time analytics." />
+      </Helmet>
         <div style={{ width: '32px', height: '32px', border: '3px solid #e5e7eb', borderTopColor: '#4f46e5', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} />
       </div>
     );

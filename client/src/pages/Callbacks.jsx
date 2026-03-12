@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { Helmet } from 'react-helmet-async';
 import { Link } from 'react-router-dom';
 import { Phone, Clock, ArrowUpRight } from 'lucide-react';
 import { apiFetch } from '../utils/api';
@@ -27,6 +28,10 @@ export default function Callbacks() {
   if (loading) {
     return (
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '256px' }}>
+      <Helmet>
+        <title>Callbacks - EstateReach AI</title>
+        <meta name="description" content="Manage callback requests from leads who want to be contacted again." />
+      </Helmet>
         <div style={{ width: '36px', height: '36px', border: '3px solid #e5e7eb', borderTopColor: '#4f46e5', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
       </div>
     );

@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
+import { Helmet } from 'react-helmet-async';
 import {
   BookOpen, ChevronDown, ChevronRight, LayoutDashboard, Megaphone, Users, Phone,
   PhoneCall, Calendar, BarChart3, ClipboardCheck, Settings, Upload, UserPlus,
@@ -619,6 +620,10 @@ export default function UserManual() {
 
   return (
     <div style={{ maxWidth: '900px', margin: '0 auto', animation: 'fadeIn 0.3s ease-out' }}>
+      <Helmet>
+        <title>User Manual - EstateReach AI</title>
+        <meta name="description" content="Learn how to use EstateReach AI platform features and best practices." />
+      </Helmet>
       {/* Header */}
       <div style={{ marginBottom: '24px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '6px' }}>

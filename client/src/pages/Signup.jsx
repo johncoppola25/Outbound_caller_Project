@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { Helmet } from 'react-helmet-async';
 import { useNavigate, Link } from 'react-router-dom';
 import { Eye, EyeOff, User, Mail, Building2, Lock, ArrowRight, Check } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
@@ -78,6 +79,10 @@ export default function Signup() {
 
   return (
     <div style={styles.page}>
+      <Helmet>
+        <title>Sign Up - EstateReach AI</title>
+        <meta name="description" content="Create your EstateReach AI account and start automating outbound calls with AI-powered technology." />
+      </Helmet>
       {/* Left Panel */}
       {!isMobile && (
         <div style={styles.leftPanel}>

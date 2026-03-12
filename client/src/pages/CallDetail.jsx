@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { Helmet } from 'react-helmet-async';
 import { useParams, Link } from 'react-router-dom';
 import {
   ArrowLeft, Phone, User, Calendar, Clock, Mail, Volume2, RefreshCw,
@@ -107,7 +108,11 @@ export default function CallDetail() {
   function formatTranscript(transcript) {
     if (!transcript) return null;
     const lines = transcript.split('\n').filter(l => l.trim());
-    if (lines.length <= 1 && !transcript.includes(':')) return <p style={{ color: '#4b5563', whiteSpace: 'pre-wrap', lineHeight: '1.8' }}>{transcript}</p>;
+    if (lines.length <= 1 && !transcript.includes(':')) return <p style={{ color: '#4b5563', whiteSpace: 'pre-wrap', lineHeight: '1.8' }}>
+      <Helmet>
+        <title>Call Details - EstateReach AI</title>
+        <meta name="description" content="Review call recording, transcript, and AI conversation details." />
+      </Helmet>{transcript}</p>;
     return lines.map((line, i) => {
       const ci = line.indexOf(':');
       if (ci > 0 && ci < 30) {

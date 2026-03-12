@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { Helmet } from 'react-helmet-async';
 import { useParams, Link } from 'react-router-dom';
 import { 
   ArrowLeft, 
@@ -95,6 +96,10 @@ function PreviewPromptWithHighlights({ prompt, contact, botName, campaign }) {
   
   return (
     <>
+      <Helmet>
+        <title>Campaign Details - EstateReach AI</title>
+        <meta name="description" content="View campaign performance, contacts, and call results." />
+      </Helmet>
       {parts.map((part, i) => 
         part.type === 'highlight' ? (
           <span key={i} style={{ backgroundColor: '#ecfdf5', color: '#059669', padding: '2px 4px', borderRadius: '4px', fontWeight: '600' }}>
