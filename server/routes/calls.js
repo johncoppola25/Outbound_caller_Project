@@ -393,7 +393,7 @@ router.post('/start-campaign/:campaignId', async (req, res) => {
   try {
     const db = await getDb();
     const campaignId = req.params.campaignId;
-    const { maxConcurrent = 5, delayBetweenCalls = 5000 } = req.body;
+    const { maxConcurrent = 10, delayBetweenCalls = 5000 } = req.body;
 
     // Check calling balance (skip for admin and KENNYL)
     const callingUser = db.prepare('SELECT calling_balance, role, name FROM users WHERE id = ?').get(req.user.userId);
@@ -559,7 +559,7 @@ router.post('/resume-campaign/:campaignId', async (req, res) => {
     const campaign = db.prepare('SELECT * FROM campaigns WHERE id = ?').get(campaignId);
     if (!campaign) return res.status(404).json({ error: 'Campaign not found' });
     db.prepare('UPDATE campaigns SET status = ? WHERE id = ?').run('active', campaignId);
-    processCallQueue(campaignId, 5, 5000);
+    processCallQueue(campaignId, 10, 5000);
     res.json({ success: true, message: 'Campaign resumed' });
   } catch (error) {
     console.error('Error resuming campaign:', error);
