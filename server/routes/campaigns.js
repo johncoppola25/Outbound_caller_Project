@@ -110,24 +110,26 @@ router.get('/:id', async (req, res) => {
 router.post('/', async (req, res) => {
   try {
     const db = await getDb();
-    const { name, type, description, ai_prompt, voice, language, caller_id, greeting, time_limit_secs, voicemail_detection, background_audio, bot_name, calling_hours_start, calling_hours_end, calling_timezone, calling_days } = req.body;
-    
+    const { name, type, description, ai_prompt, voice, language, caller_id, greeting, time_limit_secs, voicemail_detection, voicemail_message, background_audio, bot_name, calling_hours_start, calling_hours_end, calling_timezone, calling_days } = req.body;
+
     console.log('📝 Creating campaign:', name);
-    
+
     const id = uuidv4();
-    
+
     // Create AI Assistant in Telnyx
     let telnyx_assistant_id = null;
     let telnyx_error = null;
-    
+
     try {
       console.log('🤖 Attempting to create Telnyx AI Assistant...');
-      const assistant = await createAIAssistant({ 
-        name, 
+      const assistant = await createAIAssistant({
+        name,
         description,
-        ai_prompt, 
-        voice, 
-        language 
+        ai_prompt,
+        voice,
+        language,
+        voicemail_detection: voicemail_detection !== false,
+        voicemail_message
       });
       // Try multiple ways to get the ID
       telnyx_assistant_id = assistant.extractedId || assistant.data?.id || assistant.id || null;
@@ -139,9 +141,9 @@ router.post('/', async (req, res) => {
     }
     
     db.prepare(`
-      INSERT INTO campaigns (id, name, type, description, ai_prompt, voice, language, telnyx_assistant_id, caller_id, greeting, time_limit_secs, voicemail_detection, background_audio, bot_name, calling_hours_start, calling_hours_end, calling_timezone, calling_days)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `).run(id, name, type || 'general', description || '', ai_prompt || '', voice || 'astra', language || 'en-US', telnyx_assistant_id, caller_id || null, greeting || 'Hello,', time_limit_secs || 1800, voicemail_detection !== false ? 1 : 0, background_audio || 'silence', bot_name || 'Julia', calling_hours_start || '09:00', calling_hours_end || '18:00', calling_timezone || 'America/New_York', calling_days || '1,2,3,4,5');
+      INSERT INTO campaigns (id, name, type, description, ai_prompt, voice, language, telnyx_assistant_id, caller_id, greeting, time_limit_secs, voicemail_detection, voicemail_message, background_audio, bot_name, calling_hours_start, calling_hours_end, calling_timezone, calling_days)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(id, name, type || 'general', description || '', ai_prompt || '', voice || 'astra', language || 'en-US', telnyx_assistant_id, caller_id || null, greeting || 'Hello,', time_limit_secs || 1800, voicemail_detection !== false ? 1 : 0, voicemail_message || null, background_audio || 'silence', bot_name || 'Julia', calling_hours_start || '09:00', calling_hours_end || '18:00', calling_timezone || 'America/New_York', calling_days || '1,2,3,4,5');
     
     const campaign = db.prepare('SELECT * FROM campaigns WHERE id = ?').get(id);
     
@@ -162,7 +164,7 @@ router.post('/', async (req, res) => {
 router.put('/:id', async (req, res) => {
   try {
     const db = await getDb();
-    const { name, type, description, ai_prompt, voice, language, caller_id, status, greeting, time_limit_secs, voicemail_detection, background_audio, bot_name, voice_speed, calling_hours_start, calling_hours_end, calling_timezone, calling_days } = req.body;
+    const { name, type, description, ai_prompt, voice, language, caller_id, status, greeting, time_limit_secs, voicemail_detection, voicemail_message, background_audio, bot_name, voice_speed, calling_hours_start, calling_hours_end, calling_timezone, calling_days } = req.body;
     
     // Get current campaign to check if we need to update Telnyx
     const currentCampaign = db.prepare('SELECT * FROM campaigns WHERE id = ?').get(req.params.id);
@@ -188,6 +190,7 @@ router.put('/:id', async (req, res) => {
           greeting = COALESCE(?, greeting),
           time_limit_secs = COALESCE(?, time_limit_secs),
           voicemail_detection = COALESCE(?, voicemail_detection),
+          voicemail_message = COALESCE(?, voicemail_message),
           background_audio = COALESCE(?, background_audio),
           bot_name = COALESCE(?, bot_name),
           voice_speed = COALESCE(?, voice_speed),
@@ -209,6 +212,7 @@ router.put('/:id', async (req, res) => {
       safeValue(greeting),
       safeValue(time_limit_secs),
       voicemail_detection !== undefined ? (voicemail_detection ? 1 : 0) : null,
+      safeValue(voicemail_message),
       safeValue(background_audio),
       safeValue(bot_name),
       safeValue(voice_speed),
@@ -245,6 +249,7 @@ router.put('/:id', async (req, res) => {
             greeting: greeting || currentCampaign.greeting,
             time_limit_secs: time_limit_secs || currentCampaign.time_limit_secs,
             voicemail_detection: voicemail_detection !== undefined ? voicemail_detection : !!currentCampaign.voicemail_detection,
+            voicemail_message: voicemail_message || currentCampaign.voicemail_message,
             caller_id: caller_id || currentCampaign.caller_id
           });
           newAssistantId = result.extractedId || result.data?.id;

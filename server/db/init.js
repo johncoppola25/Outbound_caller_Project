@@ -188,6 +188,9 @@ export async function initDatabase() {
   try {
     db.exec(`ALTER TABLE campaigns ADD COLUMN retry_delay_hours INTEGER DEFAULT 48`);
   } catch (e) { /* column may already exist */ }
+  try {
+    db.exec(`ALTER TABLE campaigns ADD COLUMN voicemail_message TEXT`);
+  } catch (e) { /* column may already exist */ }
 
   // Contacts table - stores uploaded contacts per campaign
   db.exec(`

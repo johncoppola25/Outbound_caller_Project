@@ -568,7 +568,14 @@ RULES:
           recording: {
             channels: 'dual',
             format: 'mp3'
-          }
+          },
+          // Voicemail detection
+          ...(callData.campaign.voicemail_detection ? {
+            voicemail_detection: {
+              enabled: true,
+              message: callData.campaign.voicemail_message || `Hi ${callData.contact?.first_name || 'there'}, this is ${callData.campaign.bot_name || 'Julia'} calling from our office. I was hoping to speak with you briefly. Please call us back at your earliest convenience. Thank you!`
+            }
+          } : {})
         });
 
         tempAssistantId = newAssistant.data?.id || newAssistant.id || newAssistant.data?.assistant_id;

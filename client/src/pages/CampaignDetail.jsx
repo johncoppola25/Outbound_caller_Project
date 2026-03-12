@@ -191,6 +191,7 @@ export default function CampaignDetail() {
   const [inlineLanguage, setInlineLanguage] = useState('en-US');
   const [inlineTimeLimitSecs, setInlineTimeLimitSecs] = useState(1800);
   const [inlineVoicemailDetection, setInlineVoicemailDetection] = useState(true);
+  const [inlineVoicemailMessage, setInlineVoicemailMessage] = useState('');
 
   useEffect(() => {
     fetchCampaignData();
@@ -246,6 +247,7 @@ export default function CampaignDetail() {
       setInlineLanguage(campaign.language || 'en-US');
       setInlineTimeLimitSecs(campaign.time_limit_secs || 1800);
       setInlineVoicemailDetection(campaign.voicemail_detection !== undefined ? !!campaign.voicemail_detection : true);
+      setInlineVoicemailMessage(campaign.voicemail_message || '');
     }
   }, [campaign]);
 
@@ -499,8 +501,9 @@ export default function CampaignDetail() {
     const languageChanged = inlineLanguage !== (campaign.language || 'en-US');
     const timeLimitChanged = parseInt(inlineTimeLimitSecs) !== parseInt(campaign.time_limit_secs || 1800);
     const voicemailChanged = inlineVoicemailDetection !== !!campaign.voicemail_detection;
-    
-    const hasChanges = promptChanged || greetingChanged || botNameChanged || voiceChanged || speedChanged || languageChanged || timeLimitChanged || voicemailChanged;
+    const voicemailMsgChanged = inlineVoicemailMessage !== (campaign.voicemail_message || '');
+
+    const hasChanges = promptChanged || greetingChanged || botNameChanged || voiceChanged || speedChanged || languageChanged || timeLimitChanged || voicemailChanged || voicemailMsgChanged;
     
     if (!hasChanges && activeTab !== 'voice') {
       alert('No changes to save.');
@@ -524,7 +527,8 @@ export default function CampaignDetail() {
           voice_speed: parseFloat(inlineVoiceSpeed),
           language: inlineLanguage,
           time_limit_secs: parseInt(inlineTimeLimitSecs),
-          voicemail_detection: inlineVoicemailDetection
+          voicemail_detection: inlineVoicemailDetection,
+          voicemail_message: inlineVoicemailMessage || null
         })
       });
       
@@ -1722,13 +1726,26 @@ export default function CampaignDetail() {
                       {inlineVoicemailDetection ? 'Enabled — will detect and leave voicemail' : 'Disabled — will hang up on voicemail'}
                     </label>
                   </div>
+                  {inlineVoicemailDetection && (
+                    <div style={{ marginTop: '12px' }}>
+                      <label style={{ display: 'block', fontSize: '12px', fontWeight: '600', color: '#9ca3af', marginBottom: '6px', textTransform: 'uppercase' }}>Voicemail Drop Message</label>
+                      <textarea
+                        value={inlineVoicemailMessage}
+                        onChange={(e) => setInlineVoicemailMessage(e.target.value)}
+                        placeholder="Hi, this is Julia calling from our office. I was hoping to speak with you briefly. Please call us back at your earliest convenience. Thank you!"
+                        rows={3}
+                        style={{ width: '100%', padding: '10px 12px', border: '1px solid #e5e7eb', borderRadius: '8px', fontSize: '13px', outline: 'none', boxSizing: 'border-box', resize: 'vertical', fontFamily: 'inherit', lineHeight: '1.5' }}
+                      />
+                      <p style={{ fontSize: '11px', color: '#9ca3af', marginTop: '4px' }}>Message the AI leaves when voicemail is detected. Leave blank for default.</p>
+                    </div>
+                  )}
                 </div>
               </div>
 
               {/* Summary */}
               <div style={{ padding: '16px 20px', backgroundColor: '#eef2ff', borderRadius: '12px', border: '1px solid #bae6fd' }}>
                 <p style={{ fontSize: '13px', color: '#0369a1', margin: 0 }}>
-                  <strong>Telnyx Config:</strong> Voice: Telnyx.NaturalHD.{inlineVoice} | Speed: {inlineVoiceSpeed}x | Lang: {inlineLanguage} | Limit: {Math.floor(inlineTimeLimitSecs / 60)}min | VM: {inlineVoicemailDetection ? 'On' : 'Off'} | Bot: {inlineBotName}
+                  <strong>Telnyx Config:</strong> Voice: Telnyx.NaturalHD.{inlineVoice} | Speed: {inlineVoiceSpeed}x | Lang: {inlineLanguage} | Limit: {Math.floor(inlineTimeLimitSecs / 60)}min | VM: {inlineVoicemailDetection ? 'On' : 'Off'} | Recording: Dual/MP3 | Bot: {inlineBotName}
                 </p>
               </div>
             </div>
