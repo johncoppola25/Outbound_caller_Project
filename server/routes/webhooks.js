@@ -4,6 +4,7 @@ import { broadcast } from '../index.js';
 import { startAIConversation, telnyxRequest } from '../services/telnyx.js';
 import { calculateLeadScore } from '../services/leadScoring.js';
 import { checkConflicts } from './calls.js';
+import { reportAppointmentUsage, findUserForBilling } from './billing.js';
 
 const router = express.Router();
 
@@ -210,6 +211,12 @@ router.post('/telnyx', async (req, res) => {
               WHERE id = ?
             `).run(apptCall.contact_id);
           }
+
+          // Report $100 appointment usage to Stripe
+          const billingUserId = await findUserForBilling();
+          if (billingUserId) {
+            reportAppointmentUsage(billingUserId);
+          }
         } else if (functionName === 'mark_not_interested') {
           db.prepare(`
             UPDATE calls SET outcome = 'not_interested', summary = ?
@@ -379,6 +386,12 @@ router.post('/ai-tool/schedule_appointment', async (req, res) => {
 
       broadcast({ type: 'call_update', call: db.prepare('SELECT * FROM calls WHERE id = ?').get(call.id) });
       console.log('✅ Appointment saved for call:', call.id);
+
+      // Report $100 appointment usage to Stripe
+      const billingUserId = await findUserForBilling();
+      if (billingUserId) {
+        reportAppointmentUsage(billingUserId);
+      }
     } else {
       console.warn('⚠️ schedule_appointment: No active call found to save appointment to');
     }

@@ -24,17 +24,17 @@ const PLANS = [
     priceDisplay: '$1,000',
     interval: 'month',
     popular: true,
-    features: ['Unlimited AI calls', 'Call recording & transcripts', 'Voicemail detection', 'Full analytics dashboard', 'Priority support', 'Custom AI scripts', 'Multiple campaigns', '$100 per booked appointment']
+    features: ['Unlimited AI calls', 'Call recording & transcripts', 'Voicemail detection', 'Full analytics dashboard', 'Priority support', 'Custom AI scripts', 'Multiple campaigns', '$100 per booked appointment (billed automatically)']
   }
 ];
 
-// Ensure Stripe products and prices exist
+// Stripe price IDs cache
 let stripePrices = {};
+
 async function ensureStripeProducts() {
   if (Object.keys(stripePrices).length > 0) return stripePrices;
 
   try {
-    // Check for existing products
     const existingProducts = await stripe.products.list({ limit: 100 });
 
     for (const plan of PLANS) {
@@ -57,7 +57,7 @@ async function ensureStripeProducts() {
       const existingPrices = await stripe.prices.list({ product: product.id, active: true, limit: 10 });
       let price;
       if (plan.interval) {
-        price = existingPrices.data.find(p => p.unit_amount === plan.price && p.recurring?.interval === plan.interval);
+        price = existingPrices.data.find(p => p.unit_amount === plan.price && p.recurring?.interval === plan.interval && p.recurring?.usage_type !== 'metered');
       } else {
         price = existingPrices.data.find(p => p.unit_amount === plan.price && !p.recurring);
       }
@@ -76,6 +76,32 @@ async function ensureStripeProducts() {
 
       stripePrices[plan.id] = { priceId: price.id, productId: product.id };
     }
+
+    // Create metered appointment price (separate product)
+    const apptProductName = 'EstateReach Appointment Fee';
+    let apptProduct = existingProducts.data.find(p => p.name === apptProductName && p.active);
+    if (!apptProduct) {
+      apptProduct = await stripe.products.create({
+        name: apptProductName,
+        description: '$100 per booked appointment',
+        metadata: { plan_id: 'appointment_metered' }
+      });
+      console.log(`Created Stripe product: ${apptProductName}`);
+    }
+
+    const apptPrices = await stripe.prices.list({ product: apptProduct.id, active: true, limit: 10 });
+    let apptPrice = apptPrices.data.find(p => p.unit_amount === 10000 && p.recurring?.usage_type === 'metered');
+    if (!apptPrice) {
+      apptPrice = await stripe.prices.create({
+        product: apptProduct.id,
+        unit_amount: 10000, // $100
+        currency: 'usd',
+        recurring: { interval: 'month', usage_type: 'metered' },
+        metadata: { plan_id: 'appointment_metered' }
+      });
+      console.log(`Created Stripe metered price: Appointment Fee - $100/each`);
+    }
+    stripePrices['appointment_metered'] = { priceId: apptPrice.id, productId: apptProduct.id };
 
     console.log('Stripe products ready:', Object.keys(stripePrices));
     return stripePrices;
@@ -152,6 +178,12 @@ router.get('/subscription', async (req, res) => {
     const sub = subscriptions.data[0];
     const plan = PLANS.find(p => stripePrices[p.id]?.priceId === sub.items.data[0]?.price?.id);
 
+    // Keep subscription_status in sync
+    if (sub.status === 'active') {
+      db.prepare('UPDATE users SET subscription_status = ?, subscription_plan = ? WHERE id = ?')
+        .run('active', plan?.id || 'monthly', user.id);
+    }
+
     res.json({ subscription: sub, plan: plan || null, setupFeePaid: !!user.setup_fee_paid });
   } catch (error) {
     console.error('Error fetching subscription:', error);
@@ -195,10 +227,18 @@ router.post('/create-checkout-session', async (req, res) => {
     const plan = PLANS.find(p => p.id === planId);
     const mode = plan?.interval ? 'subscription' : 'payment';
 
+    // Build line items
+    const lineItems = [{ price: priceData.priceId, quantity: 1 }];
+
+    // For monthly subscription, also add the metered appointment price
+    if (planId === 'monthly' && prices['appointment_metered']) {
+      lineItems.push({ price: prices['appointment_metered'].priceId });
+    }
+
     const sessionConfig = {
       customer: customerId,
       payment_method_types: ['card'],
-      line_items: [{ price: priceData.priceId, quantity: 1 }],
+      line_items: lineItems,
       mode,
       success_url: `${baseUrl}/billing?success=true&plan=${planId}`,
       cancel_url: `${baseUrl}/billing?canceled=true`,
@@ -307,5 +347,82 @@ router.get('/invoices', async (req, res) => {
     res.status(500).json({ error: 'Failed to fetch invoices' });
   }
 });
+
+// Report appointment usage to Stripe (called when AI books an appointment)
+export async function reportAppointmentUsage(userId) {
+  try {
+    const db = await getDb();
+    const user = db.prepare('SELECT * FROM users WHERE id = ?').get(userId);
+
+    if (!user?.stripe_customer_id) {
+      console.log('No Stripe customer for user, skipping appointment billing');
+      return;
+    }
+
+    // Find the user's active subscription
+    const subscriptions = await stripe.subscriptions.list({
+      customer: user.stripe_customer_id,
+      status: 'active',
+      limit: 1
+    });
+
+    if (subscriptions.data.length === 0) {
+      console.log('No active subscription, skipping appointment billing');
+      return;
+    }
+
+    const sub = subscriptions.data[0];
+
+    // Find the metered subscription item (appointment fee)
+    const meteredItem = sub.items.data.find(item =>
+      item.price.recurring?.usage_type === 'metered'
+    );
+
+    if (!meteredItem) {
+      console.log('No metered item on subscription, skipping appointment billing');
+      return;
+    }
+
+    // Report 1 appointment usage
+    await stripe.subscriptionItems.createUsageRecord(meteredItem.id, {
+      quantity: 1,
+      timestamp: Math.floor(Date.now() / 1000),
+      action: 'increment'
+    });
+
+    console.log(`Reported 1 appointment usage for user ${userId} (Stripe item: ${meteredItem.id})`);
+  } catch (error) {
+    console.error('Error reporting appointment usage to Stripe:', error.message);
+  }
+}
+
+// Helper: find user ID from campaign (for webhook usage)
+export async function findUserForBilling() {
+  try {
+    const db = await getDb();
+    // Find the user with an active Stripe subscription
+    const user = db.prepare(`
+      SELECT id FROM users
+      WHERE stripe_customer_id IS NOT NULL
+      AND subscription_status != 'none'
+      LIMIT 1
+    `).get();
+
+    // Fallback: any user with a Stripe customer ID
+    if (!user) {
+      const fallback = db.prepare(`
+        SELECT id FROM users
+        WHERE stripe_customer_id IS NOT NULL
+        LIMIT 1
+      `).get();
+      return fallback?.id || null;
+    }
+
+    return user.id;
+  } catch (error) {
+    console.error('Error finding user for billing:', error);
+    return null;
+  }
+}
 
 export default router;
