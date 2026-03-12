@@ -301,8 +301,8 @@ router.post('/initiate', async (req, res) => {
     const { contact_id, campaign_id } = req.body;
 
     // Check calling balance (skip for admin and KENNYL)
-    const callingUser = db.prepare('SELECT calling_balance, role, name FROM users WHERE id = ?').get(req.user.userId);
-    if (callingUser && callingUser.role !== 'admin' && callingUser.name !== 'KENNYL' && (callingUser.calling_balance || 0) < 1) {
+    const callingUser = db.prepare('SELECT calling_balance, role, name, email FROM users WHERE id = ?').get(req.user.userId);
+    if (callingUser && callingUser.role !== 'admin' && callingUser.name !== 'KENNYL' && callingUser.email !== 'johnc@apbsecurity.com' && (callingUser.calling_balance || 0) < 1) {
       return res.status(402).json({ error: 'Insufficient balance. Please add funds to make calls.' });
     }
 
@@ -396,8 +396,8 @@ router.post('/start-campaign/:campaignId', async (req, res) => {
     const { maxConcurrent = 10, delayBetweenCalls = 5000 } = req.body;
 
     // Check calling balance (skip for admin and KENNYL)
-    const callingUser = db.prepare('SELECT calling_balance, role, name FROM users WHERE id = ?').get(req.user.userId);
-    if (callingUser && callingUser.role !== 'admin' && callingUser.name !== 'KENNYL' && (callingUser.calling_balance || 0) < 1) {
+    const callingUser = db.prepare('SELECT calling_balance, role, name, email FROM users WHERE id = ?').get(req.user.userId);
+    if (callingUser && callingUser.role !== 'admin' && callingUser.name !== 'KENNYL' && callingUser.email !== 'johnc@apbsecurity.com' && (callingUser.calling_balance || 0) < 1) {
       return res.status(402).json({ error: 'Insufficient balance. Please add funds to make calls.' });
     }
 
