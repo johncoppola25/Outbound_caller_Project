@@ -41,16 +41,21 @@ async function ensureStripeProducts() {
       const productName = `EstateReach ${plan.name}`;
       let product = existingProducts.data.find(p => p.name === productName && p.active);
 
+      const correctDescription = plan.oneTime
+        ? 'One-time platform setup and onboarding'
+        : 'Monthly AI calling platform subscription';
+
       if (!product) {
-        const description = plan.oneTime
-          ? 'One-time platform setup and onboarding'
-          : 'Monthly AI calling platform subscription';
         product = await stripe.products.create({
           name: productName,
-          description,
+          description: correctDescription,
           metadata: { plan_id: plan.id }
         });
         console.log(`Created Stripe product: ${productName}`);
+      } else if (product.description !== correctDescription) {
+        // Fix bad description from earlier bug
+        product = await stripe.products.update(product.id, { description: correctDescription });
+        console.log(`Updated Stripe product description: ${productName}`);
       }
 
       // Check for existing price
