@@ -278,6 +278,16 @@ export async function initDatabase() {
     )
   `);
 
+  try {
+    db.exec(`ALTER TABLE users ADD COLUMN stripe_customer_id TEXT`);
+  } catch (e) { /* column may already exist */ }
+  try {
+    db.exec(`ALTER TABLE users ADD COLUMN subscription_plan TEXT`);
+  } catch (e) { /* column may already exist */ }
+  try {
+    db.exec(`ALTER TABLE users ADD COLUMN subscription_status TEXT DEFAULT 'none'`);
+  } catch (e) { /* column may already exist */ }
+
   // Meeting history table - completed meetings
   db.exec(`
     CREATE TABLE IF NOT EXISTS meeting_history (
