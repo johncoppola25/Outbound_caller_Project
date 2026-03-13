@@ -257,11 +257,15 @@ RULES:
         }
       },
 
-      // Telephony settings - link to TeXML app
+      // Telephony settings - link to TeXML app, recording enabled
       telephony_settings: {
         default_texml_app_id: texmlAppId,
         noise_suppression: 'deepfilternet',
-        time_limit_secs: campaign.time_limit_secs || 600
+        time_limit_secs: campaign.time_limit_secs || 600,
+        recording_settings: {
+          channels: 'dual',
+          format: 'mp3'
+        }
       },
 
       // Enable telephony feature
@@ -273,12 +277,6 @@ RULES:
         start_speaking_plan: {
           wait_seconds: 0.8
         }
-      },
-
-      // Recording settings - dual channel stereo, MP3 format
-      recording: {
-        channels: 'dual',
-        format: 'mp3'
       },
 
       // Voicemail detection (if enabled)
@@ -352,9 +350,11 @@ RULES:
           wait_seconds: 0.8
         }
       },
-      recording: {
-        channels: 'dual',
-        format: 'mp3'
+      telephony_settings: {
+        recording_settings: {
+          channels: 'dual',
+          format: 'mp3'
+        }
       }
     };
 
@@ -556,7 +556,11 @@ RULES:
           telephony_settings: {
             default_texml_app_id: texmlAppId,
             noise_suppression: 'deepfilternet',
-            time_limit_secs: 600
+            time_limit_secs: 600,
+            recording_settings: {
+              channels: 'dual',
+              format: 'mp3'
+            }
           },
           enabled_features: ['telephony'],
           interruption_settings: {
@@ -564,10 +568,6 @@ RULES:
             start_speaking_plan: {
               wait_seconds: 0.8
             }
-          },
-          recording: {
-            channels: 'dual',
-            format: 'mp3'
           },
           // Voicemail detection
           ...(callData.campaign.voicemail_detection ? {
