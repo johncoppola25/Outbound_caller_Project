@@ -357,8 +357,13 @@ export default function Calls() {
                     <span style={{ color: '#d1d5db', fontStyle: 'italic' }}>No outcome</span>
                   )}
                 </div>
-                <div style={{ marginTop: '2px', fontSize: '12px', color: '#9ca3af' }}>
-                  {formatDuration(call.duration_seconds)}
+                <div style={{ marginTop: '2px', fontSize: '12px', color: '#9ca3af', display: 'flex', gap: '8px' }}>
+                  <span>{formatDuration(call.duration_seconds)}</span>
+                  {call.duration_seconds > 0 && (
+                    <span style={{ color: '#059669', fontWeight: '600' }}>
+                      ${(Math.ceil(call.duration_seconds / 60) * 0.15).toFixed(2)}
+                    </span>
+                  )}
                 </div>
               </div>
 

@@ -21,7 +21,7 @@ export default function Landing() {
     <div style={{ fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif", color: '#111827' }}>
       <Helmet>
         <title>OutReach AI - AI That Calls Your Leads and Books Appointments</title>
-        <meta name="description" content="AI that calls your leads and books appointments automatically. Upload contacts, launch a campaign, and watch appointments fill your calendar. $1,000/mo." />
+        <meta name="description" content="AI that calls your leads and books appointments automatically. Upload contacts, launch a campaign, and watch appointments fill your calendar. $750 setup + $1,000/mo." />
       </Helmet>
 
       {/* Nav */}
@@ -368,7 +368,7 @@ export default function Landing() {
               </div>
               <p style={{ fontSize: '13px', fontWeight: '600', color: '#6b7280', margin: '0 0 4px 0' }}>One-Time</p>
               <h3 style={{ fontSize: '18px', fontWeight: '700', margin: '0 0 8px 0' }}>Setup Fee</h3>
-              <p style={{ fontSize: isMobile ? '36px' : '42px', fontWeight: '800', margin: '0 0 16px 0', color: '#0f172a' }}>$1,000</p>
+              <p style={{ fontSize: isMobile ? '36px' : '42px', fontWeight: '800', margin: '0 0 16px 0', color: '#0f172a' }}>$750</p>
               <div style={{ borderTop: '1px solid #e5e7eb', paddingTop: '16px', textAlign: 'left' }}>
                 <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
                   {[
@@ -396,14 +396,15 @@ export default function Landing() {
                 <Phone size={22} color="#4f46e5" />
               </div>
               <p style={{ fontSize: '13px', fontWeight: '600', color: '#6b7280', margin: '0 0 4px 0' }}>Monthly</p>
-              <h3 style={{ fontSize: '18px', fontWeight: '700', margin: '0 0 8px 0' }}>Subscription</h3>
+              <h3 style={{ fontSize: '18px', fontWeight: '700', margin: '0 0 8px 0' }}>Platform Fee</h3>
               <p style={{ fontSize: isMobile ? '36px' : '42px', fontWeight: '800', margin: '0', color: '#0f172a' }}>$1,000</p>
               <p style={{ fontSize: '14px', color: '#6b7280', margin: '0 0 4px 0' }}>/month</p>
-              <p style={{ fontSize: '14px', color: '#4f46e5', fontWeight: '600', margin: '0 0 16px 0' }}>+ $100 per booked appointment</p>
+              <div style={{ height: '16px' }} />
               <div style={{ borderTop: '1px solid #e5e7eb', paddingTop: '16px', textAlign: 'left' }}>
                 <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
                   {[
-                    'Unlimited AI outbound calls',
+                    'Full access to all platform features',
+                    'AI-powered outbound calls',
                     'Call recording & full transcripts',
                     'Automatic appointment booking',
                     'Voicemail detection & drop',
@@ -422,20 +423,6 @@ export default function Landing() {
             </div>
           </div>
 
-          {/* Comparison callout */}
-          <div style={{
-            marginTop: '32px', padding: isMobile ? '20px' : '24px 32px',
-            background: '#f8fafc', borderRadius: '12px', border: '1px solid #e5e7eb',
-            display: 'flex', alignItems: isMobile ? 'flex-start' : 'center',
-            gap: isMobile ? '12px' : '20px',
-            flexDirection: isMobile ? 'column' : 'row',
-            justifyContent: 'center', textAlign: isMobile ? 'center' : 'left'
-          }}>
-            <DollarSign size={24} color="#4f46e5" style={{ flexShrink: 0, ...(isMobile ? { margin: '0 auto' } : {}) }} />
-            <p style={{ fontSize: '15px', color: '#374151', margin: 0, lineHeight: '1.6' }}>
-              <strong>Compare:</strong> Hiring a sales rep costs $4,000–$6,000/month + benefits. Lead gen agencies charge $3,000–$10,000/month. OutReach AI does it for <strong style={{ color: '#4f46e5' }}>$1,000/month</strong> — and works 24/7.
-            </p>
-          </div>
 
           <div style={{ textAlign: 'center', marginTop: '32px' }}>
             <Link to="/signup" style={{

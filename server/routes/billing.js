@@ -16,20 +16,20 @@ const PLANS = [
   {
     id: 'setup',
     name: 'Setup Fee',
-    price: 100000, // cents = $1,000
-    priceDisplay: '$1,000',
+    price: 75000, // cents = $750
+    priceDisplay: '$750',
     interval: null, // one-time
     oneTime: true,
     features: ['Full platform setup', 'Custom AI script configuration', 'Campaign creation', 'Contact import assistance', 'Training & onboarding']
   },
   {
     id: 'monthly',
-    name: 'Monthly Subscription',
+    name: 'Monthly Platform Fee',
     price: 100000, // cents = $1,000
     priceDisplay: '$1,000',
     interval: 'month',
     popular: true,
-    features: ['Unlimited AI calls', 'Call recording & transcripts', 'Voicemail detection', 'Full analytics dashboard', 'Priority support', 'Custom AI scripts', 'Multiple campaigns', '$100 per booked appointment (billed automatically)']
+    features: ['Full access to all platform features', 'AI-powered outbound calls', 'Call recording & transcripts', 'Voicemail detection', 'Full analytics dashboard', 'Priority support', 'Custom AI scripts', 'Multiple campaigns', 'Usage: $0.15 per calling minute']
   }
 ];
 
@@ -44,7 +44,9 @@ async function ensureStripeProducts() {
 
     for (const plan of PLANS) {
       const productName = `OutReach ${plan.name}`;
-      let product = existingProducts.data.find(p => p.name === productName && p.active);
+      // Match by metadata plan_id first, then by name
+      let product = existingProducts.data.find(p => p.metadata?.plan_id === plan.id && p.active)
+        || existingProducts.data.find(p => p.name === productName && p.active);
 
       const correctDescription = plan.oneTime
         ? 'One-time platform setup and onboarding'
@@ -57,10 +59,10 @@ async function ensureStripeProducts() {
           metadata: { plan_id: plan.id }
         });
         console.log(`Created Stripe product: ${productName}`);
-      } else if (product.description !== correctDescription) {
-        // Fix bad description from earlier bug
-        product = await stripe.products.update(product.id, { description: correctDescription });
-        console.log(`Updated Stripe product description: ${productName}`);
+      } else if (product.description !== correctDescription || product.name !== productName) {
+        // Keep product name and description in sync
+        product = await stripe.products.update(product.id, { name: productName, description: correctDescription });
+        console.log(`Updated Stripe product: ${productName}`);
       }
 
       // Check for existing price
@@ -265,7 +267,7 @@ router.post('/confirm-setup', async (req, res) => {
       const existing = db.prepare('SELECT id FROM payments WHERE user_id = ? AND type = ?').get(user.id, 'setup_fee');
       if (!existing) {
         db.prepare('INSERT INTO payments (id, user_id, type, amount, stripe_payment_id, status, description) VALUES (?, ?, ?, ?, ?, ?, ?)')
-          .run(uuidv4(), user.id, 'setup_fee', 1000, setupSession.payment_intent || setupSession.id, 'succeeded', 'Setup fee - platform onboarding');
+          .run(uuidv4(), user.id, 'setup_fee', 750, setupSession.payment_intent || setupSession.id, 'succeeded', 'Setup fee - platform onboarding');
       }
       return res.json({ setupFeePaid: true });
     }
@@ -548,46 +550,6 @@ export async function deductCallCost(userId, durationSeconds) {
   } catch (error) {
     console.error('Error deducting call cost:', error.message);
     return null;
-  }
-}
-
-// Report appointment charge to Stripe (adds $100 to next invoice)
-export async function reportAppointmentUsage(userId) {
-  try {
-    const db = await getDb();
-    const user = db.prepare('SELECT * FROM users WHERE id = ?').get(userId);
-
-    if (!user?.stripe_customer_id) {
-      console.log('No Stripe customer for user, skipping appointment billing');
-      return;
-    }
-
-    // Find the user's active subscription
-    const subscriptions = await stripe.subscriptions.list({
-      customer: user.stripe_customer_id,
-      status: 'active',
-      limit: 1
-    });
-
-    if (subscriptions.data.length === 0) {
-      console.log('No active subscription, skipping appointment billing');
-      return;
-    }
-
-    const sub = subscriptions.data[0];
-
-    // Add a $100 invoice item to the customer's upcoming invoice
-    await stripe.invoiceItems.create({
-      customer: user.stripe_customer_id,
-      subscription: sub.id,
-      amount: 10000, // $100 in cents
-      currency: 'usd',
-      description: 'Appointment booked by AI'
-    });
-
-    console.log(`Added $100 appointment charge for user ${userId} to next invoice`);
-  } catch (error) {
-    console.error('Error adding appointment charge to Stripe:', error.message);
   }
 }
 

@@ -3,7 +3,7 @@ import { Helmet } from 'react-helmet-async';
 import { Link } from 'react-router-dom';
 import {
   Phone, Users, Megaphone, Calendar, CheckCircle2,
-  ArrowUpRight, BarChart3, Upload, Activity, TrendingUp, Flame, Thermometer, Snowflake, DollarSign
+  ArrowUpRight, BarChart3, Upload, Activity, TrendingUp, Flame, Thermometer, Snowflake, DollarSign, Wallet, Clock
 } from 'lucide-react';
 import { useWebSocket } from '../context/WebSocketContext';
 import { useAuth } from '../context/AuthContext';
@@ -15,6 +15,7 @@ export default function Dashboard() {
   const [stats, setStats] = useState(null);
   const [recentCalls, setRecentCalls] = useState([]);
   const [telnyxCosts, setTelnyxCosts] = useState(null);
+  const [callingBalance, setCallingBalance] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
@@ -41,7 +42,7 @@ export default function Dashboard() {
   }, [subscribe]);
 
   async function fetchDashboardData() {
-    try { await Promise.all([fetchStats(), fetchRecentCalls(), fetchTelnyxCosts()]); }
+    try { await Promise.all([fetchStats(), fetchRecentCalls(), fetchTelnyxCosts(), fetchBalance()]); }
     catch (err) { setError(err.message); }
     finally { setLoading(false); }
   }
@@ -68,6 +69,16 @@ export default function Dashboard() {
       const res = await apiFetch('/api/stats/telnyx-costs');
       if (res.ok) setTelnyxCosts(await res.json());
     } catch (err) { console.error('Error fetching Telnyx costs:', err); }
+  }
+
+  async function fetchBalance() {
+    try {
+      const res = await apiFetch('/api/billing/balance');
+      if (res.ok) {
+        const data = await res.json();
+        setCallingBalance(data);
+      }
+    } catch (err) { console.error('Error fetching balance:', err); }
   }
 
   if (loading) {
@@ -130,6 +141,63 @@ export default function Dashboard() {
           </Link>
         ))}
       </div>
+
+      {/* Calling Balance - visible to all users */}
+      {callingBalance && (
+        <div style={{
+          background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)',
+          borderRadius: '14px', padding: isMobile ? '18px' : '22px 28px',
+          marginBottom: '14px', position: 'relative', overflow: 'hidden'
+        }}>
+          <div style={{
+            position: 'absolute', top: '-40px', right: '-40px', width: '150px', height: '150px',
+            background: 'radial-gradient(circle, rgba(16,185,129,0.15) 0%, transparent 70%)', borderRadius: '50%'
+          }} />
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px', position: 'relative' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <div style={{
+                width: '34px', height: '34px', borderRadius: '9px',
+                background: 'linear-gradient(135deg, #10b981, #059669)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                boxShadow: '0 2px 8px rgba(16,185,129,0.3)'
+              }}>
+                <Wallet style={{ width: '17px', height: '17px', color: 'white' }} />
+              </div>
+              <div>
+                <h2 style={{ fontSize: '15px', fontWeight: '700', color: '#f9fafb', margin: 0 }}>Calling Balance</h2>
+                <p style={{ fontSize: '11px', color: '#6b7280', margin: '1px 0 0' }}>$0.15 per minute</p>
+              </div>
+            </div>
+            <Link to="/billing" style={{
+              padding: '6px 14px', background: 'rgba(16,185,129,0.15)',
+              border: '1px solid rgba(16,185,129,0.3)', borderRadius: '8px',
+              color: '#6ee7b7', fontSize: '12px', fontWeight: '600', textDecoration: 'none'
+            }}>
+              Add Funds
+            </Link>
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(3, 1fr)', gap: '12px', position: 'relative' }}>
+            <div style={{ background: 'rgba(255,255,255,0.06)', borderRadius: '10px', padding: '14px 16px', border: '1px solid rgba(255,255,255,0.08)' }}>
+              <p style={{ fontSize: '22px', fontWeight: '800', color: callingBalance.balance < 5 ? '#f87171' : callingBalance.balance < 20 ? '#fbbf24' : '#6ee7b7', letterSpacing: '-0.02em' }}>
+                ${(callingBalance.balance || 0).toFixed(2)}
+              </p>
+              <p style={{ fontSize: '11px', color: '#9ca3af', fontWeight: '500', marginTop: '2px' }}>Current Balance</p>
+            </div>
+            <div style={{ background: 'rgba(255,255,255,0.06)', borderRadius: '10px', padding: '14px 16px', border: '1px solid rgba(255,255,255,0.08)' }}>
+              <p style={{ fontSize: '22px', fontWeight: '800', color: '#f9fafb', letterSpacing: '-0.02em' }}>
+                {Math.floor((callingBalance.balance || 0) / 0.15)}
+              </p>
+              <p style={{ fontSize: '11px', color: '#9ca3af', fontWeight: '500', marginTop: '2px' }}>Minutes Remaining</p>
+            </div>
+            <div style={{ background: 'rgba(255,255,255,0.06)', borderRadius: '10px', padding: '14px 16px', border: '1px solid rgba(255,255,255,0.08)' }}>
+              <p style={{ fontSize: '14px', fontWeight: '700', color: callingBalance.autoFund?.enabled ? '#6ee7b7' : '#6b7280', letterSpacing: '-0.02em' }}>
+                {callingBalance.autoFund?.enabled ? `ON - $${callingBalance.autoFund.amount}` : 'OFF'}
+              </p>
+              <p style={{ fontSize: '11px', color: '#9ca3af', fontWeight: '500', marginTop: '2px' }}>Auto-Fund</p>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Lead Scores Row */}
       {leadScores && (

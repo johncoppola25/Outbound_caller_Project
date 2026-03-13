@@ -171,12 +171,8 @@ export default function Billing() {
                 <p style={{ fontWeight: '700', color: '#34d399', textTransform: 'capitalize' }}>{subscription.status}</p>
               </div>
               <div>
-                <p style={{ fontSize: '11px', color: '#a5b4fc' }}>CALLS</p>
-                <p style={{ fontWeight: '700' }}>Unlimited</p>
-              </div>
-              <div>
-                <p style={{ fontSize: '11px', color: '#a5b4fc' }}>PER APPOINTMENT</p>
-                <p style={{ fontWeight: '700' }}>$100</p>
+                <p style={{ fontSize: '11px', color: '#a5b4fc' }}>USAGE</p>
+                <p style={{ fontWeight: '700' }}>$0.15/min</p>
               </div>
               {subscription.current_period_end && (
                 <div>
@@ -337,7 +333,7 @@ export default function Billing() {
                   <div style={{ display: 'flex', alignItems: 'baseline', gap: '4px', marginBottom: '16px' }}>
                     <span style={{ fontSize: '36px', fontWeight: '800', color: '#111827' }}>{monthlyPlan?.priceDisplay || '$1,000'}</span>
                     <span style={{ fontSize: '14px', color: '#6b7280' }}>/month</span>
-                    <span style={{ fontSize: '14px', color: '#6b7280', marginLeft: '8px' }}>+ $100 per appointment</span>
+                    <span style={{ fontSize: '14px', color: '#6b7280', marginLeft: '8px' }}>+ $0.15/min usage</span>
                   </div>
 
                   <ul style={{ listStyle: 'none', padding: 0, margin: 0, marginBottom: '20px' }}>
