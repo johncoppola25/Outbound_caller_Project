@@ -42,8 +42,8 @@ export default function Landing() {
                 <div onClick={() => setMenuOpen(false)} style={{ position: 'fixed', inset: 0, zIndex: 98 }} />
                 <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 99, background: '#ffffff', borderBottom: '1px solid #e5e7eb', padding: '16px', display: 'flex', flexDirection: 'column', gap: '8px', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}>
                   <a href="#see-it-work" onClick={() => setMenuOpen(false)} style={{ padding: '12px 16px', fontSize: '15px', fontWeight: '500', color: '#374151', textDecoration: 'none', borderRadius: '8px' }}>See It Work</a>
-                  <a href="#pricing" onClick={() => setMenuOpen(false)} style={{ padding: '12px 16px', fontSize: '15px', fontWeight: '500', color: '#374151', textDecoration: 'none', borderRadius: '8px' }}>Pricing</a>
                   <a href="#how-it-works" onClick={() => setMenuOpen(false)} style={{ padding: '12px 16px', fontSize: '15px', fontWeight: '500', color: '#374151', textDecoration: 'none', borderRadius: '8px' }}>How It Works</a>
+                  <a href="#pricing" onClick={() => setMenuOpen(false)} style={{ padding: '12px 16px', fontSize: '15px', fontWeight: '500', color: '#374151', textDecoration: 'none', borderRadius: '8px' }}>Pricing</a>
                   <Link to="/login" onClick={() => setMenuOpen(false)} style={{ padding: '12px 16px', fontSize: '15px', fontWeight: '600', color: '#374151', textDecoration: 'none', borderRadius: '8px' }}>Log In</Link>
                   <Link to="/signup" onClick={() => setMenuOpen(false)} style={{ padding: '12px 16px', fontSize: '15px', fontWeight: '700', color: '#fff', background: '#4f46e5', textDecoration: 'none', borderRadius: '10px', textAlign: 'center' }}>Get Started</Link>
                 </div>
@@ -53,8 +53,8 @@ export default function Landing() {
         ) : (
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
             <a href="#see-it-work" style={{ padding: '9px 16px', fontSize: '14px', fontWeight: '500', color: '#374151', textDecoration: 'none' }}>See It Work</a>
-            <a href="#pricing" style={{ padding: '9px 16px', fontSize: '14px', fontWeight: '500', color: '#374151', textDecoration: 'none' }}>Pricing</a>
             <a href="#how-it-works" style={{ padding: '9px 16px', fontSize: '14px', fontWeight: '500', color: '#374151', textDecoration: 'none' }}>How It Works</a>
+            <a href="#pricing" style={{ padding: '9px 16px', fontSize: '14px', fontWeight: '500', color: '#374151', textDecoration: 'none' }}>Pricing</a>
             <Link to="/login" style={{ padding: '9px 20px', fontSize: '14px', fontWeight: '600', color: '#374151', textDecoration: 'none' }}>Log In</Link>
             <Link to="/signup" style={{ padding: '9px 24px', fontSize: '14px', fontWeight: '600', color: '#fff', background: '#4f46e5', textDecoration: 'none', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>Get Started <ArrowRight size={14} /></Link>
           </div>
