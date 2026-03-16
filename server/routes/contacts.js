@@ -293,7 +293,62 @@ router.put('/:id', async (req, res) => {
   }
 });
 
-// Delete contact
+// Get ALL contacts for user (across all campaigns + unassigned)
+router.get('/all/user', async (req, res) => {
+  try {
+    const db = await getDb();
+    const isAdmin = req.user.role === 'admin';
+    const { status, search, limit = 200 } = req.query;
+
+    let query, params;
+    if (isAdmin) {
+      query = `SELECT c.*, cp.name as campaign_name FROM contacts c LEFT JOIN campaigns cp ON c.campaign_id = cp.id`;
+      params = [];
+    } else {
+      query = `SELECT c.*, cp.name as campaign_name FROM contacts c LEFT JOIN campaigns cp ON c.campaign_id = cp.id WHERE (cp.user_id = ? OR c.campaign_id = '')`;
+      params = [req.user.userId];
+    }
+
+    if (status && status !== 'all') {
+      query += (params.length ? ' AND' : ' WHERE') + ' c.status = ?';
+      params.push(status);
+    }
+
+    if (search) {
+      query += (params.length ? ' AND' : ' WHERE') + ' (c.first_name LIKE ? OR c.last_name LIKE ? OR c.phone LIKE ? OR c.email LIKE ?)';
+      const s = `%${search}%`;
+      params.push(s, s, s, s);
+    }
+
+    query += ' ORDER BY c.created_at DESC LIMIT ?';
+    params.push(parseInt(limit));
+
+    const contacts = db.prepare(query).all(...params);
+    res.json({ contacts });
+  } catch (error) {
+    console.error('Error fetching all contacts:', error);
+    res.status(500).json({ error: 'Failed to fetch contacts' });
+  }
+});
+
+// Remove contact from campaign (unlink, don't delete)
+router.post('/:id/unlink', async (req, res) => {
+  try {
+    const db = await getDb();
+    const isAdmin = req.user.role === 'admin';
+    if (!isAdmin) {
+      const ownsContact = db.prepare('SELECT c.id FROM contacts c JOIN campaigns cp ON c.campaign_id = cp.id WHERE c.id = ? AND cp.user_id = ?').get(req.params.id, req.user.userId);
+      if (!ownsContact) return res.status(404).json({ error: 'Contact not found' });
+    }
+    db.prepare("UPDATE contacts SET campaign_id = '', status = 'pending' WHERE id = ?").run(req.params.id);
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Error unlinking contact:', error);
+    res.status(500).json({ error: 'Failed to remove contact from campaign' });
+  }
+});
+
+// Delete contact (permanently)
 router.delete('/:id', async (req, res) => {
   try {
     const db = await getDb();

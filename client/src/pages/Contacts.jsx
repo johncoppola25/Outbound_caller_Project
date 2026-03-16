@@ -67,13 +67,9 @@ export default function Contacts() {
         const url = `/api/contacts/campaign/${selectedCampaign}?limit=200` + (statusFilter !== 'all' ? `&status=${statusFilter}` : '');
         const res = await apiFetch(url); const data = await res.json(); setContacts(data.contacts || []);
       } else {
-        const allContacts = [];
-        for (const campaign of campaigns) {
-          const url = `/api/contacts/campaign/${campaign.id}?limit=100` + (statusFilter !== 'all' ? `&status=${statusFilter}` : '');
-          const res = await apiFetch(url); const data = await res.json();
-          allContacts.push(...(data.contacts || []).map(c => ({ ...c, campaign_name: campaign.name })));
-        }
-        setContacts(allContacts);
+        const url = `/api/contacts/all/user?limit=500` + (statusFilter !== 'all' ? `&status=${statusFilter}` : '');
+        const res = await apiFetch(url); const data = await res.json();
+        setContacts(data.contacts || []);
       }
     } catch (err) { console.error('Error:', err); }
   }

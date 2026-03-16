@@ -612,17 +612,17 @@ export default function CampaignDetail() {
     }
   }
 
-  // Delete Contact
+  // Remove Contact from Campaign (keeps in global contacts)
   async function handleDeleteContact(contactId) {
-    if (!confirm('Are you sure you want to delete this contact?')) return;
+    if (!confirm('Remove this contact from the campaign? They will still be available in your Contacts page.')) return;
     try {
-      const res = await apiFetch(`/api/contacts/${contactId}`, { method: 'DELETE' });
+      const res = await apiFetch(`/api/contacts/${contactId}/unlink`, { method: 'POST' });
       if (res.ok) {
         fetchContacts();
         fetchStats();
       }
     } catch (err) {
-      console.error('Error deleting contact:', err);
+      console.error('Error removing contact:', err);
     }
   }
 
