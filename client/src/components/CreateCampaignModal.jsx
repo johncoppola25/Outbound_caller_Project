@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { X, Sparkles, ChevronRight, ChevronLeft } from 'lucide-react';
+import { X, Sparkles, ChevronRight, ChevronLeft, Phone } from 'lucide-react';
 import { apiFetch } from '../utils/api';
 
 const steps = ['Template', 'Details', 'AI Prompt'];
@@ -17,17 +17,31 @@ export default function CreateCampaignModal({ onClose, onCreated }) {
   const [currentStep, setCurrentStep] = useState(0);
   const [templates, setTemplates] = useState([]);
   const [selectedTemplate, setSelectedTemplate] = useState(null);
+  const [myNumbers, setMyNumbers] = useState([]);
   const [formData, setFormData] = useState({
     name: '', type: 'pre_foreclosure', description: '', ai_prompt: '',
-    voice: 'astra', language: 'en-US', caller_id: '+17324028535',
+    voice: 'astra', language: 'en-US', caller_id: '',
     greeting: 'Hello,', time_limit_secs: 600, voicemail_detection: true, bot_name: 'Julia'
   });
   const [saving, setSaving] = useState(false);
 
-  useEffect(() => { fetchTemplates(); }, []);
+  useEffect(() => { fetchTemplates(); fetchMyNumbers(); }, []);
 
   async function fetchTemplates() {
     try { const res = await apiFetch('/api/campaigns/templates/list'); const data = await res.json(); setTemplates(data); } catch (err) { console.error('Error:', err); }
+  }
+
+  async function fetchMyNumbers() {
+    try {
+      const res = await apiFetch('/api/phone-numbers/my-numbers');
+      if (res.ok) {
+        const data = await res.json();
+        setMyNumbers(data);
+        if (data.length > 0 && !formData.caller_id) {
+          setFormData(prev => ({ ...prev, caller_id: data[0].phone_number }));
+        }
+      }
+    } catch (err) { console.error('Error fetching numbers:', err); }
   }
 
   function selectTemplate(template) {
@@ -148,7 +162,20 @@ export default function CreateCampaignModal({ onClose, onCreated }) {
                 </select></div>
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '14px' }}>
-                <div><label style={labelStyle}>Caller ID *</label><input type="text" value={formData.caller_id} onChange={(e) => setFormData({ ...formData, caller_id: e.target.value })} style={inputStyle} placeholder="+17324028535" /></div>
+                <div>
+                  <label style={labelStyle}>Phone Number *</label>
+                  {myNumbers.length > 0 ? (
+                    <select value={formData.caller_id} onChange={(e) => setFormData({ ...formData, caller_id: e.target.value })} style={{ ...inputStyle, backgroundColor: '#ffffff' }}>
+                      {myNumbers.map(n => (
+                        <option key={n.id} value={n.phone_number}>{n.phone_number}</option>
+                      ))}
+                    </select>
+                  ) : (
+                    <div style={{ padding: '10px 14px', background: '#fffbeb', border: '1px solid #fde68a', borderRadius: '8px', fontSize: '13px', color: '#b45309' }}>
+                      No phone numbers purchased. <a href="/phone-numbers" style={{ color: '#4f46e5', fontWeight: '600' }}>Buy one first</a>
+                    </div>
+                  )}
+                </div>
                 <div><label style={labelStyle}>Time Limit</label><select value={formData.time_limit_secs} onChange={(e) => setFormData({ ...formData, time_limit_secs: parseInt(e.target.value) })} style={{ ...inputStyle, backgroundColor: '#ffffff' }}>
                   <option value={300}>5 min</option><option value={600}>10 min</option><option value={900}>15 min</option><option value={1800}>30 min</option><option value={3600}>1 hr</option>
                 </select></div>

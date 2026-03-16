@@ -341,4 +341,34 @@ router.delete('/users/:id', async (req, res) => {
   }
 });
 
+// PUT /api/admin/users/:id/profile - admin edit user name/email/password
+router.put('/users/:id/profile', async (req, res) => {
+  try {
+    const { name, email, password } = req.body;
+    const db = await getDb();
+    const user = db.prepare('SELECT * FROM users WHERE id = ?').get(req.params.id);
+    if (!user) return res.status(404).json({ error: 'User not found.' });
+
+    if (name) {
+      db.prepare('UPDATE users SET name = ? WHERE id = ?').run(name, req.params.id);
+    }
+    if (email) {
+      const existing = db.prepare('SELECT id FROM users WHERE email = ? AND id != ?').get(email, req.params.id);
+      if (existing) return res.status(409).json({ error: 'Email already taken by another user.' });
+      db.prepare('UPDATE users SET email = ? WHERE id = ?').run(email, req.params.id);
+    }
+    if (password) {
+      const bcrypt = await import('bcryptjs');
+      const hash = await bcrypt.default.hash(password, 10);
+      db.prepare('UPDATE users SET password_hash = ? WHERE id = ?').run(hash, req.params.id);
+    }
+
+    const updated = db.prepare('SELECT id, name, email, role, calling_balance, subscription_status, setup_fee_paid FROM users WHERE id = ?').get(req.params.id);
+    res.json({ success: true, user: updated });
+  } catch (err) {
+    console.error('Admin profile update error:', err);
+    res.status(500).json({ error: 'Failed to update user profile.' });
+  }
+});
+
 export default router;

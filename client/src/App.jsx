@@ -33,21 +33,17 @@ function ProtectedRoute({ children }) {
 }
 
 function PaidRoute({ children }) {
-  const { user } = useAuth();
   const [checked, setChecked] = useState(false);
   const [paid, setPaid] = useState(false);
 
-  // Admin and specific users bypass payment check
-  const bypass = user?.role === 'admin' || user?.name === 'Dozer19' || user?.email === 'johnc@apbsecurity.com' || user?.email === 'john.coppola25@gmail.com';
-
+  // Always check server-side (DB role, not JWT) to prevent stale token bypass
   useEffect(() => {
-    if (bypass) { setPaid(true); setChecked(true); return; }
     apiFetch('/api/billing/subscription').then(res => res.json()).then(data => {
-      const hasPaid = data.setupFeePaid && data.subscription?.status === 'active';
+      const hasPaid = data.bypass || (data.setupFeePaid && data.subscription?.status === 'active');
       setPaid(hasPaid);
       setChecked(true);
     }).catch(() => setChecked(true));
-  }, [bypass]);
+  }, []);
 
   if (!checked) return null;
   if (!paid) return <Navigate to="/billing" replace />;
@@ -91,7 +87,7 @@ function App() {
             <Route element={<ProtectedRoute><Layout /></ProtectedRoute>}>
               <Route path="billing" element={<Billing />} />
             </Route>
-            {/* All other routes require payment (admin + KENNYL bypass) */}
+            {/* All other routes require payment */}
             <Route element={<ProtectedRoute><PaidRoute><Layout /></PaidRoute></ProtectedRoute>}>
               <Route path="dashboard" element={<Dashboard />} />
               <Route path="campaigns" element={<Campaigns />} />

@@ -30,6 +30,8 @@ export default function Analytics() {
   const [loading, setLoading] = useState(true);
   const [syncing, setSyncing] = useState(false);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+  const [campaigns, setCampaigns] = useState([]);
+  const [selectedCampaign, setSelectedCampaign] = useState('all');
 
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth < 768);
@@ -38,20 +40,67 @@ export default function Analytics() {
   }, []);
 
   useEffect(() => {
+    fetchCampaigns();
+  }, []);
+
+  useEffect(() => {
     fetchAnalytics();
-  }, [period]);
+  }, [period, selectedCampaign]);
+
+  async function fetchCampaigns() {
+    try {
+      const res = await apiFetch('/api/campaigns');
+      const data = await res.json();
+      setCampaigns(data);
+    } catch (err) {
+      console.error(err);
+    }
+  }
 
   async function fetchAnalytics() {
     setLoading(true);
     try {
-      const [analyticsRes, statsRes] = await Promise.all([
-        apiFetch(`/api/stats/analytics?period=${period}`),
-        apiFetch('/api/stats/dashboard')
-      ]);
-      const analyticsData = await analyticsRes.json();
-      const statsData = await statsRes.json();
-      setAnalytics(analyticsData);
-      setDashboardStats(statsData);
+      if (selectedCampaign !== 'all') {
+        // Fetch campaign-specific stats
+        const res = await apiFetch(`/api/stats/campaign/${selectedCampaign}`);
+        const data = await res.json();
+        const { basic, contactBreakdown, callBreakdown, outcomeBreakdown, callsOverTime, hourlyDistribution, conversionRate, cost } = data;
+        // Map campaign-specific data to the shape the UI expects
+        setDashboardStats({
+          calls: {
+            total_calls: basic?.total_calls || 0,
+            completed_calls: basic?.completed_calls || 0,
+            active_calls: 0,
+            avg_duration: basic?.avg_duration || 0
+          },
+          outcomes: outcomeBreakdown || [],
+          contacts: {
+            total_contacts: basic?.total_contacts || 0,
+            pending_contacts: 0,
+            converted_contacts: 0
+          },
+          today: { calls_today: 0, completed_today: 0, appointments_today: 0 },
+          thisWeek: { calls_this_week: 0, completed_this_week: 0, appointments_this_week: 0 },
+          leadScores: { hot: 0, warm: 0, cold: 0 },
+          costs: { total: cost || 0, today: 0 }
+        });
+        setAnalytics({
+          callsOverTime: callsOverTime || [],
+          campaignPerformance: [],
+          bestHours: hourlyDistribution || [],
+          outcomeDistribution: outcomeBreakdown || []
+        });
+      } else {
+        // Fetch general stats from both endpoints
+        const [analyticsRes, statsRes] = await Promise.all([
+          apiFetch(`/api/stats/analytics?period=${period}`),
+          apiFetch('/api/stats/dashboard')
+        ]);
+        const analyticsData = await analyticsRes.json();
+        const statsData = await statsRes.json();
+        setAnalytics(analyticsData);
+        setDashboardStats(statsData);
+      }
     } catch (err) {
       console.error('Error fetching analytics:', err);
     } finally {
@@ -161,6 +210,20 @@ export default function Analytics() {
             <RefreshCw style={{ width: '14px', height: '14px', animation: syncing ? 'spin 1s linear infinite' : 'none' }} />
             {syncing ? 'Syncing...' : 'Sync Calls'}
           </button>
+          <select
+            value={selectedCampaign}
+            onChange={(e) => setSelectedCampaign(e.target.value)}
+            style={{
+              padding: '8px 14px', background: '#ffffff', border: '1px solid #e5e7eb',
+              borderRadius: '10px', fontSize: '13px', fontWeight: '600', color: '#4b5563',
+              cursor: 'pointer', outline: 'none', maxWidth: '200px'
+            }}
+          >
+            <option value="all">All Campaigns</option>
+            {campaigns.map(c => (
+              <option key={c.id} value={c.id}>{c.name}</option>
+            ))}
+          </select>
           <div style={{
             display: 'flex', gap: '2px', background: '#ffffff',
             borderRadius: '10px', padding: '3px', border: '1px solid #e5e7eb'

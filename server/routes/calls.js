@@ -318,9 +318,9 @@ router.post('/initiate', async (req, res) => {
     const db = await getDb();
     const { contact_id, campaign_id } = req.body;
 
-    // Check calling balance (skip for admin and KENNYL)
+    // Check calling balance (skip for admin and free accounts)
     const callingUser = db.prepare('SELECT calling_balance, role, name, email FROM users WHERE id = ?').get(req.user.userId);
-    if (callingUser && callingUser.role !== 'admin' && callingUser.name !== 'KENNYL' && callingUser.email !== 'johnc@apbsecurity.com' && (callingUser.calling_balance || 0) < 1) {
+    if (callingUser && callingUser.role !== 'admin' && callingUser.email !== 'johnc@apbsecurity.com' && callingUser.email !== 'john.coppola25@gmail.com' && (callingUser.calling_balance || 0) < 1) {
       return res.status(402).json({ error: 'Insufficient balance. Please add funds to make calls.' });
     }
 
@@ -415,9 +415,9 @@ router.post('/start-campaign/:campaignId', async (req, res) => {
     const campaignId = req.params.campaignId;
     const { maxConcurrent = 10, delayBetweenCalls = 5000 } = req.body;
 
-    // Check calling balance (skip for admin and KENNYL)
+    // Check calling balance (skip for admin and free accounts)
     const callingUser = db.prepare('SELECT calling_balance, role, name, email FROM users WHERE id = ?').get(req.user.userId);
-    if (callingUser && callingUser.role !== 'admin' && callingUser.name !== 'KENNYL' && callingUser.email !== 'johnc@apbsecurity.com' && (callingUser.calling_balance || 0) < 1) {
+    if (callingUser && callingUser.role !== 'admin' && callingUser.email !== 'johnc@apbsecurity.com' && callingUser.email !== 'john.coppola25@gmail.com' && (callingUser.calling_balance || 0) < 1) {
       return res.status(402).json({ error: 'Insufficient balance. Please add funds to make calls.' });
     }
 

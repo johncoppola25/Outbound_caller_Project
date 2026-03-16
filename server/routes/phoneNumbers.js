@@ -57,7 +57,7 @@ router.post('/purchase', async (req, res) => {
 
     // Check balance ($5 to purchase)
     const purchaseCost = 5.00;
-    if ((user.calling_balance || 0) < purchaseCost && user.name !== 'Dozer19' && user.email !== 'johnc@apbsecurity.com' && user.email !== 'john.coppola25@gmail.com' && user.role !== 'admin') {
+    if ((user.calling_balance || 0) < purchaseCost && user.email !== 'johnc@apbsecurity.com' && user.email !== 'john.coppola25@gmail.com' && user.role !== 'admin') {
       return res.status(402).json({ error: `Insufficient balance. You need at least $${purchaseCost.toFixed(2)} to purchase a number.` });
     }
 
@@ -76,7 +76,7 @@ router.post('/purchase', async (req, res) => {
     const telnyxId = orderedNumber?.id || null;
 
     // Deduct balance
-    if (user.name !== 'KENNYL' && user.email !== 'johnc@apbsecurity.com' && user.role !== 'admin') {
+    if (user.email !== 'johnc@apbsecurity.com' && user.email !== 'john.coppola25@gmail.com' && user.role !== 'admin') {
       const newBalance = (user.calling_balance || 0) - purchaseCost;
       db.prepare('UPDATE users SET calling_balance = ? WHERE id = ?').run(newBalance, user.id);
     }

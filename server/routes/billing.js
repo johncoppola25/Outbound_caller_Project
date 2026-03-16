@@ -186,8 +186,11 @@ router.get('/subscription', async (req, res) => {
     const db = await getDb();
     const user = db.prepare('SELECT * FROM users WHERE id = ?').get(req.user.userId);
 
+    // Server-side bypass check: admin role or free accounts (checked from DB, not JWT)
+    const bypass = user?.role === 'admin' || user?.email === 'johnc@apbsecurity.com' || user?.email === 'john.coppola25@gmail.com';
+
     if (!user?.stripe_customer_id) {
-      return res.json({ subscription: null, plan: null, setupFeePaid: !!user?.setup_fee_paid });
+      return res.json({ subscription: null, plan: null, setupFeePaid: !!user?.setup_fee_paid, bypass });
     }
 
     // Check if setup fee was paid via Stripe (in case DB flag missed it)
@@ -222,9 +225,9 @@ router.get('/subscription', async (req, res) => {
       if (allSubs.data.length > 0) {
         const sub = allSubs.data[0];
         const plan = PLANS.find(p => stripePrices[p.id]?.priceId === sub.items.data[0]?.price?.id);
-        return res.json({ subscription: sub, plan: plan || null, setupFeePaid: !!user.setup_fee_paid });
+        return res.json({ subscription: sub, plan: plan || null, setupFeePaid: !!user.setup_fee_paid, bypass });
       }
-      return res.json({ subscription: null, plan: null, setupFeePaid: !!user.setup_fee_paid });
+      return res.json({ subscription: null, plan: null, setupFeePaid: !!user.setup_fee_paid, bypass });
     }
 
     const sub = subscriptions.data[0];
@@ -236,10 +239,49 @@ router.get('/subscription', async (req, res) => {
         .run('active', plan?.id || 'monthly', user.id);
     }
 
-    res.json({ subscription: sub, plan: plan || null, setupFeePaid: !!user.setup_fee_paid });
+    res.json({ subscription: sub, plan: plan || null, setupFeePaid: !!user.setup_fee_paid, bypass });
   } catch (error) {
     console.error('Error fetching subscription:', error);
     res.status(500).json({ error: 'Failed to fetch subscription' });
+  }
+});
+
+// Cancel subscription
+router.post('/cancel-subscription', async (req, res) => {
+  try {
+    const db = await getDb();
+    const user = db.prepare('SELECT * FROM users WHERE id = ?').get(req.user.userId);
+
+    if (!user?.stripe_customer_id || !stripe) {
+      return res.status(400).json({ error: 'No active subscription found.' });
+    }
+
+    // Find active subscription
+    const subscriptions = await stripe.subscriptions.list({
+      customer: user.stripe_customer_id,
+      status: 'active',
+      limit: 1
+    });
+
+    if (subscriptions.data.length === 0) {
+      return res.status(400).json({ error: 'No active subscription found.' });
+    }
+
+    // Cancel at end of billing period
+    const sub = await stripe.subscriptions.update(subscriptions.data[0].id, {
+      cancel_at_period_end: true
+    });
+
+    db.prepare('UPDATE users SET subscription_status = ? WHERE id = ?').run('canceling', user.id);
+
+    res.json({
+      success: true,
+      message: 'Subscription will be canceled at the end of the current billing period.',
+      cancelAt: sub.current_period_end
+    });
+  } catch (error) {
+    console.error('Error canceling subscription:', error);
+    res.status(500).json({ error: 'Failed to cancel subscription.' });
   }
 });
 

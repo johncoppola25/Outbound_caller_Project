@@ -3,7 +3,7 @@ import { Helmet } from 'react-helmet-async';
 import {
   Users, Shield, Trash2, Crown, UserCheck, AlertCircle, ChevronDown, ChevronUp,
   DollarSign, Phone, Clock, CreditCard, Plus, Minus, X, CheckCircle, Smartphone,
-  BarChart3, Target, PhoneCall, Calendar, MapPin, ArrowLeft
+  BarChart3, Target, PhoneCall, Calendar, MapPin, ArrowLeft, Edit3, Save, Eye, EyeOff
 } from 'lucide-react';
 import { apiFetch } from '../utils/api';
 
@@ -20,6 +20,13 @@ export default function AdminUsers() {
   const [selectedUser, setSelectedUser] = useState(null);
   const [userData, setUserData] = useState(null);
   const [userDataLoading, setUserDataLoading] = useState(false);
+  const [editModal, setEditModal] = useState(null);
+  const [editName, setEditName] = useState('');
+  const [editEmail, setEditEmail] = useState('');
+  const [editPassword, setEditPassword] = useState('');
+  const [showEditPw, setShowEditPw] = useState(false);
+  const [editSaving, setEditSaving] = useState(false);
+  const [editMsg, setEditMsg] = useState(null);
 
   const fetchUsers = async () => {
     try {
@@ -113,6 +120,45 @@ export default function AdminUsers() {
     } catch (e) { /* ignore */ }
   };
 
+  const openEditModal = (user) => {
+    setEditModal(user.id);
+    setEditName(user.name || '');
+    setEditEmail(user.email || '');
+    setEditPassword('');
+    setEditMsg(null);
+  };
+
+  const handleEditProfile = async () => {
+    if (!editModal) return;
+    setEditSaving(true);
+    setEditMsg(null);
+    try {
+      const body = {};
+      if (editName) body.name = editName;
+      if (editEmail) body.email = editEmail;
+      if (editPassword) body.password = editPassword;
+      const res = await apiFetch(`/api/admin/users/${editModal}/profile`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setEditMsg({ type: 'success', text: 'Profile updated!' });
+        fetchUsers();
+        if (selectedUser?.id === editModal) {
+          setSelectedUser(prev => ({ ...prev, name: editName || prev.name, email: editEmail || prev.email }));
+        }
+        setTimeout(() => { setEditModal(null); setEditMsg(null); }, 1000);
+      } else {
+        setEditMsg({ type: 'error', text: data.error || 'Failed to update.' });
+      }
+    } catch {
+      setEditMsg({ type: 'error', text: 'Failed to update profile.' });
+    }
+    setEditSaving(false);
+  };
+
   const typeLabel = (type) => {
     const labels = {
       setup_fee: 'Setup Fee',
@@ -167,10 +213,20 @@ export default function AdminUsers() {
               }}>
                 {(selectedUser.name || 'U')[0].toUpperCase()}
               </div>
-              <div>
+              <div style={{ flex: 1 }}>
                 <h1 style={{ fontSize: '20px', fontWeight: '700', color: '#111827', margin: 0 }}>{selectedUser.name}</h1>
                 <p style={{ fontSize: '13px', color: '#6b7280', margin: 0 }}>{selectedUser.email}</p>
               </div>
+              <button
+                onClick={() => openEditModal(selectedUser)}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: '6px',
+                  padding: '8px 16px', background: '#eef2ff', border: '1px solid #c7d2fe',
+                  borderRadius: '8px', cursor: 'pointer', fontSize: '13px', fontWeight: '600', color: '#4f46e5'
+                }}
+              >
+                <Edit3 size={14} /> Edit User
+              </button>
             </div>
           </div>
         </div>
@@ -466,6 +522,16 @@ export default function AdminUsers() {
                   {user.role !== 'admin' && (
                     <>
                       <button
+                        onClick={(e) => { e.stopPropagation(); openEditModal(user); }}
+                        title="Edit User"
+                        style={{
+                          background: '#eef2ff', border: 'none', borderRadius: '6px',
+                          padding: '5px', cursor: 'pointer', display: 'flex'
+                        }}
+                      >
+                        <Edit3 size={13} color="#4f46e5" />
+                      </button>
+                      <button
                         onClick={(e) => { e.stopPropagation(); setAdjustModal(user.id); }}
                         title="Adjust Balance"
                         style={{
@@ -656,6 +722,79 @@ export default function AdminUsers() {
                 flex: 1, padding: '10px', borderRadius: '8px', border: 'none',
                 background: '#4f46e5', cursor: 'pointer', fontSize: '13px', fontWeight: '600', color: '#fff'
               }}>Apply</button>
+            </div>
+          </div>
+        </>
+      )}
+      {/* Edit User Modal */}
+      {editModal && (
+        <>
+          <div onClick={() => setEditModal(null)} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', zIndex: 1000 }} />
+          <div style={{
+            position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%, -50%)',
+            zIndex: 1001, background: '#fff', borderRadius: '16px', padding: '24px',
+            width: '400px', boxShadow: '0 20px 60px rgba(0,0,0,0.3)'
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+              <h3 style={{ fontSize: '16px', fontWeight: '700', margin: 0, color: '#111827' }}>Edit User</h3>
+              <button onClick={() => setEditModal(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px' }}>
+                <X size={18} color="#6b7280" />
+              </button>
+            </div>
+
+            {editMsg && (
+              <div style={{
+                padding: '8px 12px', borderRadius: '8px', marginBottom: '12px', fontSize: '12px', fontWeight: '500',
+                background: editMsg.type === 'success' ? '#ecfdf5' : '#fef2f2',
+                color: editMsg.type === 'success' ? '#059669' : '#dc2626',
+                border: `1px solid ${editMsg.type === 'success' ? '#a7f3d0' : '#fecaca'}`
+              }}>
+                {editMsg.text}
+              </div>
+            )}
+
+            <div style={{ marginBottom: '12px' }}>
+              <label style={{ fontSize: '12px', fontWeight: '600', color: '#374151', display: 'block', marginBottom: '4px' }}>Username</label>
+              <input
+                type="text" value={editName} onChange={e => setEditName(e.target.value)}
+                style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1.5px solid #e5e7eb', fontSize: '14px', outline: 'none', boxSizing: 'border-box' }}
+              />
+            </div>
+            <div style={{ marginBottom: '12px' }}>
+              <label style={{ fontSize: '12px', fontWeight: '600', color: '#374151', display: 'block', marginBottom: '4px' }}>Email</label>
+              <input
+                type="email" value={editEmail} onChange={e => setEditEmail(e.target.value)}
+                style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1.5px solid #e5e7eb', fontSize: '14px', outline: 'none', boxSizing: 'border-box' }}
+              />
+            </div>
+            <div style={{ marginBottom: '16px' }}>
+              <label style={{ fontSize: '12px', fontWeight: '600', color: '#374151', display: 'block', marginBottom: '4px' }}>New Password <span style={{ fontWeight: '400', color: '#9ca3af' }}>(leave blank to keep current)</span></label>
+              <div style={{ position: 'relative' }}>
+                <input
+                  type={showEditPw ? 'text' : 'password'} value={editPassword} onChange={e => setEditPassword(e.target.value)}
+                  placeholder="Enter new password"
+                  style={{ width: '100%', padding: '10px 40px 10px 12px', borderRadius: '8px', border: '1.5px solid #e5e7eb', fontSize: '14px', outline: 'none', boxSizing: 'border-box' }}
+                />
+                <button onClick={() => setShowEditPw(!showEditPw)} style={{
+                  position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)',
+                  background: 'none', border: 'none', cursor: 'pointer', padding: '2px'
+                }}>
+                  {showEditPw ? <EyeOff size={16} color="#9ca3af" /> : <Eye size={16} color="#9ca3af" />}
+                </button>
+              </div>
+            </div>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <button onClick={() => setEditModal(null)} style={{
+                flex: 1, padding: '10px', borderRadius: '8px', border: '1px solid #e5e7eb',
+                background: '#fff', cursor: 'pointer', fontSize: '13px', fontWeight: '600', color: '#6b7280'
+              }}>Cancel</button>
+              <button onClick={handleEditProfile} disabled={editSaving} style={{
+                flex: 1, padding: '10px', borderRadius: '8px', border: 'none',
+                background: '#4f46e5', cursor: editSaving ? 'not-allowed' : 'pointer',
+                fontSize: '13px', fontWeight: '600', color: '#fff', opacity: editSaving ? 0.6 : 1
+              }}>
+                {editSaving ? 'Saving...' : 'Save Changes'}
+              </button>
             </div>
           </div>
         </>

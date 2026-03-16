@@ -355,6 +355,9 @@ export default function CampaignDetail() {
         fetchContacts();
         fetchCalls();
         fetchStats();
+      } else if (res.status === 402) {
+        alert('Insufficient balance! Please add funds to your calling balance before making calls. Go to the balance button in the top right to add funds.');
+        setCallingInProgress(false);
       } else {
         alert(data.error || 'Failed to start campaign');
         setCallingInProgress(false);
@@ -400,14 +403,18 @@ export default function CampaignDetail() {
     if (callingContactId) return; // Prevent double-clicks
     setCallingContactId(contactId);
     try {
-      await apiFetch('/api/calls/initiate', {
+      const res = await apiFetch('/api/calls/initiate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ campaign_id: id, contact_id: contactId })
       });
-      // Refresh contacts and calls after initiating
-      fetchContacts();
-      fetchCalls();
+      if (res.status === 402) {
+        alert('Insufficient balance! Please add funds to your calling balance before making calls. Go to the balance button in the top right to add funds.');
+      } else {
+        // Refresh contacts and calls after initiating
+        fetchContacts();
+        fetchCalls();
+      }
     } catch (err) {
       console.error('Error initiating call:', err);
     } finally {
@@ -433,13 +440,17 @@ export default function CampaignDetail() {
       for (let i = 0; i < pendingContacts.length; i++) {
         const contact = pendingContacts[i];
         try {
-          await apiFetch('/api/calls/initiate', {
+          const res = await apiFetch('/api/calls/initiate', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ campaign_id: id, contact_id: contact.id })
           });
+          if (res.status === 402) {
+            alert('Insufficient balance! Please add funds to your calling balance before making calls. Go to the balance button in the top right to add funds.');
+            break;
+          }
           successCount++;
-          
+
           // Small delay between calls to avoid overwhelming the API
           if (i < pendingContacts.length - 1) {
             await new Promise(resolve => setTimeout(resolve, 500));

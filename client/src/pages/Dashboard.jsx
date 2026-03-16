@@ -269,7 +269,7 @@ export default function Dashboard() {
                 display: 'flex', alignItems: 'center', gap: '6px'
               }}>
                 <div style={{ width: '6px', height: '6px', borderRadius: '3px', background: '#10b981' }} />
-                <span style={{ fontSize: '12px', color: '#6ee7b7', fontWeight: '600' }}>Balance: ${telnyxCosts.balance}</span>
+                <span style={{ fontSize: '12px', color: '#6ee7b7', fontWeight: '600' }}>Telnyx Balance: ${telnyxCosts.balance}</span>
               </div>
             )}
           </div>
