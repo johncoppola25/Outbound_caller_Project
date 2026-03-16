@@ -10,7 +10,7 @@ const router = express.Router();
 // POST /api/auth/register
 router.post('/register', async (req, res) => {
   try {
-    const { email, password, name, company } = req.body;
+    const { email, password, name, company, username } = req.body;
 
     if (!email || !password || !name) {
       return res.status(400).json({ error: 'Email, password, and name are required.' });
@@ -18,28 +18,37 @@ router.post('/register', async (req, res) => {
 
     const db = await getDb();
 
-    // Check if user already exists
+    // Check if email already exists
     const existing = db.prepare('SELECT id FROM users WHERE email = ?').get(email);
     if (existing) {
       return res.status(409).json({ error: 'A user with this email already exists.' });
+    }
+
+    // Check if username already exists (if provided)
+    if (username) {
+      const existingUsername = db.prepare('SELECT id FROM users WHERE username = ?').get(username);
+      if (existingUsername) {
+        return res.status(409).json({ error: 'This username is already taken.' });
+      }
     }
 
     const id = uuidv4();
     const password_hash = await bcrypt.hash(password, 10);
 
     db.prepare(
-      'INSERT INTO users (id, email, password_hash, name, company, role) VALUES (?, ?, ?, ?, ?, ?)'
-    ).run(id, email, password_hash, name, company || null, 'user');
+      'INSERT INTO users (id, email, password_hash, name, company, role, username) VALUES (?, ?, ?, ?, ?, ?, ?)'
+    ).run(id, email, password_hash, name, company || null, 'user', username || null);
 
+    const displayName = username || name;
     const token = jwt.sign(
-      { userId: id, email, name, role: 'user' },
+      { userId: id, email, name: displayName, role: 'user' },
       getJwtSecret(),
       { expiresIn: '7d' }
     );
 
     res.status(201).json({
       token,
-      user: { id, email, name, company: company || null, role: 'user' }
+      user: { id, email, name, username: username || null, company: company || null, role: 'user' }
     });
   } catch (err) {
     console.error('Registration error:', err);
@@ -59,8 +68,8 @@ router.post('/login', async (req, res) => {
 
     const db = await getDb();
 
-    // Look up by username or email
-    const user = db.prepare('SELECT * FROM users WHERE email = ? OR name = ?').get(loginName, loginName);
+    // Look up by email, username, or name
+    const user = db.prepare('SELECT * FROM users WHERE email = ? OR name = ? OR username = ?').get(loginName, loginName, loginName);
     if (!user) {
       return res.status(401).json({ error: 'Invalid username or password.' });
     }

@@ -11,6 +11,7 @@ export default function Signup() {
   const navigate = useNavigate();
   const [step, setStep] = useState(1);
   const [name, setName] = useState('');
+  const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [company, setCompany] = useState('');
   const [password, setPassword] = useState('');
@@ -29,6 +30,8 @@ export default function Signup() {
   const handleNext = () => {
     setError('');
     if (!name.trim()) return setError('Full name is required.');
+    if (!username.trim()) return setError('Username is required.');
+    if (username.includes(' ')) return setError('Username cannot contain spaces.');
     if (!email.trim()) return setError('Email is required.');
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return setError('Please enter a valid email.');
     setStep(2);
@@ -48,7 +51,7 @@ export default function Signup() {
       const res = await fetch(`${API_BASE}/api/auth/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password, name, company: company || undefined }),
+        body: JSON.stringify({ email, password, name, username, company: company || undefined }),
       });
 
       const data = await res.json();
@@ -171,6 +174,22 @@ export default function Signup() {
               </div>
 
               <div style={styles.fieldGroup}>
+                <label style={styles.label}>Username *</label>
+                <div style={styles.inputWrapper}>
+                  <User size={16} color="#9ca3af" style={styles.inputIcon} />
+                  <input
+                    type="text"
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value)}
+                    placeholder="Choose a username"
+                    required
+                    style={styles.inputWithIcon}
+                    autoComplete="username"
+                  />
+                </div>
+              </div>
+
+              <div style={styles.fieldGroup}>
                 <label style={styles.label}>Email Address *</label>
                 <div style={styles.inputWrapper}>
                   <Mail size={16} color="#9ca3af" style={styles.inputIcon} />
@@ -213,10 +232,10 @@ export default function Signup() {
           ) : (
             <form onSubmit={handleSubmit} style={styles.form}>
               <div style={styles.userPreview}>
-                <div style={styles.userAvatar}>{name.charAt(0).toUpperCase()}</div>
+                <div style={styles.userAvatar}>{(username || name).charAt(0).toUpperCase()}</div>
                 <div>
-                  <p style={styles.userName}>{name}</p>
-                  <p style={styles.userEmail}>{email}</p>
+                  <p style={styles.userName}>{username || name}</p>
+                  <p style={styles.userEmail}>{name} &middot; {email}</p>
                 </div>
                 <button type="button" onClick={() => { setStep(1); setError(''); }} style={styles.editButton}>Edit</button>
               </div>

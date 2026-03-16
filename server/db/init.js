@@ -311,6 +311,9 @@ export async function initDatabase() {
   try {
     db.exec(`ALTER TABLE users ADD COLUMN secondary_emails TEXT DEFAULT ''`);
   } catch (e) { /* column may already exist */ }
+  try {
+    db.exec(`ALTER TABLE users ADD COLUMN username TEXT`);
+  } catch (e) { /* column may already exist */ }
 
   // Meeting history table - completed meetings
   db.exec(`
