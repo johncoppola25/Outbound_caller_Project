@@ -87,20 +87,40 @@ router.post('/purchase', async (req, res) => {
       'INSERT INTO user_phone_numbers (id, user_id, phone_number, telnyx_id, friendly_name) VALUES (?, ?, ?, ?, ?)'
     ).run(id, user.id, phone_number, telnyxId, phone_number);
 
-    // Configure the number for voice (assign to connection/app)
-    try {
-      // Get the messaging profile or connection ID if available
-      const phoneDetails = await telnyxRequest(`/phone_numbers?filter[phone_number]=${encodeURIComponent(phone_number)}`);
-      const phoneId = phoneDetails.data?.[0]?.id;
-      if (phoneId) {
-        // Enable voice on the number
-        await telnyxRequest(`/phone_numbers/${phoneId}`, 'PATCH', {
-          connection_id: process.env.TELNYX_CONNECTION_ID || undefined
-        });
+    // Configure the number for voice (assign to TeXML app for AI calls)
+    const connectionId = process.env.TELNYX_TEXML_APP_ID || process.env.TELNYX_CONNECTION_ID;
+    if (connectionId) {
+      // Wait a moment for the number order to be provisioned
+      await new Promise(resolve => setTimeout(resolve, 3000));
+
+      try {
+        const phoneDetails = await telnyxRequest(`/phone_numbers?filter[phone_number]=${encodeURIComponent(phone_number)}`);
+        const phoneId = phoneDetails.data?.[0]?.id;
+        if (phoneId) {
+          await telnyxRequest(`/phone_numbers/${phoneId}`, 'PATCH', {
+            connection_id: connectionId
+          });
+          console.log(`✅ Number ${phone_number} assigned to connection ${connectionId}`);
+        } else {
+          console.warn(`⚠️ Could not find phone ${phone_number} to assign to connection. May need manual config.`);
+        }
+      } catch (configErr) {
+        console.error('Error configuring number:', configErr.message);
+        // Try again after a longer delay
+        try {
+          await new Promise(resolve => setTimeout(resolve, 5000));
+          const phoneDetails2 = await telnyxRequest(`/phone_numbers?filter[phone_number]=${encodeURIComponent(phone_number)}`);
+          const phoneId2 = phoneDetails2.data?.[0]?.id;
+          if (phoneId2) {
+            await telnyxRequest(`/phone_numbers/${phoneId2}`, 'PATCH', {
+              connection_id: connectionId
+            });
+            console.log(`✅ Number ${phone_number} assigned to connection on retry`);
+          }
+        } catch (retryErr) {
+          console.error('Retry also failed:', retryErr.message);
+        }
       }
-    } catch (configErr) {
-      console.error('Error configuring number:', configErr.message);
-      // Number is purchased, just may need manual config
     }
 
     res.json({
