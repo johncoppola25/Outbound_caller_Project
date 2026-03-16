@@ -33,8 +33,16 @@ const PLANS = [
   }
 ];
 
+// Per-user pricing overrides (by username)
+const USER_PRICING = {
+  'KENNYL': {
+    monthly: { price: 15000, priceDisplay: '$150' } // $150/month for Kenny
+  }
+};
+
 // Stripe price IDs cache
 let stripePrices = {};
+let userStripePrices = {}; // Cache for user-specific prices
 
 async function ensureStripeProducts() {
   if (Object.keys(stripePrices).length > 0) return stripePrices;
@@ -97,17 +105,73 @@ async function ensureStripeProducts() {
   }
 }
 
-// Get available plans
+// Ensure user-specific Stripe price exists (for custom pricing)
+async function ensureUserPrice(userName, planId) {
+  const cacheKey = `${userName}_${planId}`;
+  if (userStripePrices[cacheKey]) return userStripePrices[cacheKey];
+
+  const override = USER_PRICING[userName]?.[planId];
+  if (!override) return null;
+
+  await ensureStripeProducts();
+  const productId = stripePrices[planId]?.productId;
+  if (!productId) return null;
+
+  try {
+    // Check if price already exists
+    const existingPrices = await stripe.prices.list({ product: productId, active: true, limit: 20 });
+    const plan = PLANS.find(p => p.id === planId);
+    let price;
+    if (plan?.interval) {
+      price = existingPrices.data.find(p => p.unit_amount === override.price && p.recurring?.interval === plan.interval);
+    } else {
+      price = existingPrices.data.find(p => p.unit_amount === override.price && !p.recurring);
+    }
+
+    if (!price) {
+      const priceData = {
+        product: productId,
+        unit_amount: override.price,
+        currency: 'usd',
+        metadata: { plan_id: planId, user_override: userName }
+      };
+      if (plan?.interval) priceData.recurring = { interval: plan.interval };
+      price = await stripe.prices.create(priceData);
+      console.log(`Created custom Stripe price for ${userName}: ${override.priceDisplay}/${plan?.interval || 'one-time'}`);
+    }
+
+    userStripePrices[cacheKey] = { priceId: price.id, productId };
+    return userStripePrices[cacheKey];
+  } catch (error) {
+    console.error(`Error creating user price for ${userName}:`, error.message);
+    return null;
+  }
+}
+
+// Get available plans (with per-user pricing overrides)
 router.get('/plans', async (req, res) => {
   try {
     const prices = await ensureStripeProducts();
     const db = await getDb();
     const user = db.prepare('SELECT * FROM users WHERE id = ?').get(req.user.userId);
     const setupFeePaid = !!user?.setup_fee_paid;
+    const userOverrides = USER_PRICING[user?.name] || {};
 
-    const plans = PLANS.map(plan => ({
-      ...plan,
-      stripePriceId: prices[plan.id]?.priceId || null
+    const plans = await Promise.all(PLANS.map(async (plan) => {
+      const override = userOverrides[plan.id];
+      if (override) {
+        const userPrice = await ensureUserPrice(user.name, plan.id);
+        return {
+          ...plan,
+          price: override.price,
+          priceDisplay: override.priceDisplay,
+          stripePriceId: userPrice?.priceId || prices[plan.id]?.priceId || null
+        };
+      }
+      return {
+        ...plan,
+        stripePriceId: prices[plan.id]?.priceId || null
+      };
     }));
     res.json({ plans, setupFeePaid });
   } catch (error) {
@@ -192,7 +256,15 @@ router.post('/create-checkout-session', async (req, res) => {
     }
 
     const prices = await ensureStripeProducts();
-    const priceData = prices[planId];
+    // Check for user-specific pricing
+    const userOverride = USER_PRICING[user?.name]?.[planId];
+    let priceData;
+    if (userOverride) {
+      priceData = await ensureUserPrice(user.name, planId);
+    }
+    if (!priceData) {
+      priceData = prices[planId];
+    }
 
     if (!priceData) {
       return res.status(400).json({ error: 'Invalid plan' });
