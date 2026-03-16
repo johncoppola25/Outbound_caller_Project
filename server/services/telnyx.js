@@ -237,7 +237,7 @@ RULES:
     const result = await telnyxRequest('/ai/assistants', 'POST', {
       name: campaign.name,
       instructions: fullInstructions,
-      model: 'meta-llama/Llama-3.3-70B-Instruct',
+      model: 'Groq/llama-4-maverick-17b-128e-instruct',
       greeting: campaign.greeting || 'Hello,',
 
       // Tools - hangup, transfer, webhooks for scheduling
@@ -534,7 +534,7 @@ RULES:
         const newAssistant = await telnyxRequest('/ai/assistants', 'POST', {
           name: `Call - ${contactFullName || 'Unknown'} - ${new Date().toISOString().slice(0, 16)}`,
           instructions: fullPrompt + callFlowRules,
-          model: 'meta-llama/Llama-3.3-70B-Instruct',
+          model: 'Groq/llama-4-maverick-17b-128e-instruct',
           greeting: updatedGreeting,
           tools: callTools,
           voice_settings: {
@@ -611,7 +611,7 @@ RULES:
         const minimalAssistant = await telnyxRequest('/ai/assistants', 'POST', {
           name: `Call - ${firstName || 'Unknown'} - ${Date.now()}`,
           instructions: prompt,
-          model: 'meta-llama/Llama-3.3-70B-Instruct',
+          model: 'Groq/llama-4-maverick-17b-128e-instruct',
           greeting: greeting,
           voice_settings: { voice: 'aura-astra-en' },
           enabled_features: ['telephony'],
