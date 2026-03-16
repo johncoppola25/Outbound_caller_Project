@@ -361,16 +361,22 @@ export async function initDatabase() {
   const bcrypt = await import('bcryptjs');
   const { v4: uuidv4 } = await import('uuid');
 
-  // KENNYL - regular user
-  const existingKenny = db.prepare('SELECT id FROM users WHERE name = ?').get('KENNYL');
-  const kennyHash = await bcrypt.default.hash('KENNYL123', 10);
+  // Dozer19 - regular user (formerly KENNYL)
+  const kennyHash = await bcrypt.default.hash('CapChaos1916!!', 10);
+  // Rename KENNYL to Dozer19 if exists
+  const existingOldKenny = db.prepare('SELECT id FROM users WHERE name = ?').get('KENNYL');
+  if (existingOldKenny) {
+    db.prepare('UPDATE users SET name = ?, password_hash = ? WHERE name = ?').run('Dozer19', kennyHash, 'KENNYL');
+    console.log('👤 Renamed KENNYL to Dozer19');
+  }
+  const existingKenny = db.prepare('SELECT id FROM users WHERE name = ?').get('Dozer19');
   if (!existingKenny) {
     db.prepare('INSERT INTO users (id, email, password_hash, name, role) VALUES (?, ?, ?, ?, ?)').run(
-      uuidv4(), 'kenny@estatereach.com', kennyHash, 'KENNYL', 'user'
+      uuidv4(), 'kenny@estatereach.com', kennyHash, 'Dozer19', 'user'
     );
-    console.log('👤 Default user created (KENNYL)');
+    console.log('👤 Default user created (Dozer19)');
   } else {
-    db.prepare('UPDATE users SET password_hash = ?, role = ? WHERE name = ?').run(kennyHash, 'user', 'KENNYL');
+    db.prepare('UPDATE users SET password_hash = ?, role = ? WHERE name = ?').run(kennyHash, 'user', 'Dozer19');
   }
 
   // Admin account
@@ -385,8 +391,8 @@ export async function initDatabase() {
     db.prepare('UPDATE users SET password_hash = ?, role = ? WHERE name = ?').run(adminHash, 'admin', 'EstateAdmin');
   }
 
-  // Assign orphaned campaigns to KENNYL user
-  const kennyUser = db.prepare('SELECT id FROM users WHERE name = ?').get('KENNYL');
+  // Assign orphaned campaigns to Dozer19 user
+  const kennyUser = db.prepare('SELECT id FROM users WHERE name = ?').get('Dozer19');
   if (kennyUser) {
     db.prepare('UPDATE campaigns SET user_id = ? WHERE user_id IS NULL').run(kennyUser.id);
     db.prepare('UPDATE meeting_history SET user_id = ? WHERE user_id IS NULL').run(kennyUser.id);

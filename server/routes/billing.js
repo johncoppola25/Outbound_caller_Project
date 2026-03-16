@@ -35,7 +35,7 @@ const PLANS = [
 
 // Per-user pricing overrides (by username)
 const USER_PRICING = {
-  'KENNYL': {
+  'Dozer19': {
     monthly: { price: 15000, priceDisplay: '$150' } // $150/month for Kenny
   }
 };
