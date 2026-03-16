@@ -67,15 +67,16 @@ router.get('/', async (req, res) => {
   try {
     const db = await getDb();
     const isAdmin = req.user.role === 'admin';
+    const filterUserId = isAdmin && req.query.userId ? req.query.userId : (isAdmin ? null : req.user.userId);
     const campaigns = db.prepare(`
       SELECT c.*,
         (SELECT COUNT(*) FROM contacts WHERE campaign_id = c.id) as contact_count,
         (SELECT COUNT(*) FROM calls WHERE campaign_id = c.id) as call_count,
         (SELECT COUNT(*) FROM calls WHERE campaign_id = c.id AND status = 'completed') as completed_calls
       FROM campaigns c
-      ${isAdmin ? '' : 'WHERE c.user_id = ?'}
+      ${filterUserId ? 'WHERE c.user_id = ?' : ''}
       ORDER BY c.created_at DESC
-    `).all(...(isAdmin ? [] : [req.user.userId]));
+    `).all(...(filterUserId ? [filterUserId] : []));
 
     res.json(campaigns);
   } catch (error) {

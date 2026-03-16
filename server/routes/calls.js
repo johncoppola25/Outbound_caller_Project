@@ -698,6 +698,7 @@ router.get('/', async (req, res) => {
     `).run();
 
     const isAdmin = req.user.role === 'admin';
+    const filterUserId = isAdmin && req.query.userId ? req.query.userId : (isAdmin ? null : req.user.userId);
     const { status, page = 1, limit = 50 } = req.query;
     const offset = (page - 1) * limit;
 
@@ -709,9 +710,9 @@ router.get('/', async (req, res) => {
     `;
     const params = [];
 
-    if (!isAdmin) {
+    if (filterUserId) {
       query += ' WHERE cp.user_id = ?';
-      params.push(req.user.userId);
+      params.push(filterUserId);
     }
 
     if (status) {

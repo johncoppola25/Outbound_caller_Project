@@ -9,16 +9,16 @@ router.get('/dashboard', async (req, res) => {
   try {
     const db = await getDb();
     const isAdmin = req.user.role === 'admin';
-    const uid = req.user.userId;
+    const filterUserId = isAdmin && req.query.userId ? req.query.userId : (isAdmin ? null : req.user.userId);
 
     // Scoping filters
-    const campFilter = isAdmin ? '' : 'WHERE user_id = ?';
-    const campParams = isAdmin ? [] : [uid];
-    const contactFilter = isAdmin ? '' : 'WHERE campaign_id IN (SELECT id FROM campaigns WHERE user_id = ?)';
-    const contactParams = isAdmin ? [] : [uid];
-    const callFilter = isAdmin ? '' : 'WHERE campaign_id IN (SELECT id FROM campaigns WHERE user_id = ?)';
-    const callParams = isAdmin ? [] : [uid];
-    const callAndFilter = isAdmin ? '' : 'AND campaign_id IN (SELECT id FROM campaigns WHERE user_id = ?)';
+    const campFilter = filterUserId ? 'WHERE user_id = ?' : '';
+    const campParams = filterUserId ? [filterUserId] : [];
+    const contactFilter = filterUserId ? 'WHERE campaign_id IN (SELECT id FROM campaigns WHERE user_id = ?)' : '';
+    const contactParams = filterUserId ? [filterUserId] : [];
+    const callFilter = filterUserId ? 'WHERE campaign_id IN (SELECT id FROM campaigns WHERE user_id = ?)' : '';
+    const callParams = filterUserId ? [filterUserId] : [];
+    const callAndFilter = filterUserId ? 'AND campaign_id IN (SELECT id FROM campaigns WHERE user_id = ?)' : '';
 
     // Campaign stats
     const campaignStats = db.prepare(`
@@ -83,8 +83,8 @@ router.get('/dashboard', async (req, res) => {
     const todayCost = db.prepare(`SELECT COALESCE(SUM(estimated_cost), 0) as total FROM calls WHERE date(created_at) = date('now') ${callAndFilter}`).get(...callParams);
 
     // Lead score summary
-    const leadFilter = isAdmin ? '' : 'AND campaign_id IN (SELECT id FROM campaigns WHERE user_id = ?)';
-    const leadParams = isAdmin ? [] : [uid];
+    const leadFilter = filterUserId ? 'AND campaign_id IN (SELECT id FROM campaigns WHERE user_id = ?)' : '';
+    const leadParams = filterUserId ? [filterUserId] : [];
     const hotLeads = db.prepare(`SELECT COUNT(*) as count FROM contacts WHERE lead_score >= 80 ${leadFilter}`).get(...leadParams);
     const warmLeads = db.prepare(`SELECT COUNT(*) as count FROM contacts WHERE lead_score >= 50 AND lead_score < 80 ${leadFilter}`).get(...leadParams);
     const coldLeads = db.prepare(`SELECT COUNT(*) as count FROM contacts WHERE lead_score < 50 ${leadFilter}`).get(...leadParams);
@@ -204,11 +204,11 @@ router.get('/analytics', async (req, res) => {
     const db = await getDb();
     const { period = '7d' } = req.query;
     const isAdmin = req.user.role === 'admin';
-    const uid = req.user.userId;
-    const userFilter = isAdmin ? '' : 'AND campaign_id IN (SELECT id FROM campaigns WHERE user_id = ?)';
-    const userParams = isAdmin ? [] : [uid];
-    const campFilter = isAdmin ? '' : 'WHERE cp.user_id = ?';
-    const campParams = isAdmin ? [] : [uid];
+    const filterUserId = isAdmin && req.query.userId ? req.query.userId : (isAdmin ? null : req.user.userId);
+    const userFilter = filterUserId ? 'AND campaign_id IN (SELECT id FROM campaigns WHERE user_id = ?)' : '';
+    const userParams = filterUserId ? [filterUserId] : [];
+    const campFilter = filterUserId ? 'WHERE cp.user_id = ?' : '';
+    const campParams = filterUserId ? [filterUserId] : [];
 
     let dateFilter;
     switch (period) {

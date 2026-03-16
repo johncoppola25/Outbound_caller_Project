@@ -15,13 +15,18 @@ import {
 } from 'lucide-react';
 import { useWebSocket } from '../context/WebSocketContext';
 import { apiFetch } from '../utils/api';
+import { useAuth } from '../context/AuthContext';
+import AdminUserFilter from '../components/AdminUserFilter';
 
 export default function Calls() {
+  const { user } = useAuth();
+  const isAdmin = user?.role === 'admin';
   const [calls, setCalls] = useState([]);
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+  const [selectedUserId, setSelectedUserId] = useState('');
   const { subscribe } = useWebSocket();
 
   useEffect(() => {
@@ -44,11 +49,11 @@ export default function Calls() {
       }
     });
     return unsubscribe;
-  }, [subscribe]);
+  }, [subscribe, selectedUserId]);
 
   async function fetchCalls() {
     try {
-      const res = await apiFetch('/api/calls?limit=200');
+      const res = await apiFetch(`/api/calls?limit=200${selectedUserId ? `&userId=${selectedUserId}` : ''}`);
       const data = await res.json();
       setCalls(data.calls || []);
     } catch (err) {
@@ -139,6 +144,9 @@ export default function Calls() {
           <p style={{ color: '#6b7280', marginTop: '4px', fontSize: '14px' }}>Monitor and review all outbound calls</p>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          {isAdmin && (
+            <AdminUserFilter selectedUserId={selectedUserId} onUserChange={setSelectedUserId} />
+          )}
           <a
             href="/api/calls/export"
             download="calls.csv"

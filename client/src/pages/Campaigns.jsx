@@ -11,14 +11,19 @@ import {
   Trash2
 } from 'lucide-react';
 import CreateCampaignModal from '../components/CreateCampaignModal';
+import AdminUserFilter from '../components/AdminUserFilter';
 import { apiFetch } from '../utils/api';
+import { useAuth } from '../context/AuthContext';
 
 export default function Campaigns() {
+  const { user } = useAuth();
+  const isAdmin = user?.role === 'admin';
   const [campaigns, setCampaigns] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+  const [selectedUserId, setSelectedUserId] = useState('');
 
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth < 768);
@@ -28,11 +33,11 @@ export default function Campaigns() {
 
   useEffect(() => {
     fetchCampaigns();
-  }, []);
+  }, [selectedUserId]);
 
   async function fetchCampaigns() {
     try {
-      const res = await apiFetch('/api/campaigns');
+      const res = await apiFetch(`/api/campaigns${selectedUserId ? `?userId=${selectedUserId}` : ''}`);
       const data = await res.json();
       setCampaigns(data);
     } catch (err) {
@@ -108,9 +113,12 @@ export default function Campaigns() {
         </button>
       </div>
 
-      {/* Search */}
-      <div style={{ marginBottom: '24px' }}>
-        <div style={{ position: 'relative', maxWidth: isMobile ? '100%' : '400px' }}>
+      {/* Search + Admin Filter */}
+      <div style={{ marginBottom: '24px', display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '12px' }}>
+        {isAdmin && (
+          <AdminUserFilter selectedUserId={selectedUserId} onUserChange={setSelectedUserId} />
+        )}
+        <div style={{ position: 'relative', maxWidth: isMobile ? '100%' : '400px', flex: 1 }}>
           <Search style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', width: '18px', height: '18px', color: '#9ca3af' }} />
           <input
             type="text"

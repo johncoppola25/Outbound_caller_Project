@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import { apiFetch } from '../utils/api';
 import { useAuth } from '../context/AuthContext';
+import AdminUserFilter from '../components/AdminUserFilter';
 
 export default function Analytics() {
   const { user } = useAuth();
@@ -32,6 +33,7 @@ export default function Analytics() {
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
   const [campaigns, setCampaigns] = useState([]);
   const [selectedCampaign, setSelectedCampaign] = useState('all');
+  const [selectedUserId, setSelectedUserId] = useState('');
 
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth < 768);
@@ -41,15 +43,16 @@ export default function Analytics() {
 
   useEffect(() => {
     fetchCampaigns();
-  }, []);
+    setSelectedCampaign('all');
+  }, [selectedUserId]);
 
   useEffect(() => {
     fetchAnalytics();
-  }, [period, selectedCampaign]);
+  }, [period, selectedCampaign, selectedUserId]);
 
   async function fetchCampaigns() {
     try {
-      const res = await apiFetch('/api/campaigns');
+      const res = await apiFetch(`/api/campaigns${selectedUserId ? `?userId=${selectedUserId}` : ''}`);
       const data = await res.json();
       setCampaigns(data);
     } catch (err) {
@@ -60,9 +63,10 @@ export default function Analytics() {
   async function fetchAnalytics() {
     setLoading(true);
     try {
+      const userParam = selectedUserId ? `userId=${selectedUserId}` : '';
       if (selectedCampaign !== 'all') {
         // Fetch campaign-specific stats
-        const res = await apiFetch(`/api/stats/campaign/${selectedCampaign}`);
+        const res = await apiFetch(`/api/stats/campaign/${selectedCampaign}${userParam ? `?${userParam}` : ''}`);
         const data = await res.json();
         const { basic, contactBreakdown, callBreakdown, outcomeBreakdown, callsOverTime, hourlyDistribution, conversionRate, cost } = data;
         // Map campaign-specific data to the shape the UI expects
@@ -93,8 +97,8 @@ export default function Analytics() {
       } else {
         // Fetch general stats from both endpoints
         const [analyticsRes, statsRes] = await Promise.all([
-          apiFetch(`/api/stats/analytics?period=${period}`),
-          apiFetch('/api/stats/dashboard')
+          apiFetch(`/api/stats/analytics?period=${period}${userParam ? `&${userParam}` : ''}`),
+          apiFetch(`/api/stats/dashboard${userParam ? `?${userParam}` : ''}`)
         ]);
         const analyticsData = await analyticsRes.json();
         const statsData = await statsRes.json();
@@ -196,7 +200,10 @@ export default function Analytics() {
           <h1 style={{ fontSize: '26px', fontWeight: '800', color: '#111827', letterSpacing: '-0.03em' }}>Analytics</h1>
           <p style={{ color: '#6b7280', marginTop: '4px', fontSize: '14px' }}>Track your outreach performance and insights</p>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
+          {isAdmin && (
+            <AdminUserFilter selectedUserId={selectedUserId} onUserChange={setSelectedUserId} />
+          )}
           <button
             onClick={syncStaleCalls}
             disabled={syncing}
