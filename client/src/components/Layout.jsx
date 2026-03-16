@@ -533,7 +533,6 @@ export default function Layout() {
                   }}>
                     <div style={{ padding: '14px 16px', borderBottom: '1px solid #f3f4f6' }}>
                       <p style={{ fontSize: '13px', fontWeight: '700', color: '#111827', margin: 0 }}>Add Calling Credits</p>
-                      <p style={{ fontSize: '11px', color: '#6b7280', margin: '2px 0 0' }}>$0.15/min per call</p>
                     </div>
                     <div style={{ padding: '8px' }}>
                       {[25, 50, 100, 200].map(amount => (
@@ -552,7 +551,7 @@ export default function Layout() {
                           onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
                         >
                           <span>Add ${amount}</span>
-                          <span style={{ fontSize: '11px', color: '#6b7280' }}>~{Math.floor(amount / 0.15)} min</span>
+                          <span style={{ fontSize: '11px', color: '#6b7280' }}>~{Math.floor(amount / 0.17)} min</span>
                         </button>
                       ))}
                     </div>
