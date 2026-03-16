@@ -402,12 +402,12 @@ export async function initDatabase() {
   const johnHash = await bcrypt.default.hash('Coppola25$$', 10);
   if (!existingJohn) {
     db.prepare('INSERT INTO users (id, email, password_hash, name, role, setup_fee_paid, subscription_status, subscription_plan, calling_balance) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)').run(
-      uuidv4(), 'john.coppola25@gmail.com', johnHash, 'John', 'user', 1, 'active', 'monthly', 9999
+      uuidv4(), 'john.coppola25@gmail.com', johnHash, 'John', 'user', 1, 'active', 'monthly', 100
     );
     console.log('👤 Free user created (john.coppola25@gmail.com)');
   } else {
     db.prepare('UPDATE users SET password_hash = ?, setup_fee_paid = 1, subscription_status = ?, subscription_plan = ?, calling_balance = ? WHERE email = ?')
-      .run(johnHash, 'active', 'monthly', 9999, 'john.coppola25@gmail.com');
+      .run(johnHash, 'active', 'monthly', 100, 'john.coppola25@gmail.com');
   }
 
   // Assign orphaned campaigns to Dozer19 user
