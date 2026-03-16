@@ -494,32 +494,31 @@ export default function Layout() {
             background: 'rgba(243,244,246,0.95)', backdropFilter: 'blur(8px)'
           }}>
             <div style={{ position: 'relative' }}>
-              <button
+              <div
                 onClick={() => setShowAddFunds(!showAddFunds)}
                 style={{
-                  display: 'flex', alignItems: 'center', gap: '8px',
-                  padding: '8px 16px', borderRadius: '10px', border: '1px solid #e5e7eb',
-                  background: callingBalance < 20 ? '#fef2f2' : callingBalance < 50 ? '#fffbeb' : '#ecfdf5',
-                  cursor: 'pointer', fontSize: '13px', fontWeight: '600',
-                  color: callingBalance < 20 ? '#dc2626' : callingBalance < 50 ? '#b45309' : '#059669',
-                  boxShadow: '0 1px 3px rgba(0,0,0,0.06)'
+                  display: 'flex', alignItems: 'center', gap: '10px',
+                  padding: '10px 14px', borderRadius: '12px', border: 'none',
+                  background: callingBalance < 20 ? 'linear-gradient(135deg, #dc2626, #b91c1c)' : callingBalance < 50 ? 'linear-gradient(135deg, #d97706, #b45309)' : 'linear-gradient(135deg, #10b981, #059669)',
+                  cursor: 'pointer',
+                  boxShadow: '0 2px 8px rgba(0,0,0,0.12)'
                 }}
               >
-                <DollarSign size={15} color={callingBalance < 20 ? '#dc2626' : callingBalance < 50 ? '#d97706' : '#059669'} />
-                Balance: ${callingBalance.toFixed(2)}
-                {callingBalance < 20 && (
-                  <span style={{
-                    background: '#dc2626', color: '#fff', fontSize: '9px', fontWeight: '700',
-                    padding: '1px 6px', borderRadius: '8px', marginLeft: '4px'
-                  }}>LOW</span>
-                )}
-                {callingBalance >= 20 && callingBalance < 50 && (
-                  <span style={{
-                    background: '#d97706', color: '#fff', fontSize: '9px', fontWeight: '700',
-                    padding: '1px 6px', borderRadius: '8px', marginLeft: '4px'
-                  }}>LOW</span>
-                )}
-              </button>
+                <div>
+                  <p style={{ fontSize: '16px', fontWeight: '700', color: '#fff', margin: 0, lineHeight: 1 }}>
+                    ${callingBalance.toFixed(2)}
+                  </p>
+                  <p style={{ fontSize: '10px', color: 'rgba(255,255,255,0.8)', margin: '3px 0 0', lineHeight: 1 }}>
+                    Available credit in USD
+                  </p>
+                </div>
+                <div style={{
+                  width: '28px', height: '28px', borderRadius: '8px',
+                  background: 'rgba(255,255,255,0.2)', display: 'flex',
+                  alignItems: 'center', justifyContent: 'center',
+                  fontSize: '18px', fontWeight: '700', color: '#fff', lineHeight: 1
+                }}>+</div>
+              </div>
 
               {/* Add Funds dropdown */}
               {showAddFunds && (
