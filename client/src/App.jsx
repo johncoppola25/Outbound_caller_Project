@@ -37,8 +37,8 @@ function PaidRoute({ children }) {
   const [checked, setChecked] = useState(false);
   const [paid, setPaid] = useState(false);
 
-  // Admin and KENNYL bypass payment check
-  const bypass = user?.role === 'admin' || user?.name === 'KENNYL' || user?.email === 'johnc@apbsecurity.com';
+  // Admin and specific users bypass payment check
+  const bypass = user?.role === 'admin' || user?.name === 'Dozer19' || user?.email === 'johnc@apbsecurity.com' || user?.email === 'john.coppola25@gmail.com';
 
   useEffect(() => {
     if (bypass) { setPaid(true); setChecked(true); return; }
