@@ -476,9 +476,9 @@ export async function initiateOutboundCall(callData) {
   console.log('   TeXML App ID:', texmlAppId);
   console.log('   Contact Data:', callData.contact ? 'Yes' : 'No');
   
+  let tempAssistantId = null; // Track if we created a temp assistant to clean up later
   try {
     let assistantIdToUse = callData.assistant_id;
-    let tempAssistantId = null; // Track if we created a temp assistant to clean up later
 
     // Create a FRESH temporary assistant for each call with personalized greeting/prompt
     // This prevents the previous contact's name from leaking into the next call
