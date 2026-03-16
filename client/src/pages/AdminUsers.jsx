@@ -23,6 +23,8 @@ export default function AdminUsers() {
   const [editModal, setEditModal] = useState(null);
   const [editName, setEditName] = useState('');
   const [editEmail, setEditEmail] = useState('');
+  const [editSecondaryEmails, setEditSecondaryEmails] = useState([]);
+  const [newSecondaryEmail, setNewSecondaryEmail] = useState('');
   const [editPassword, setEditPassword] = useState('');
   const [showEditPw, setShowEditPw] = useState(false);
   const [editSaving, setEditSaving] = useState(false);
@@ -124,6 +126,8 @@ export default function AdminUsers() {
     setEditModal(user.id);
     setEditName(user.name || '');
     setEditEmail(user.email || '');
+    setEditSecondaryEmails(user.secondary_emails ? user.secondary_emails.split(',').filter(e => e.trim()) : []);
+    setNewSecondaryEmail('');
     setEditPassword('');
     setEditMsg(null);
   };
@@ -137,6 +141,7 @@ export default function AdminUsers() {
       if (editName) body.name = editName;
       if (editEmail) body.email = editEmail;
       if (editPassword) body.password = editPassword;
+      body.secondary_emails = editSecondaryEmails.join(',');
       const res = await apiFetch(`/api/admin/users/${editModal}/profile`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
@@ -482,7 +487,10 @@ export default function AdminUsers() {
                       <span style={{ fontSize: '13px', fontWeight: '600', color: '#111827' }}>{user.name}</span>
                       {user.role === 'admin' && <Crown size={12} color="#8b5cf6" />}
                     </div>
-                    <p style={{ fontSize: '11px', color: '#6b7280', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{user.email}</p>
+                    <p style={{ fontSize: '11px', color: '#6b7280', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {user.email}
+                      {user.secondary_emails && <span style={{ color: '#9ca3af' }}> +{user.secondary_emails.split(',').filter(e => e.trim()).length}</span>}
+                    </p>
                   </div>
                 </div>
 
@@ -771,11 +779,63 @@ export default function AdminUsers() {
               />
             </div>
             <div style={{ marginBottom: '12px' }}>
-              <label style={{ fontSize: '12px', fontWeight: '600', color: '#374151', display: 'block', marginBottom: '4px' }}>Email</label>
+              <label style={{ fontSize: '12px', fontWeight: '600', color: '#374151', display: 'block', marginBottom: '4px' }}>Primary Email <span style={{ fontWeight: '400', color: '#9ca3af' }}>(used for login)</span></label>
               <input
                 type="email" value={editEmail} onChange={e => setEditEmail(e.target.value)}
                 style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1.5px solid #e5e7eb', fontSize: '14px', outline: 'none', boxSizing: 'border-box' }}
               />
+            </div>
+            <div style={{ marginBottom: '12px' }}>
+              <label style={{ fontSize: '12px', fontWeight: '600', color: '#374151', display: 'block', marginBottom: '4px' }}>Additional Emails</label>
+              {editSecondaryEmails.map((em, i) => (
+                <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '6px' }}>
+                  <input
+                    type="email" value={em}
+                    onChange={e => {
+                      const updated = [...editSecondaryEmails];
+                      updated[i] = e.target.value;
+                      setEditSecondaryEmails(updated);
+                    }}
+                    style={{ flex: 1, padding: '8px 12px', borderRadius: '8px', border: '1.5px solid #e5e7eb', fontSize: '13px', outline: 'none', boxSizing: 'border-box' }}
+                  />
+                  <button
+                    onClick={() => setEditSecondaryEmails(editSecondaryEmails.filter((_, idx) => idx !== i))}
+                    style={{ background: '#fef2f2', border: 'none', borderRadius: '6px', padding: '6px', cursor: 'pointer', display: 'flex' }}
+                  >
+                    <X size={14} color="#dc2626" />
+                  </button>
+                </div>
+              ))}
+              <div style={{ display: 'flex', gap: '6px' }}>
+                <input
+                  type="email" value={newSecondaryEmail}
+                  onChange={e => setNewSecondaryEmail(e.target.value)}
+                  placeholder="Add another email"
+                  onKeyDown={e => {
+                    if (e.key === 'Enter' && newSecondaryEmail.trim()) {
+                      e.preventDefault();
+                      setEditSecondaryEmails([...editSecondaryEmails, newSecondaryEmail.trim()]);
+                      setNewSecondaryEmail('');
+                    }
+                  }}
+                  style={{ flex: 1, padding: '8px 12px', borderRadius: '8px', border: '1.5px solid #e5e7eb', fontSize: '13px', outline: 'none', boxSizing: 'border-box' }}
+                />
+                <button
+                  onClick={() => {
+                    if (newSecondaryEmail.trim()) {
+                      setEditSecondaryEmails([...editSecondaryEmails, newSecondaryEmail.trim()]);
+                      setNewSecondaryEmail('');
+                    }
+                  }}
+                  style={{
+                    background: '#ecfdf5', border: 'none', borderRadius: '6px',
+                    padding: '6px 10px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px',
+                    fontSize: '12px', fontWeight: '600', color: '#059669'
+                  }}
+                >
+                  <Plus size={14} /> Add
+                </button>
+              </div>
             </div>
             <div style={{ marginBottom: '16px' }}>
               <label style={{ fontSize: '12px', fontWeight: '600', color: '#374151', display: 'block', marginBottom: '4px' }}>New Password <span style={{ fontWeight: '400', color: '#9ca3af' }}>(leave blank to keep current)</span></label>

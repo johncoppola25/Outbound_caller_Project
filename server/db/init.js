@@ -308,6 +308,9 @@ export async function initDatabase() {
   try {
     db.exec(`ALTER TABLE users ADD COLUMN auto_fund_threshold INTEGER DEFAULT 20`);
   } catch (e) { /* column may already exist */ }
+  try {
+    db.exec(`ALTER TABLE users ADD COLUMN secondary_emails TEXT DEFAULT ''`);
+  } catch (e) { /* column may already exist */ }
 
   // Meeting history table - completed meetings
   db.exec(`

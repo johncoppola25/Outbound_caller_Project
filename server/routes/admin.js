@@ -15,7 +15,7 @@ router.get('/users', async (req, res) => {
     const users = db.prepare(`
       SELECT id, email, name, company, role, setup_fee_paid,
              stripe_customer_id, subscription_plan, subscription_status,
-             calling_balance, auto_fund_enabled, created_at
+             calling_balance, auto_fund_enabled, secondary_emails, created_at
       FROM users ORDER BY created_at DESC
     `).all();
 
@@ -341,10 +341,10 @@ router.delete('/users/:id', async (req, res) => {
   }
 });
 
-// PUT /api/admin/users/:id/profile - admin edit user name/email/password
+// PUT /api/admin/users/:id/profile - admin edit user name/email/password/secondary emails
 router.put('/users/:id/profile', async (req, res) => {
   try {
-    const { name, email, password } = req.body;
+    const { name, email, password, secondary_emails } = req.body;
     const db = await getDb();
     const user = db.prepare('SELECT * FROM users WHERE id = ?').get(req.params.id);
     if (!user) return res.status(404).json({ error: 'User not found.' });
@@ -362,8 +362,11 @@ router.put('/users/:id/profile', async (req, res) => {
       const hash = await bcrypt.default.hash(password, 10);
       db.prepare('UPDATE users SET password_hash = ? WHERE id = ?').run(hash, req.params.id);
     }
+    if (secondary_emails !== undefined) {
+      db.prepare('UPDATE users SET secondary_emails = ? WHERE id = ?').run(secondary_emails, req.params.id);
+    }
 
-    const updated = db.prepare('SELECT id, name, email, role, calling_balance, subscription_status, setup_fee_paid FROM users WHERE id = ?').get(req.params.id);
+    const updated = db.prepare('SELECT id, name, email, role, calling_balance, subscription_status, setup_fee_paid, secondary_emails FROM users WHERE id = ?').get(req.params.id);
     res.json({ success: true, user: updated });
   } catch (err) {
     console.error('Admin profile update error:', err);
