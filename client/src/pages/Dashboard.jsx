@@ -165,7 +165,6 @@ export default function Dashboard() {
               </div>
               <div>
                 <h2 style={{ fontSize: '15px', fontWeight: '700', color: '#f9fafb', margin: 0 }}>Calling Balance</h2>
-                <p style={{ fontSize: '11px', color: '#6b7280', margin: '1px 0 0' }}>$0.17 per minute</p>
               </div>
             </div>
             <Link to="/billing" style={{
