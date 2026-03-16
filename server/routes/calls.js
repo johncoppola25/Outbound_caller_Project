@@ -383,24 +383,33 @@ router.post('/initiate', async (req, res) => {
       
     } catch (telnyxError) {
       console.error('Telnyx error:', telnyxError);
+      console.error('Telnyx error details - From:', campaign.caller_id, 'To:', contact.phone, 'Assistant:', campaign.telnyx_assistant_id);
       db.prepare(`UPDATE calls SET status = 'failed' WHERE id = ?`).run(callId);
-      
+
       db.prepare(`
         INSERT INTO call_events (call_id, event_type, event_data)
         VALUES (?, 'call_failed', ?)
-      `).run(callId, JSON.stringify({ error: telnyxError.message }));
+      `).run(callId, JSON.stringify({ error: telnyxError.message, from: campaign.caller_id, to: contact.phone }));
     }
-    
+
     const call = db.prepare(`
       SELECT cl.*, ct.first_name, ct.last_name, ct.phone
       FROM calls cl
       JOIN contacts ct ON cl.contact_id = ct.id
       WHERE cl.id = ?
     `).get(callId);
-    
+
+    // Include error details if failed
+    if (call && call.status === 'failed') {
+      const failEvent = db.prepare("SELECT event_data FROM call_events WHERE call_id = ? AND event_type = 'call_failed' ORDER BY created_at DESC LIMIT 1").get(callId);
+      if (failEvent) {
+        try { call.error_detail = JSON.parse(failEvent.event_data).error; } catch(e) {}
+      }
+    }
+
     // Broadcast update
     broadcast({ type: 'call_update', call });
-    
+
     res.status(201).json(call);
   } catch (error) {
     console.error('Error initiating call:', error);

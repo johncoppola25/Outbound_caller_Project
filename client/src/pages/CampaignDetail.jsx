@@ -411,6 +411,10 @@ export default function CampaignDetail() {
       if (res.status === 402) {
         alert('Insufficient balance! Please add funds to your calling balance before making calls. Go to the balance button in the top right to add funds.');
       } else {
+        const data = await res.json();
+        if (data.status === 'failed' && data.error_detail) {
+          alert('Call failed: ' + data.error_detail);
+        }
         // Refresh contacts and calls after initiating
         fetchContacts();
         fetchCalls();
