@@ -280,7 +280,7 @@ export default function PhoneNumbers() {
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                       <span style={{ fontSize: '13px', fontWeight: '600', color: '#059669' }}>
-                        $1.00
+                        $5.00
                       </span>
                       <button
                         onClick={() => purchaseNumber(num.phone_number)}

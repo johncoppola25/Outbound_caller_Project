@@ -55,8 +55,8 @@ router.post('/purchase', async (req, res) => {
     const db = await getDb();
     const user = db.prepare('SELECT * FROM users WHERE id = ?').get(req.user.userId);
 
-    // Check balance ($1 to purchase)
-    const purchaseCost = 1.00;
+    // Check balance ($5 to purchase)
+    const purchaseCost = 5.00;
     if ((user.calling_balance || 0) < purchaseCost && user.name !== 'KENNYL' && user.email !== 'johnc@apbsecurity.com' && user.role !== 'admin') {
       return res.status(402).json({ error: `Insufficient balance. You need at least $${purchaseCost.toFixed(2)} to purchase a number.` });
     }
