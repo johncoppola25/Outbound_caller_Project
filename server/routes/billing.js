@@ -16,8 +16,8 @@ const PLANS = [
   {
     id: 'setup',
     name: 'Setup Fee',
-    price: 75000, // cents = $750
-    priceDisplay: '$750',
+    price: 50000, // cents = $500
+    priceDisplay: '$500',
     interval: null, // one-time
     oneTime: true,
     features: ['Full platform setup', 'Custom AI script configuration', 'Campaign creation', 'Contact import assistance', 'Training & onboarding']
@@ -25,11 +25,11 @@ const PLANS = [
   {
     id: 'monthly',
     name: 'Monthly Platform Fee',
-    price: 100000, // cents = $1,000
-    priceDisplay: '$1,000',
+    price: 70000, // cents = $700
+    priceDisplay: '$700',
     interval: 'month',
     popular: true,
-    features: ['Full access to all platform features', 'AI-powered outbound calls', 'Call recording & transcripts', 'Voicemail detection', 'Full analytics dashboard', 'Priority support', 'Custom AI scripts', 'Multiple campaigns', 'Usage: $0.15 per calling minute']
+    features: ['Full access to all platform features', 'AI-powered outbound calls', 'Call recording & transcripts', 'Voicemail detection', 'Full analytics dashboard', 'Priority support', 'Custom AI scripts', 'Multiple campaigns', 'Usage: $0.17 per calling minute']
   }
 ];
 
@@ -267,7 +267,7 @@ router.post('/confirm-setup', async (req, res) => {
       const existing = db.prepare('SELECT id FROM payments WHERE user_id = ? AND type = ?').get(user.id, 'setup_fee');
       if (!existing) {
         db.prepare('INSERT INTO payments (id, user_id, type, amount, stripe_payment_id, status, description) VALUES (?, ?, ?, ?, ?, ?, ?)')
-          .run(uuidv4(), user.id, 'setup_fee', 750, setupSession.payment_intent || setupSession.id, 'succeeded', 'Setup fee - platform onboarding');
+          .run(uuidv4(), user.id, 'setup_fee', 500, setupSession.payment_intent || setupSession.id, 'succeeded', 'Setup fee - platform onboarding');
       }
       return res.json({ setupFeePaid: true });
     }
@@ -490,7 +490,7 @@ export async function deductCallCost(userId, durationSeconds) {
   try {
     const db = await getDb();
     const minutes = Math.ceil(durationSeconds / 60);
-    const cost = minutes * 0.15; // $0.15 per minute
+    const cost = minutes * 0.17; // $0.17 per minute
 
     const user = db.prepare('SELECT calling_balance, auto_fund_enabled, auto_fund_amount, auto_fund_threshold, stripe_customer_id FROM users WHERE id = ?').get(userId);
     const newBalance = Math.max(0, (user?.calling_balance || 0) - cost);

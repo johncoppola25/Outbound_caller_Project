@@ -21,7 +21,7 @@ export default function Landing() {
     <div style={{ fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif", color: '#111827' }}>
       <Helmet>
         <title>OutReach AI - AI That Calls Your Leads and Books Appointments</title>
-        <meta name="description" content="AI that calls your leads and books appointments automatically. Upload contacts, launch a campaign, and watch appointments fill your calendar. $750 setup + $1,000/mo." />
+        <meta name="description" content="AI that calls your leads and books appointments automatically. Upload contacts, launch a campaign, and watch appointments fill your calendar. $500 setup + $700/mo." />
       </Helmet>
 
       {/* Nav */}
@@ -368,7 +368,7 @@ export default function Landing() {
               </div>
               <p style={{ fontSize: '13px', fontWeight: '600', color: '#6b7280', margin: '0 0 4px 0' }}>One-Time</p>
               <h3 style={{ fontSize: '18px', fontWeight: '700', margin: '0 0 8px 0' }}>Setup Fee</h3>
-              <p style={{ fontSize: isMobile ? '36px' : '42px', fontWeight: '800', margin: '0 0 16px 0', color: '#0f172a' }}>$750</p>
+              <p style={{ fontSize: isMobile ? '36px' : '42px', fontWeight: '800', margin: '0 0 16px 0', color: '#0f172a' }}>$500</p>
               <div style={{ borderTop: '1px solid #e5e7eb', paddingTop: '16px', textAlign: 'left' }}>
                 <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
                   {[
@@ -397,7 +397,7 @@ export default function Landing() {
               </div>
               <p style={{ fontSize: '13px', fontWeight: '600', color: '#6b7280', margin: '0 0 4px 0' }}>Monthly</p>
               <h3 style={{ fontSize: '18px', fontWeight: '700', margin: '0 0 8px 0' }}>Platform Fee</h3>
-              <p style={{ fontSize: isMobile ? '36px' : '42px', fontWeight: '800', margin: '0', color: '#0f172a' }}>$1,000</p>
+              <p style={{ fontSize: isMobile ? '36px' : '42px', fontWeight: '800', margin: '0', color: '#0f172a' }}>$700</p>
               <p style={{ fontSize: '14px', color: '#6b7280', margin: '0 0 4px 0' }}>/month</p>
               <div style={{ height: '16px' }} />
               <div style={{ borderTop: '1px solid #e5e7eb', paddingTop: '16px', textAlign: 'left' }}>

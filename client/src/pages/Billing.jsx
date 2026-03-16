@@ -172,7 +172,7 @@ export default function Billing() {
               </div>
               <div>
                 <p style={{ fontSize: '11px', color: '#a5b4fc' }}>USAGE</p>
-                <p style={{ fontWeight: '700' }}>$0.15/min</p>
+                <p style={{ fontWeight: '700' }}>$0.17/min</p>
               </div>
               {subscription.current_period_end && (
                 <div>
@@ -333,7 +333,7 @@ export default function Billing() {
                   <div style={{ display: 'flex', alignItems: 'baseline', gap: '4px', marginBottom: '16px' }}>
                     <span style={{ fontSize: '36px', fontWeight: '800', color: '#111827' }}>{monthlyPlan?.priceDisplay || '$1,000'}</span>
                     <span style={{ fontSize: '14px', color: '#6b7280' }}>/month</span>
-                    <span style={{ fontSize: '14px', color: '#6b7280', marginLeft: '8px' }}>+ $0.15/min usage</span>
+                    <span style={{ fontSize: '14px', color: '#6b7280', marginLeft: '8px' }}>+ $0.17/min usage</span>
                   </div>
 
                   <ul style={{ listStyle: 'none', padding: 0, margin: 0, marginBottom: '20px' }}>

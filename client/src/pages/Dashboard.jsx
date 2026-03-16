@@ -165,7 +165,7 @@ export default function Dashboard() {
               </div>
               <div>
                 <h2 style={{ fontSize: '15px', fontWeight: '700', color: '#f9fafb', margin: 0 }}>Calling Balance</h2>
-                <p style={{ fontSize: '11px', color: '#6b7280', margin: '1px 0 0' }}>$0.15 per minute</p>
+                <p style={{ fontSize: '11px', color: '#6b7280', margin: '1px 0 0' }}>$0.17 per minute</p>
               </div>
             </div>
             <Link to="/billing" style={{
@@ -185,7 +185,7 @@ export default function Dashboard() {
             </div>
             <div style={{ background: 'rgba(255,255,255,0.06)', borderRadius: '10px', padding: '14px 16px', border: '1px solid rgba(255,255,255,0.08)' }}>
               <p style={{ fontSize: '22px', fontWeight: '800', color: '#f9fafb', letterSpacing: '-0.02em' }}>
-                {Math.floor((callingBalance.balance || 0) / 0.15)}
+                {Math.floor((callingBalance.balance || 0) / 0.17)}
               </p>
               <p style={{ fontSize: '11px', color: '#9ca3af', fontWeight: '500', marginTop: '2px' }}>Minutes Remaining</p>
             </div>
