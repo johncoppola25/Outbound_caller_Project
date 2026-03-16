@@ -587,7 +587,8 @@ RULES:
           await patchCampaignAssistantFallback(assistantIdToUse, fullPrompt + callFlowRules, updatedGreeting, callTools, voiceName, callData.campaign);
         }
       } catch (createError) {
-        console.error('⚠️ Could not create temp assistant, patching campaign assistant as fallback:', createError.message);
+        console.error('⚠️ Could not create temp assistant:', createError.message);
+        console.error('   Full error:', JSON.stringify(createError));
         // Fall back: PATCH the campaign assistant with the correct contact name
         try {
           await patchCampaignAssistantFallback(assistantIdToUse, fullPrompt + callFlowRules, updatedGreeting, callTools, voiceName, callData.campaign);
@@ -595,6 +596,36 @@ RULES:
         } catch (patchErr) {
           console.error('❌ Fallback PATCH also failed:', patchErr.message);
         }
+      }
+    }
+
+    // Safety net: if we still have no assistant, create a minimal one
+    if (!assistantIdToUse) {
+      console.log('⚠️ No assistant ID available, creating minimal assistant...');
+      try {
+        const botName = callData.campaign?.bot_name || 'Julia';
+        const firstName = callData.contact?.first_name || '';
+        const greeting = firstName ? `Hi, may I speak with ${firstName} please?` : 'Hello, how are you today?';
+        const prompt = callData.campaign?.ai_prompt || `You are ${botName}, a friendly professional making a business call.`;
+
+        const minimalAssistant = await telnyxRequest('/ai/assistants', 'POST', {
+          name: `Call - ${firstName || 'Unknown'} - ${Date.now()}`,
+          instructions: prompt,
+          model: 'meta-llama/Meta-Llama-3.1-70B-Instruct',
+          greeting: greeting,
+          voice_settings: { voice: 'aura-astra-en' },
+          enabled_features: ['telephony'],
+          telephony_settings: { default_texml_app_id: texmlAppId }
+        });
+
+        tempAssistantId = minimalAssistant.data?.id || minimalAssistant.id || minimalAssistant.data?.assistant_id;
+        if (tempAssistantId) {
+          assistantIdToUse = tempAssistantId;
+          console.log('✅ Minimal assistant created:', tempAssistantId);
+        }
+      } catch (minErr) {
+        console.error('❌ Even minimal assistant creation failed:', minErr.message);
+        throw new Error('Could not create AI assistant for call: ' + minErr.message);
       }
     }
 
