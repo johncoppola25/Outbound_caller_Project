@@ -430,6 +430,22 @@ export default function AdminUsers() {
           <span style={{ fontSize: '12px', color: '#6b7280' }}>{users.length} total ({nonAdminUsers.length} users, {users.length - nonAdminUsers.length} admins)</span>
         </div>
 
+        {/* Column headers */}
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: 'minmax(180px, 1.5fr) minmax(100px, 1fr) 90px 100px 100px 100px 120px',
+          alignItems: 'center', padding: '8px 20px', gap: '8px',
+          background: '#f9fafb', borderBottom: '1px solid #e5e7eb'
+        }}>
+          <span style={{ fontSize: '11px', fontWeight: '600', color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Name</span>
+          <span style={{ fontSize: '11px', fontWeight: '600', color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Balance</span>
+          <span style={{ fontSize: '11px', fontWeight: '600', color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Status</span>
+          <span style={{ fontSize: '11px', fontWeight: '600', color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.05em' }}>This Month</span>
+          <span style={{ fontSize: '11px', fontWeight: '600', color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Total Paid</span>
+          <span style={{ fontSize: '11px', fontWeight: '600', color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Last Payment</span>
+          <span style={{ fontSize: '11px', fontWeight: '600', color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.05em', textAlign: 'right' }}>Actions</span>
+        </div>
+
         {users.map(user => {
           const isExpanded = expandedUser === user.id;
           const payments = userPayments[user.id] || [];
@@ -658,12 +674,6 @@ export default function AdminUsers() {
         {/* Column headers */}
       </div>
 
-      {/* Table column legend */}
-      <div style={{ marginTop: '8px', display: 'flex', gap: '8px', flexWrap: 'wrap', padding: '0 4px' }}>
-        {['Name', 'Balance', 'Status', 'This Month', 'Total Paid', 'Last Payment', 'Actions'].map(h => (
-          <span key={h} style={{ fontSize: '10px', color: '#9ca3af', fontWeight: '500' }}>{h}</span>
-        ))}
-      </div>
 
       {/* Adjust Balance Modal */}
       {adjustModal && (
