@@ -1,8 +1,16 @@
 import jwt from 'jsonwebtoken';
+import crypto from 'crypto';
 
 // Read JWT_SECRET lazily so dotenv has time to load
+// Generate a random fallback so the app doesn't use a guessable default
+let _randomFallback;
 export function getJwtSecret() {
-  return process.env.JWT_SECRET || 'outreach-outbound-caller-secret-2026';
+  if (process.env.JWT_SECRET) return process.env.JWT_SECRET;
+  if (!_randomFallback) {
+    _randomFallback = crypto.randomBytes(64).toString('hex');
+    console.warn('⚠️ JWT_SECRET not set — using random secret (tokens will not survive restarts)');
+  }
+  return _randomFallback;
 }
 
 export function authenticateToken(req, res, next) {

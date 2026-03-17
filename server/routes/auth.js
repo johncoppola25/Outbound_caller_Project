@@ -8,6 +8,19 @@ import { sendWelcomeEmail } from '../services/email.js';
 
 const router = express.Router();
 
+// Track failed login attempts per username (in-memory)
+const loginAttempts = new Map();
+const MAX_ATTEMPTS = 5;
+const LOCKOUT_MS = 15 * 60 * 1000; // 15 minutes
+
+function validatePassword(password) {
+  if (password.length < 8) return 'Password must be at least 8 characters.';
+  if (!/[A-Z]/.test(password)) return 'Password must contain an uppercase letter.';
+  if (!/[a-z]/.test(password)) return 'Password must contain a lowercase letter.';
+  if (!/[0-9]/.test(password)) return 'Password must contain a number.';
+  return null;
+}
+
 // POST /api/auth/register
 router.post('/register', async (req, res) => {
   try {
@@ -16,6 +29,9 @@ router.post('/register', async (req, res) => {
     if (!email || !password || !name) {
       return res.status(400).json({ error: 'Email, password, and name are required.' });
     }
+
+    const pwError = validatePassword(password);
+    if (pwError) return res.status(400).json({ error: pwError });
 
     const db = await getDb();
 
@@ -70,18 +86,35 @@ router.post('/login', async (req, res) => {
       return res.status(400).json({ error: 'Username and password are required.' });
     }
 
+    // Check account lockout
+    const key = loginName.toLowerCase();
+    const attempts = loginAttempts.get(key);
+    if (attempts && attempts.count >= MAX_ATTEMPTS && Date.now() - attempts.lastAttempt < LOCKOUT_MS) {
+      const minutesLeft = Math.ceil((LOCKOUT_MS - (Date.now() - attempts.lastAttempt)) / 60000);
+      return res.status(429).json({ error: `Account temporarily locked. Try again in ${minutesLeft} minutes.` });
+    }
+
     const db = await getDb();
 
     // Look up by email, username, or name
     const user = db.prepare('SELECT * FROM users WHERE email = ? OR name = ? OR username = ?').get(loginName, loginName, loginName);
     if (!user) {
+      // Track failed attempt
+      const prev = loginAttempts.get(key) || { count: 0 };
+      loginAttempts.set(key, { count: prev.count + 1, lastAttempt: Date.now() });
       return res.status(401).json({ error: 'Invalid username or password.' });
     }
 
     const validPassword = await bcrypt.compare(password, String(user.password_hash));
     if (!validPassword) {
+      // Track failed attempt
+      const prev = loginAttempts.get(key) || { count: 0 };
+      loginAttempts.set(key, { count: prev.count + 1, lastAttempt: Date.now() });
       return res.status(401).json({ error: 'Invalid username or password.' });
     }
+
+    // Clear failed attempts on successful login
+    loginAttempts.delete(key);
 
     const token = jwt.sign(
       { userId: user.id, email: user.email, name: user.name, role: user.role },
@@ -125,13 +158,25 @@ router.get('/me', authenticateToken, async (req, res) => {
 // PUT /api/auth/profile
 router.put('/profile', authenticateToken, async (req, res) => {
   try {
-    const { name, email } = req.body;
+    const { name, email, password } = req.body;
 
     if (!name || !email) {
       return res.status(400).json({ error: 'Name and email are required.' });
     }
 
     const db = await getDb();
+
+    // Require password confirmation if email is changing
+    const currentUser = db.prepare('SELECT email, password_hash FROM users WHERE id = ?').get(req.user.userId);
+    if (currentUser && currentUser.email !== email) {
+      if (!password) {
+        return res.status(400).json({ error: 'Password is required to change your email.' });
+      }
+      const validPw = await bcrypt.compare(password, String(currentUser.password_hash));
+      if (!validPw) {
+        return res.status(401).json({ error: 'Incorrect password.' });
+      }
+    }
 
     // Check if email is already taken by another user
     const existing = db.prepare('SELECT id FROM users WHERE email = ? AND id != ?').get(email, req.user.userId);
@@ -164,6 +209,9 @@ router.put('/password', authenticateToken, async (req, res) => {
     if (!currentPassword || !newPassword) {
       return res.status(400).json({ error: 'Current password and new password are required.' });
     }
+
+    const pwError = validatePassword(newPassword);
+    if (pwError) return res.status(400).json({ error: pwError });
 
     const db = await getDb();
 

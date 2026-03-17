@@ -12,6 +12,14 @@ const __dirname = path.dirname(__filename);
 
 const router = express.Router();
 
+// Sanitize CSV cell values to prevent formula injection
+function sanitizeCSV(val) {
+  if (typeof val !== 'string') return val;
+  // Strip leading formula characters that Excel/Sheets interpret
+  if (/^[=+\-@\t\r]/.test(val)) return "'" + val;
+  return val;
+}
+
 // Configure multer for CSV uploads
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
@@ -156,13 +164,13 @@ router.post('/upload/:campaignId', upload.single('file'), async (req, res) => {
     for await (const record of parser) {
       rowNumber++;
       
-      // Normalize column names (handle various CSV formats)
-      const firstName = record.first_name || record.firstName || record['First Name'] || record.name?.split(' ')[0] || '';
-      const lastName = record.last_name || record.lastName || record['Last Name'] || record.name?.split(' ').slice(1).join(' ') || '';
+      // Normalize column names (handle various CSV formats) + sanitize against formula injection
+      const firstName = sanitizeCSV(record.first_name || record.firstName || record['First Name'] || record.name?.split(' ')[0] || '');
+      const lastName = sanitizeCSV(record.last_name || record.lastName || record['Last Name'] || record.name?.split(' ').slice(1).join(' ') || '');
       const phone = record.phone || record.Phone || record.phone_number || record['Phone Number'] || '';
-      const email = record.email || record.Email || record['Email Address'] || '';
-      const propertyAddress = record.property_address || record.address || record.Address || record['Property Address'] || '';
-      const notes = record.notes || record.Notes || '';
+      const email = sanitizeCSV(record.email || record.Email || record['Email Address'] || '');
+      const propertyAddress = sanitizeCSV(record.property_address || record.address || record.Address || record['Property Address'] || '');
+      const notes = sanitizeCSV(record.notes || record.Notes || '');
       
       // Validate phone number
       const cleanPhone = phone.replace(/\D/g, '');

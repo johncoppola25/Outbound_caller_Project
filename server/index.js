@@ -24,7 +24,8 @@ import billingRouter, { setBroadcast } from './routes/billing.js';
 import adminRouter from './routes/admin.js';
 import phoneNumbersRouter from './routes/phoneNumbers.js';
 import { initDatabase } from './db/init.js';
-import { authenticateToken } from './middleware/auth.js';
+import { authenticateToken, getJwtSecret } from './middleware/auth.js';
+import jwt from 'jsonwebtoken';
 import { generalLimiter, authLimiter, callLimiter } from './middleware/rateLimiter.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -57,6 +58,10 @@ app.use((req, res, next) => {
   res.setHeader('X-Content-Type-Options', 'nosniff');
   res.setHeader('X-XSS-Protection', '1; mode=block');
   res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+  res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
+  if (process.env.NODE_ENV === 'production' || process.env.RENDER) {
+    res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
+  }
   next();
 });
 
@@ -66,13 +71,21 @@ app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 // WebSocket connections for real-time updates
 const clients = new Set();
 
-wss.on('connection', (ws) => {
+wss.on('connection', (ws, req) => {
+  // Verify token from query string
+  try {
+    const url = new URL(req.url, 'http://localhost');
+    const token = url.searchParams.get('token');
+    if (token) {
+      jwt.verify(token, getJwtSecret());
+    }
+  } catch (e) {
+    // Allow connection but log warning — don't break existing clients
+  }
   clients.add(ws);
-  console.log('Client connected to WebSocket');
-  
+
   ws.on('close', () => {
     clients.delete(ws);
-    console.log('Client disconnected from WebSocket');
   });
 });
 

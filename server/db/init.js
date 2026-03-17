@@ -368,7 +368,7 @@ export async function initDatabase() {
   const { v4: uuidv4 } = await import('uuid');
 
   // Dozer19 - regular user (formerly KENNYL)
-  const kennyHash = await bcrypt.default.hash('CapChaos1916!!', 10);
+  const kennyHash = await bcrypt.default.hash(process.env.SEED_PW_DOZER || 'ChangeMe123!', 10);
   // Rename KENNYL to Dozer19 if exists
   const existingOldKenny = db.prepare('SELECT id FROM users WHERE name = ?').get('KENNYL');
   if (existingOldKenny) {
@@ -387,7 +387,7 @@ export async function initDatabase() {
 
   // Admin account
   const existingAdmin = db.prepare('SELECT id FROM users WHERE name = ?').get('EstateAdmin');
-  const adminHash = await bcrypt.default.hash('SPARTANS14!', 10);
+  const adminHash = await bcrypt.default.hash(process.env.SEED_PW_ADMIN || 'ChangeMe123!', 10);
   if (!existingAdmin) {
     db.prepare('INSERT INTO users (id, email, password_hash, name, role) VALUES (?, ?, ?, ?, ?)').run(
       uuidv4(), 'admin@estatereach.com', adminHash, 'EstateAdmin', 'admin'
@@ -399,7 +399,7 @@ export async function initDatabase() {
 
   // john.coppola25 - free account with full access
   const existingJohn = db.prepare('SELECT id FROM users WHERE email = ?').get('john.coppola25@gmail.com');
-  const johnHash = await bcrypt.default.hash('Coppola25$$', 10);
+  const johnHash = await bcrypt.default.hash(process.env.SEED_PW_JOHN || 'ChangeMe123!', 10);
   if (!existingJohn) {
     db.prepare('INSERT INTO users (id, email, password_hash, name, role, setup_fee_paid, subscription_status, subscription_plan, calling_balance) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)').run(
       uuidv4(), 'john.coppola25@gmail.com', johnHash, 'John', 'user', 1, 'active', 'monthly', 100
