@@ -696,8 +696,8 @@ export async function deductCallCost(userId, durationSeconds) {
           ? 'Your calling balance is empty! Add funds to continue making calls.'
           : `Your calling balance is low ($${newBalance.toFixed(2)}). Add funds to avoid interruptions.`
       });
-      // Send low balance email
-      if (user?.email) {
+      // Send low balance email when balance drops below $10
+      if (newBalance < 10 && user?.email) {
         sendLowBalanceEmail(user.email, user.name, newBalance)
           .catch(err => console.error('Low balance email error:', err.message));
       }
