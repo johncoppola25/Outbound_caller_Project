@@ -312,8 +312,16 @@ router.post('/create-checkout-session', async (req, res) => {
       return res.status(400).json({ error: 'Invalid plan' });
     }
 
-    // Get or create Stripe customer
+    // Get or create Stripe customer (handle test->live key switch)
     let customerId = user.stripe_customer_id;
+    if (customerId) {
+      try {
+        await stripe.customers.retrieve(customerId);
+      } catch (e) {
+        console.log('Stripe customer not found (likely test mode ID), creating new one');
+        customerId = null;
+      }
+    }
     if (!customerId) {
       const customer = await stripe.customers.create({
         email: user.email,
@@ -505,8 +513,15 @@ router.post('/add-funds', async (req, res) => {
     const db = await getDb();
     const user = db.prepare('SELECT * FROM users WHERE id = ?').get(req.user.userId);
 
-    // Get or create Stripe customer
+    // Get or create Stripe customer (handle test->live key switch)
     let customerId = user.stripe_customer_id;
+    if (customerId) {
+      try {
+        await stripe.customers.retrieve(customerId);
+      } catch (e) {
+        customerId = null;
+      }
+    }
     if (!customerId) {
       const customer = await stripe.customers.create({
         email: user.email,
