@@ -50,6 +50,19 @@ function PaidRoute({ children }) {
   return children;
 }
 
+function NotFound() {
+  return (
+    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f9fafb', fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif' }}>
+      <div style={{ textAlign: 'center', padding: '40px 20px' }}>
+        <div style={{ fontSize: '72px', fontWeight: '800', color: '#4f46e5', letterSpacing: '-2px', marginBottom: '8px' }}>404</div>
+        <h1 style={{ fontSize: '22px', fontWeight: '700', color: '#111827', margin: '0 0 8px' }}>Page not found</h1>
+        <p style={{ fontSize: '15px', color: '#6b7280', margin: '0 0 28px', lineHeight: 1.6 }}>The page you're looking for doesn't exist or has been moved.</p>
+        <a href="/" style={{ display: 'inline-block', padding: '12px 28px', background: '#4f46e5', color: '#fff', borderRadius: '10px', fontSize: '14px', fontWeight: '600', textDecoration: 'none' }}>Go Home</a>
+      </div>
+    </div>
+  );
+}
+
 function HomeRoute() {
   const { isAuthenticated } = useAuth();
   if (isAuthenticated) {
@@ -105,6 +118,8 @@ function App() {
               <Route path="admin/revenue" element={<AdminRevenue />} />
               <Route path="user-manual" element={<UserManual />} />
             </Route>
+            {/* 404 catch-all */}
+            <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
       </WebSocketProvider>
