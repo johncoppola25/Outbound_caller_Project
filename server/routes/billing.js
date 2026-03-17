@@ -2,6 +2,7 @@ import express from 'express';
 import Stripe from 'stripe';
 import { v4 as uuidv4 } from 'uuid';
 import { getDb } from '../db/init.js';
+import { sendSetupFeePaidEmail, sendSubscriptionActiveEmail, sendLowBalanceEmail, sendFundsAddedEmail } from '../services/email.js';
 
 // Broadcast function set by index.js to avoid circular import
 let _broadcast = () => {};
@@ -277,8 +278,14 @@ router.get('/subscription', async (req, res) => {
 
     // Keep subscription_status in sync
     if (sub.status === 'active') {
+      const wasInactive = user.subscription_status !== 'active';
       db.prepare('UPDATE users SET subscription_status = ?, subscription_plan = ? WHERE id = ?')
         .run('active', plan?.id || 'professional', user.id);
+      // Send activation email only when transitioning to active
+      if (wasInactive && plan) {
+        sendSubscriptionActiveEmail(user.email, user.name, plan.name, plan.priceDisplay)
+          .catch(err => console.error('Subscription email error:', err.message));
+      }
     }
 
     res.json({ subscription: sub, plan: plan || null, setupFeePaid: !!user.setup_fee_paid, bypass });
@@ -432,6 +439,7 @@ router.post('/confirm-setup', async (req, res) => {
       if (!existing) {
         db.prepare('INSERT INTO payments (id, user_id, type, amount, stripe_payment_id, status, description) VALUES (?, ?, ?, ?, ?, ?, ?)')
           .run(uuidv4(), user.id, 'setup_fee', 500, setupSession.payment_intent || setupSession.id, 'succeeded', 'Setup fee - platform onboarding');
+        sendSetupFeePaidEmail(user.email, user.name).catch(err => console.error('Setup fee email error:', err.message));
       }
       return res.json({ setupFeePaid: true });
     }
@@ -645,6 +653,10 @@ router.post('/confirm-funds', async (req, res) => {
           metadata: { ...fundSession.metadata, credited: 'true' }
         });
 
+        // Send funds added email
+        sendFundsAddedEmail(user.email, user.name, Number(amount), currentBalance + Number(amount))
+          .catch(err => console.error('Funds added email error:', err.message));
+
         return res.json({ balance: currentBalance + Number(amount), added: true });
       }
       // Already credited
@@ -666,7 +678,7 @@ export async function deductCallCost(userId, durationSeconds) {
     const minutes = Math.ceil(durationSeconds / 60);
 
     // Get user's plan to determine per-minute rate
-    const user = db.prepare('SELECT calling_balance, auto_fund_enabled, auto_fund_amount, auto_fund_threshold, stripe_customer_id, subscription_plan FROM users WHERE id = ?').get(userId);
+    const user = db.prepare('SELECT email, name, calling_balance, auto_fund_enabled, auto_fund_amount, auto_fund_threshold, stripe_customer_id, subscription_plan FROM users WHERE id = ?').get(userId);
     const rate = getCostPerMin(user?.subscription_plan);
     const cost = minutes * rate;
     const newBalance = Math.max(0, (user?.calling_balance || 0) - cost);
@@ -684,6 +696,11 @@ export async function deductCallCost(userId, durationSeconds) {
           ? 'Your calling balance is empty! Add funds to continue making calls.'
           : `Your calling balance is low ($${newBalance.toFixed(2)}). Add funds to avoid interruptions.`
       });
+      // Send low balance email
+      if (user?.email) {
+        sendLowBalanceEmail(user.email, user.name, newBalance)
+          .catch(err => console.error('Low balance email error:', err.message));
+      }
     }
 
     // Auto-fund: if balance dropped below threshold, charge saved payment method

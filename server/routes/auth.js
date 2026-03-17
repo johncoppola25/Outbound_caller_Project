@@ -4,6 +4,7 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { getDb } from '../db/init.js';
 import { authenticateToken, getJwtSecret } from '../middleware/auth.js';
+import { sendWelcomeEmail } from '../services/email.js';
 
 const router = express.Router();
 
@@ -38,6 +39,9 @@ router.post('/register', async (req, res) => {
     db.prepare(
       'INSERT INTO users (id, email, password_hash, name, company, role, username) VALUES (?, ?, ?, ?, ?, ?, ?)'
     ).run(id, email, password_hash, name, company || null, 'user', username || null);
+
+    // Send welcome email (async, don't block signup)
+    sendWelcomeEmail(email, name).catch(err => console.error('Welcome email error:', err.message));
 
     const displayName = username || name;
     const token = jwt.sign(

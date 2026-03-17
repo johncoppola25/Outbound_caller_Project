@@ -5,6 +5,7 @@ import { startAIConversation, telnyxRequest } from '../services/telnyx.js';
 import { calculateLeadScore } from '../services/leadScoring.js';
 import { checkConflicts } from './calls.js';
 import { findUserForBilling, deductCallCost } from './billing.js';
+import { sendAppointmentBookedEmail } from '../services/email.js';
 
 const router = express.Router();
 
@@ -387,6 +388,19 @@ router.post('/ai-tool/schedule_appointment', async (req, res) => {
 
       broadcast({ type: 'call_update', call: db.prepare('SELECT * FROM calls WHERE id = ?').get(call.id) });
       console.log('✅ Appointment saved for call:', call.id);
+
+      // Send appointment booked email to campaign owner
+      try {
+        const campaign = db.prepare('SELECT name, user_id FROM campaigns WHERE id = ?').get(call.campaign_id);
+        if (campaign?.user_id) {
+          const owner = db.prepare('SELECT email, name FROM users WHERE id = ?').get(campaign.user_id);
+          if (owner?.email) {
+            const contactName = contact ? `${contact.first_name || ''} ${contact.last_name || ''}`.trim() : (contact_name || 'Unknown');
+            sendAppointmentBookedEmail(owner.email, owner.name, contactName, appointmentStr, campaign.name)
+              .catch(err => console.error('Appointment email error:', err.message));
+          }
+        }
+      } catch (emailErr) { console.error('Appointment email lookup error:', emailErr.message); }
 
     } else {
       console.warn('⚠️ schedule_appointment: No active call found to save appointment to');
