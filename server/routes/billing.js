@@ -101,7 +101,7 @@ async function ensureStripeProducts() {
     return stripePrices;
   } catch (error) {
     console.error('Error setting up Stripe products:', error.message);
-    return {};
+    throw error;
   }
 }
 
@@ -351,7 +351,7 @@ router.post('/create-checkout-session', async (req, res) => {
     res.json({ url: session.url });
   } catch (error) {
     console.error('Error creating checkout session:', error);
-    res.status(500).json({ error: 'Failed to create checkout session' });
+    res.status(500).json({ error: 'Failed to create checkout session: ' + (error.message || '') });
   }
 });
 
