@@ -3,7 +3,8 @@ import { Helmet } from 'react-helmet-async';
 import { Link } from 'react-router-dom';
 import {
   Phone, Users, Megaphone, Calendar, CheckCircle2,
-  ArrowUpRight, BarChart3, Upload, Activity, TrendingUp, Flame, Thermometer, Snowflake, DollarSign, Wallet, Clock
+  ArrowUpRight, BarChart3, Upload, Activity, TrendingUp, Flame, Thermometer, Snowflake, DollarSign, Wallet, Clock,
+  X, CreditCard, Smartphone, Zap
 } from 'lucide-react';
 import { useWebSocket } from '../context/WebSocketContext';
 import { useAuth } from '../context/AuthContext';
@@ -19,6 +20,8 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+  const [showGettingStarted, setShowGettingStarted] = useState(false);
+  const [onboardingStatus, setOnboardingStatus] = useState(null);
   const { subscribe } = useWebSocket();
 
   useEffect(() => {
@@ -42,9 +45,32 @@ export default function Dashboard() {
   }, [subscribe]);
 
   async function fetchDashboardData() {
-    try { await Promise.all([fetchStats(), fetchRecentCalls(), fetchTelnyxCosts(), fetchBalance()]); }
+    try { await Promise.all([fetchStats(), fetchRecentCalls(), fetchTelnyxCosts(), fetchBalance(), checkOnboarding()]); }
     catch (err) { setError(err.message); }
     finally { setLoading(false); }
+  }
+
+  async function checkOnboarding() {
+    try {
+      const dismissed = sessionStorage.getItem('gettingStartedDismissed');
+      if (dismissed) return;
+      const [phoneRes, subRes] = await Promise.all([
+        apiFetch('/api/phone-numbers/my-numbers'),
+        apiFetch('/api/billing/subscription')
+      ]);
+      const phones = phoneRes.ok ? await phoneRes.json() : [];
+      const sub = subRes.ok ? await subRes.json() : {};
+      const status = {
+        setupFeePaid: !!sub.setupFeePaid,
+        hasSubscription: !!sub.subscription,
+        hasPhoneNumber: Array.isArray(phones) && phones.length > 0
+      };
+      setOnboardingStatus(status);
+      // Show popup if they haven't completed all steps
+      if (!status.setupFeePaid || !status.hasSubscription || !status.hasPhoneNumber) {
+        setShowGettingStarted(true);
+      }
+    } catch (err) { console.error('Onboarding check error:', err); }
   }
 
   async function fetchStats() {
@@ -402,6 +428,111 @@ export default function Dashboard() {
           </div>
         </div>
       </div>
+
+      {/* Getting Started Popup */}
+      {showGettingStarted && onboardingStatus && (
+        <div style={{
+          position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '16px'
+        }} onClick={() => { setShowGettingStarted(false); sessionStorage.setItem('gettingStartedDismissed', '1'); }}>
+          <div style={{
+            background: '#fff', borderRadius: '20px', maxWidth: '440px', width: '100%',
+            boxShadow: '0 25px 60px rgba(0,0,0,0.15)', overflow: 'hidden', animation: 'fadeIn 0.2s ease-out'
+          }} onClick={e => e.stopPropagation()}>
+            {/* Header */}
+            <div style={{
+              background: 'linear-gradient(135deg, #1e1b4b 0%, #312e81 100%)',
+              padding: '28px 24px 24px', textAlign: 'center', position: 'relative'
+            }}>
+              <button onClick={() => { setShowGettingStarted(false); sessionStorage.setItem('gettingStartedDismissed', '1'); }} style={{
+                position: 'absolute', top: '12px', right: '12px', background: 'rgba(255,255,255,0.15)',
+                border: 'none', borderRadius: '8px', width: '32px', height: '32px', cursor: 'pointer',
+                display: 'flex', alignItems: 'center', justifyContent: 'center'
+              }}>
+                <X style={{ width: '16px', height: '16px', color: '#fff' }} />
+              </button>
+              <div style={{
+                width: '52px', height: '52px', borderRadius: '14px',
+                background: 'rgba(255,255,255,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                margin: '0 auto 14px'
+              }}>
+                <Zap style={{ width: '26px', height: '26px', color: '#a5b4fc' }} />
+              </div>
+              <h2 style={{ fontSize: '20px', fontWeight: '800', color: '#fff', margin: '0 0 6px' }}>Get Started with OutReach AI</h2>
+              <p style={{ fontSize: '13px', color: '#a5b4fc', margin: 0 }}>Complete these steps to start making AI calls</p>
+            </div>
+
+            {/* Steps */}
+            <div style={{ padding: '20px 24px 24px' }}>
+              {[
+                {
+                  done: onboardingStatus.setupFeePaid,
+                  icon: CreditCard,
+                  title: 'Pay Setup Fee',
+                  desc: 'One-time $500 setup to activate your account',
+                  link: '/billing',
+                  linkLabel: 'Go to Billing'
+                },
+                {
+                  done: onboardingStatus.hasSubscription,
+                  icon: Megaphone,
+                  title: 'Choose a Plan',
+                  desc: 'Pick Starter, Professional, or Enterprise',
+                  link: '/billing',
+                  linkLabel: 'Choose Plan'
+                },
+                {
+                  done: onboardingStatus.hasPhoneNumber,
+                  icon: Smartphone,
+                  title: 'Buy a Phone Number',
+                  desc: 'You need a number before you can make calls',
+                  link: '/phone-numbers',
+                  linkLabel: 'Buy Number'
+                }
+              ].map((s, i) => (
+                <div key={i} style={{
+                  display: 'flex', alignItems: 'center', gap: '14px',
+                  padding: '14px', borderRadius: '12px', marginBottom: i < 2 ? '8px' : '16px',
+                  background: s.done ? '#f0fdf4' : '#f9fafb',
+                  border: `1px solid ${s.done ? '#bbf7d0' : '#e5e7eb'}`
+                }}>
+                  <div style={{
+                    width: '38px', height: '38px', borderRadius: '10px', flexShrink: 0,
+                    background: s.done ? '#dcfce7' : '#eef2ff',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center'
+                  }}>
+                    {s.done
+                      ? <CheckCircle2 style={{ width: '20px', height: '20px', color: '#16a34a' }} />
+                      : <s.icon style={{ width: '18px', height: '18px', color: '#4f46e5' }} />
+                    }
+                  </div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <p style={{
+                      fontSize: '14px', fontWeight: '700', margin: '0 0 2px',
+                      color: s.done ? '#16a34a' : '#111827',
+                      textDecoration: s.done ? 'line-through' : 'none'
+                    }}>{s.title}</p>
+                    <p style={{ fontSize: '12px', color: '#6b7280', margin: 0 }}>{s.desc}</p>
+                  </div>
+                  {!s.done && (
+                    <Link to={s.link} onClick={() => { setShowGettingStarted(false); sessionStorage.setItem('gettingStartedDismissed', '1'); }} style={{
+                      padding: '6px 14px', background: '#4f46e5', color: '#fff', borderRadius: '8px',
+                      fontSize: '12px', fontWeight: '600', textDecoration: 'none', whiteSpace: 'nowrap'
+                    }}>{s.linkLabel}</Link>
+                  )}
+                </div>
+              ))}
+
+              <button onClick={() => { setShowGettingStarted(false); sessionStorage.setItem('gettingStartedDismissed', '1'); }} style={{
+                width: '100%', padding: '12px', background: '#f3f4f6', border: 'none', borderRadius: '10px',
+                fontSize: '13px', fontWeight: '600', color: '#6b7280', cursor: 'pointer'
+              }}>
+                I'll do this later
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
