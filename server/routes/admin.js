@@ -1,7 +1,11 @@
 import express from 'express';
 import Stripe from 'stripe';
+import jwt from 'jsonwebtoken';
 import { getDb } from '../db/init.js';
 import { requireAdmin } from '../middleware/adminAuth.js';
+import { getJwtSecret } from '../middleware/auth.js';
+import { sendEmail } from '../services/email.js';
+import { logActivity } from '../services/activityLog.js';
 
 const router = express.Router();
 router.use(requireAdmin);
@@ -291,6 +295,9 @@ router.put('/users/:id/role', async (req, res) => {
 
     const db = await getDb();
     db.prepare('UPDATE users SET role = ? WHERE id = ?').run(role, req.params.id);
+
+    logActivity(req.user.userId, 'role_changed', { targetUserId: req.params.id, role }, req.ip);
+
     res.json({ success: true });
   } catch (err) {
     console.error('Admin role update error:', err);
@@ -318,6 +325,8 @@ router.put('/users/:id/balance', async (req, res) => {
     db.prepare('INSERT INTO payments (id, user_id, type, amount, status, description) VALUES (?, ?, ?, ?, ?, ?)')
       .run(uuidv4(), req.params.id, 'admin_adjustment', amount, 'succeeded', reason || `Admin balance adjustment: ${amount >= 0 ? '+' : ''}$${amount.toFixed(2)}`);
 
+    logActivity(req.user.userId, 'balance_adjusted', { targetUserId: req.params.id, amount, reason: reason || null, newBalance }, req.ip);
+
     res.json({ success: true, newBalance });
   } catch (err) {
     console.error('Admin balance update error:', err);
@@ -334,6 +343,9 @@ router.delete('/users/:id', async (req, res) => {
     if (user.role === 'admin') return res.status(400).json({ error: 'Cannot delete admin user.' });
 
     db.prepare('DELETE FROM users WHERE id = ?').run(req.params.id);
+
+    logActivity(req.user.userId, 'user_deleted', { targetUserId: req.params.id, email: user.email, name: user.name }, req.ip);
+
     res.json({ success: true });
   } catch (err) {
     console.error('Admin delete user error:', err);
@@ -366,11 +378,333 @@ router.put('/users/:id/profile', async (req, res) => {
       db.prepare('UPDATE users SET secondary_emails = ? WHERE id = ?').run(secondary_emails, req.params.id);
     }
 
+    logActivity(req.user.userId, 'admin_profile_edit', { targetUserId: req.params.id, name: name || undefined, email: email || undefined }, req.ip);
+
     const updated = db.prepare('SELECT id, name, email, role, calling_balance, subscription_status, setup_fee_paid, secondary_emails FROM users WHERE id = ?').get(req.params.id);
     res.json({ success: true, user: updated });
   } catch (err) {
     console.error('Admin profile update error:', err);
     res.status(500).json({ error: 'Failed to update user profile.' });
+  }
+});
+
+// GET /api/admin/activity - activity log
+router.get('/activity', async (req, res) => {
+  try {
+    const db = await getDb();
+    const limit = parseInt(req.query.limit) || 50;
+    const offset = parseInt(req.query.offset) || 0;
+
+    let where = [];
+    let params = [];
+
+    if (req.query.user_id) {
+      where.push('a.user_id = ?');
+      params.push(req.query.user_id);
+    }
+    if (req.query.action) {
+      where.push('a.action = ?');
+      params.push(req.query.action);
+    }
+
+    const whereClause = where.length > 0 ? 'WHERE ' + where.join(' AND ') : '';
+
+    const total = db.prepare(
+      `SELECT COUNT(*) as count FROM activity_log a ${whereClause}`
+    ).get(...params);
+
+    const logs = db.prepare(`
+      SELECT a.*, u.name as user_name, u.email as user_email
+      FROM activity_log a
+      LEFT JOIN users u ON a.user_id = u.id
+      ${whereClause}
+      ORDER BY a.created_at DESC
+      LIMIT ? OFFSET ?
+    `).all(...params, limit, offset);
+
+    res.json({ logs, total: total?.count || 0 });
+  } catch (err) {
+    console.error('Admin activity log error:', err);
+    res.status(500).json({ error: 'Failed to fetch activity log.' });
+  }
+});
+
+// GET /api/admin/platform-stats - live platform stats
+router.get('/platform-stats', async (req, res) => {
+  try {
+    const db = await getDb();
+    const todayStart = new Date();
+    todayStart.setHours(0, 0, 0, 0);
+    const todayISO = todayStart.toISOString();
+
+    const activeCampaigns = db.prepare(
+      "SELECT COUNT(*) as count FROM campaigns WHERE status = 'active'"
+    ).get();
+
+    const callsInProgress = db.prepare(
+      "SELECT COUNT(*) as count FROM calls WHERE status IN ('in_progress', 'ringing')"
+    ).get();
+
+    const callsToday = db.prepare(
+      'SELECT COUNT(*) as count FROM calls WHERE created_at >= ?'
+    ).get(todayISO);
+
+    const appointmentsToday = db.prepare(
+      "SELECT COUNT(*) as count FROM calls WHERE outcome = 'appointment_scheduled' AND created_at >= ?"
+    ).get(todayISO);
+
+    const totalContacts = db.prepare(
+      'SELECT COUNT(*) as count FROM contacts'
+    ).get();
+
+    const totalPhoneNumbers = db.prepare(
+      'SELECT COUNT(*) as count FROM user_phone_numbers'
+    ).get();
+
+    const campaignCount = db.prepare(
+      'SELECT COUNT(*) as count FROM campaigns'
+    ).get();
+    const totalCalls = db.prepare(
+      'SELECT COUNT(*) as count FROM calls'
+    ).get();
+    const avgCallsPerCampaign = campaignCount?.count > 0
+      ? Math.round((totalCalls?.count || 0) / campaignCount.count * 100) / 100
+      : 0;
+
+    res.json({
+      activeCampaigns: activeCampaigns?.count || 0,
+      callsInProgress: callsInProgress?.count || 0,
+      callsToday: callsToday?.count || 0,
+      appointmentsToday: appointmentsToday?.count || 0,
+      totalContacts: totalContacts?.count || 0,
+      totalPhoneNumbers: totalPhoneNumbers?.count || 0,
+      avgCallsPerCampaign
+    });
+  } catch (err) {
+    console.error('Admin platform stats error:', err);
+    res.status(500).json({ error: 'Failed to fetch platform stats.' });
+  }
+});
+
+// GET /api/admin/call-quality - call quality metrics
+router.get('/call-quality', async (req, res) => {
+  try {
+    const db = await getDb();
+    const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
+
+    const avgDuration = db.prepare(
+      "SELECT AVG(duration_seconds) as avg FROM calls WHERE status = 'completed' AND duration_seconds > 0"
+    ).get();
+
+    const totalCalls = db.prepare(
+      'SELECT COUNT(*) as count FROM calls'
+    ).get();
+
+    const voicemailCount = db.prepare(
+      "SELECT COUNT(*) as count FROM calls WHERE outcome = 'voicemail'"
+    ).get();
+
+    const completedCalls = db.prepare(
+      "SELECT COUNT(*) as count FROM calls WHERE status = 'completed'"
+    ).get();
+
+    const appointmentCount = db.prepare(
+      "SELECT COUNT(*) as count FROM calls WHERE outcome = 'appointment_scheduled'"
+    ).get();
+
+    const notInterestedCount = db.prepare(
+      "SELECT COUNT(*) as count FROM calls WHERE outcome = 'not_interested'"
+    ).get();
+
+    const callbackCount = db.prepare(
+      "SELECT COUNT(*) as count FROM calls WHERE outcome = 'callback_requested'"
+    ).get();
+
+    const totalCallsCount = totalCalls?.count || 0;
+    const completedCount = completedCalls?.count || 0;
+
+    const voicemailRate = totalCallsCount > 0
+      ? Math.round((voicemailCount?.count || 0) / totalCallsCount * 10000) / 100
+      : 0;
+    const appointmentRate = completedCount > 0
+      ? Math.round((appointmentCount?.count || 0) / completedCount * 10000) / 100
+      : 0;
+    const notInterestedRate = totalCallsCount > 0
+      ? Math.round((notInterestedCount?.count || 0) / totalCallsCount * 10000) / 100
+      : 0;
+    const callbackRate = totalCallsCount > 0
+      ? Math.round((callbackCount?.count || 0) / totalCallsCount * 10000) / 100
+      : 0;
+
+    // Average calls per contact
+    const contactsWithCalls = db.prepare(
+      'SELECT COUNT(DISTINCT contact_id) as count FROM calls'
+    ).get();
+    const avgCallsPerContact = (contactsWithCalls?.count || 0) > 0
+      ? Math.round(totalCallsCount / contactsWithCalls.count * 100) / 100
+      : 0;
+
+    // Calls by hour of day (last 30 days)
+    const callsByHour = db.prepare(`
+      SELECT CAST(strftime('%H', created_at) AS INTEGER) as hour,
+             COUNT(*) as count
+      FROM calls
+      WHERE created_at >= ?
+      GROUP BY hour
+      ORDER BY hour ASC
+    `).all(thirtyDaysAgo);
+
+    res.json({
+      avgDuration: Math.round(avgDuration?.avg || 0),
+      voicemailRate,
+      appointmentRate,
+      notInterestedRate,
+      callbackRate,
+      avgCallsPerContact,
+      callsByHour
+    });
+  } catch (err) {
+    console.error('Admin call quality error:', err);
+    res.status(500).json({ error: 'Failed to fetch call quality metrics.' });
+  }
+});
+
+// GET /api/admin/churn - churn tracking
+router.get('/churn', async (req, res) => {
+  try {
+    const db = await getDb();
+    const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
+    const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+
+    // Users with canceled or past_due subscriptions
+    const canceled = db.prepare(`
+      SELECT id, email, name, subscription_status, subscription_plan, created_at
+      FROM users
+      WHERE subscription_status IN ('canceled', 'past_due') AND role != 'admin'
+      ORDER BY created_at DESC
+    `).all();
+
+    // Active subscribers with no calls in last 30 days
+    const inactive = db.prepare(`
+      SELECT u.id, u.email, u.name, u.subscription_status, u.subscription_plan, u.created_at
+      FROM users u
+      WHERE u.subscription_status = 'active' AND u.role != 'admin'
+        AND u.id NOT IN (
+          SELECT DISTINCT cp.user_id
+          FROM calls cl
+          JOIN campaigns cp ON cl.campaign_id = cp.id
+          WHERE cl.created_at >= ?
+        )
+      ORDER BY u.created_at DESC
+    `).all(thirtyDaysAgo);
+
+    // Users who signed up but never paid setup fee (account older than 7 days)
+    const neverPaid = db.prepare(`
+      SELECT id, email, name, subscription_status, created_at
+      FROM users
+      WHERE setup_fee_paid = 0 AND role != 'admin' AND created_at <= ?
+      ORDER BY created_at DESC
+    `).all(sevenDaysAgo);
+
+    res.json({ canceled, inactive, neverPaid });
+  } catch (err) {
+    console.error('Admin churn error:', err);
+    res.status(500).json({ error: 'Failed to fetch churn data.' });
+  }
+});
+
+// POST /api/admin/users/:id/impersonate - impersonate a user
+router.post('/users/:id/impersonate', async (req, res) => {
+  try {
+    const db = await getDb();
+    const user = db.prepare('SELECT id, email, name, role FROM users WHERE id = ?').get(req.params.id);
+    if (!user) return res.status(404).json({ error: 'User not found.' });
+    if (user.role === 'admin') return res.status(403).json({ error: 'Cannot impersonate admin users.' });
+
+    const token = jwt.sign(
+      { userId: user.id, email: user.email, name: user.name, role: user.role },
+      getJwtSecret(),
+      { expiresIn: '1h' }
+    );
+
+    res.json({ token, user: { id: user.id, email: user.email, name: user.name, role: user.role } });
+  } catch (err) {
+    console.error('Admin impersonate error:', err);
+    res.status(500).json({ error: 'Failed to impersonate user.' });
+  }
+});
+
+// POST /api/admin/bulk-email - send bulk email to users
+router.post('/bulk-email', async (req, res) => {
+  try {
+    const { subject, message, filter } = req.body;
+    if (!subject || !message) {
+      return res.status(400).json({ error: 'Subject and message are required.' });
+    }
+    if (!['all', 'active', 'inactive'].includes(filter)) {
+      return res.status(400).json({ error: 'Filter must be all, active, or inactive.' });
+    }
+
+    const db = await getDb();
+    let users;
+    if (filter === 'active') {
+      users = db.prepare("SELECT email, name FROM users WHERE subscription_status = 'active' AND role != 'admin'").all();
+    } else if (filter === 'inactive') {
+      users = db.prepare("SELECT email, name FROM users WHERE (subscription_status IS NULL OR subscription_status != 'active') AND role != 'admin'").all();
+    } else {
+      users = db.prepare("SELECT email, name FROM users WHERE role != 'admin'").all();
+    }
+
+    let sent = 0;
+    for (const user of users) {
+      const htmlBody = `<!DOCTYPE html>
+<html><head><meta charset="utf-8"></head>
+<body style="margin:0;padding:20px;font-family:Arial,sans-serif;background:#f3f4f6;">
+  <div style="max-width:560px;margin:0 auto;background:#fff;border-radius:12px;padding:32px;border:1px solid #e5e7eb;">
+    <h1 style="font-size:20px;color:#111827;margin:0 0 16px;">${subject}</h1>
+    <div style="font-size:15px;color:#374151;line-height:1.6;">${message}</div>
+    <hr style="border:none;border-top:1px solid #e5e7eb;margin:24px 0;">
+    <p style="font-size:12px;color:#9ca3af;margin:0;">OutReach AI - AI-Powered Outbound Calling Platform</p>
+  </div>
+</body></html>`;
+      const result = await sendEmail(user.email, subject, htmlBody);
+      if (result) sent++;
+    }
+
+    res.json({ sent });
+  } catch (err) {
+    console.error('Admin bulk email error:', err);
+    res.status(500).json({ error: 'Failed to send bulk emails.' });
+  }
+});
+
+// POST /api/admin/users/:id/pause-campaigns - pause all active campaigns for a user
+router.post('/users/:id/pause-campaigns', async (req, res) => {
+  try {
+    const db = await getDb();
+    const result = db.prepare(
+      "UPDATE campaigns SET status = 'paused' WHERE user_id = ? AND status = 'active'"
+    ).run(req.params.id);
+
+    res.json({ paused: result.changes });
+  } catch (err) {
+    console.error('Admin pause campaigns error:', err);
+    res.status(500).json({ error: 'Failed to pause campaigns.' });
+  }
+});
+
+// POST /api/admin/users/:id/resume-campaigns - resume all paused campaigns for a user
+router.post('/users/:id/resume-campaigns', async (req, res) => {
+  try {
+    const db = await getDb();
+    const result = db.prepare(
+      "UPDATE campaigns SET status = 'active' WHERE user_id = ? AND status = 'paused'"
+    ).run(req.params.id);
+
+    res.json({ resumed: result.changes });
+  } catch (err) {
+    console.error('Admin resume campaigns error:', err);
+    res.status(500).json({ error: 'Failed to resume campaigns.' });
   }
 });
 

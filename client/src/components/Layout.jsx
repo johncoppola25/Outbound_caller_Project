@@ -20,7 +20,9 @@ import {
   CreditCard,
   Crown,
   DollarSign,
-  Smartphone
+  Smartphone,
+  Activity,
+  TrendingUp
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useWebSocket } from '../context/WebSocketContext';
@@ -45,8 +47,10 @@ const userNavigation = [
 
 const adminNavigation = [
   { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
+  { name: 'Overview', href: '/admin/overview', icon: TrendingUp },
   { name: 'Users', href: '/admin/users', icon: Users },
   { name: 'Revenue', href: '/admin/revenue', icon: DollarSign },
+  { name: 'Activity Log', href: '/admin/activity', icon: Activity },
   { name: 'Campaigns', href: '/campaigns', icon: Megaphone },
   { name: 'Calls', href: '/calls', icon: Phone },
   { name: 'Analytics', href: '/analytics', icon: BarChart3 },

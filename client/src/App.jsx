@@ -16,6 +16,8 @@ import UserManual from './pages/UserManual';
 import Billing from './pages/Billing';
 import AdminUsers from './pages/AdminUsers';
 import AdminRevenue from './pages/AdminRevenue';
+import AdminOverview from './pages/AdminOverview';
+import AdminActivity from './pages/AdminActivity';
 import PhoneNumbers from './pages/PhoneNumbers';
 import Landing from './pages/Landing';
 import Login from './pages/Login';
@@ -116,6 +118,8 @@ function App() {
               <Route path="settings" element={<Settings />} />
               <Route path="admin/users" element={<AdminUsers />} />
               <Route path="admin/revenue" element={<AdminRevenue />} />
+              <Route path="admin/overview" element={<AdminOverview />} />
+              <Route path="admin/activity" element={<AdminActivity />} />
               <Route path="user-manual" element={<UserManual />} />
             </Route>
             {/* 404 catch-all */}

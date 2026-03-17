@@ -363,6 +363,22 @@ export async function initDatabase() {
     )
   `);
 
+  // Activity log table - tracks user and system events
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS activity_log (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id TEXT,
+      action TEXT NOT NULL,
+      details TEXT,
+      ip TEXT,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+
+  // Index on user_id and created_at for efficient queries
+  db.exec(`CREATE INDEX IF NOT EXISTS idx_activity_log_user_id ON activity_log(user_id)`);
+  db.exec(`CREATE INDEX IF NOT EXISTS idx_activity_log_created_at ON activity_log(created_at)`);
+
   // Seed users
   const bcrypt = await import('bcryptjs');
   const { v4: uuidv4 } = await import('uuid');

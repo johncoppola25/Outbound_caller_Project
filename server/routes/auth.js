@@ -5,6 +5,7 @@ import jwt from 'jsonwebtoken';
 import { getDb } from '../db/init.js';
 import { authenticateToken, getJwtSecret } from '../middleware/auth.js';
 import { sendWelcomeEmail } from '../services/email.js';
+import { logActivity } from '../services/activityLog.js';
 
 const router = express.Router();
 
@@ -66,6 +67,8 @@ router.post('/register', async (req, res) => {
       { expiresIn: '7d' }
     );
 
+    logActivity(id, 'register', { email, name }, req.ip);
+
     res.status(201).json({
       token,
       user: { id, email, name, username: username || null, company: company || null, role: 'user' }
@@ -121,6 +124,8 @@ router.post('/login', async (req, res) => {
       getJwtSecret(),
       { expiresIn: '7d' }
     );
+
+    logActivity(user.id, 'login', { email: user.email }, req.ip);
 
     res.json({
       token,
@@ -194,6 +199,8 @@ router.put('/profile', authenticateToken, async (req, res) => {
       { expiresIn: '7d' }
     );
 
+    logActivity(req.user.userId, 'profile_updated', { name, email }, req.ip);
+
     res.json({ token, user });
   } catch (err) {
     console.error('Update profile error:', err);
@@ -227,6 +234,8 @@ router.put('/password', authenticateToken, async (req, res) => {
 
     const password_hash = await bcrypt.hash(newPassword, 10);
     db.prepare('UPDATE users SET password_hash = ? WHERE id = ?').run(password_hash, req.user.userId);
+
+    logActivity(req.user.userId, 'password_changed', null, req.ip);
 
     res.json({ message: 'Password updated successfully.' });
   } catch (err) {

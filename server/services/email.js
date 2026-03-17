@@ -3,7 +3,7 @@ const API_KEY = process.env.SMTP2GO_API_KEY;
 const FROM_EMAIL = 'noreply@outboundcaller.ai';
 const FROM_NAME = 'OutReach AI';
 
-async function sendEmail(to, subject, htmlBody, textBody) {
+export async function sendEmail(to, subject, htmlBody, textBody) {
   if (!API_KEY) {
     console.log('SMTP2GO_API_KEY not set, skipping email to:', to);
     return null;

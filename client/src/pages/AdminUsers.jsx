@@ -3,11 +3,14 @@ import { Helmet } from 'react-helmet-async';
 import {
   Users, Shield, Trash2, Crown, UserCheck, AlertCircle, ChevronDown, ChevronUp,
   DollarSign, Phone, Clock, CreditCard, Plus, Minus, X, CheckCircle, Smartphone,
-  BarChart3, Target, PhoneCall, Calendar, MapPin, ArrowLeft, Edit3, Save, Eye, EyeOff
+  BarChart3, Target, PhoneCall, Calendar, MapPin, ArrowLeft, Edit3, Save, Eye, EyeOff,
+  Search, LogIn, Pause, Play, Mail
 } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
 import { apiFetch } from '../utils/api';
 
 export default function AdminUsers() {
+  const { login: authLogin } = useAuth();
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -29,6 +32,10 @@ export default function AdminUsers() {
   const [showEditPw, setShowEditPw] = useState(false);
   const [editSaving, setEditSaving] = useState(false);
   const [editMsg, setEditMsg] = useState(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [planFilter, setPlanFilter] = useState('');
+  const [statusFilter, setStatusFilter] = useState('');
+  const [actionMsg, setActionMsg] = useState(null);
 
   const fetchUsers = async () => {
     try {
@@ -186,7 +193,54 @@ export default function AdminUsers() {
     return colors[type] || { bg: '#f3f4f6', color: '#6b7280' };
   };
 
-  const nonAdminUsers = users.filter(u => u.role !== 'admin');
+  const handleImpersonate = async (user) => {
+    if (!confirm(`Impersonate "${user.name}"? You'll be logged in as this user for 1 hour.`)) return;
+    try {
+      const res = await apiFetch(`/api/admin/users/${user.id}/impersonate`, { method: 'POST' });
+      if (res.ok) {
+        const data = await res.json();
+        authLogin(data.token, data.user, true);
+        window.location.href = '/dashboard';
+      } else {
+        const data = await res.json();
+        setActionMsg({ type: 'error', text: data.error || 'Failed to impersonate.' });
+      }
+    } catch { setActionMsg({ type: 'error', text: 'Failed to impersonate.' }); }
+  };
+
+  const handlePauseCampaigns = async (userId, name) => {
+    try {
+      const res = await apiFetch(`/api/admin/users/${userId}/pause-campaigns`, { method: 'POST' });
+      if (res.ok) {
+        const data = await res.json();
+        setActionMsg({ type: 'success', text: `Paused ${data.paused} campaigns for ${name}` });
+      }
+    } catch { setActionMsg({ type: 'error', text: 'Failed to pause campaigns.' }); }
+  };
+
+  const handleResumeCampaigns = async (userId, name) => {
+    try {
+      const res = await apiFetch(`/api/admin/users/${userId}/resume-campaigns`, { method: 'POST' });
+      if (res.ok) {
+        const data = await res.json();
+        setActionMsg({ type: 'success', text: `Resumed ${data.resumed} campaigns for ${name}` });
+      }
+    } catch { setActionMsg({ type: 'error', text: 'Failed to resume campaigns.' }); }
+  };
+
+  // Filter users
+  const nonAdminUsers = users.filter(u => {
+    if (u.role === 'admin') return false;
+    if (searchQuery) {
+      const q = searchQuery.toLowerCase();
+      if (!(u.name || '').toLowerCase().includes(q) && !(u.email || '').toLowerCase().includes(q)) return false;
+    }
+    if (planFilter && (u.subscription_plan || '') !== planFilter) return false;
+    if (statusFilter === 'active' && u.subscription_status !== 'active') return false;
+    if (statusFilter === 'inactive' && u.subscription_status === 'active') return false;
+    if (statusFilter === 'setup_pending' && u.setup_fee_paid) return false;
+    return true;
+  });
 
   if (loading) return <div style={{ padding: '40px', color: '#6b7280' }}>Loading users...</div>;
 
@@ -428,11 +482,53 @@ export default function AdminUsers() {
         ))}
       </div>
 
+      {/* Action message */}
+      {actionMsg && (
+        <div style={{
+          background: actionMsg.type === 'success' ? '#ecfdf5' : '#fef2f2',
+          border: `1px solid ${actionMsg.type === 'success' ? '#a7f3d0' : '#fecaca'}`,
+          borderRadius: '10px', padding: '10px 16px', marginBottom: '16px',
+          color: actionMsg.type === 'success' ? '#059669' : '#dc2626',
+          fontSize: '13px', display: 'flex', alignItems: 'center', justifyContent: 'space-between'
+        }}>
+          <span>{actionMsg.text}</span>
+          <button onClick={() => setActionMsg(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '2px' }}>
+            <X size={14} color={actionMsg.type === 'success' ? '#059669' : '#dc2626'} />
+          </button>
+        </div>
+      )}
+
+      {/* Search & Filter Bar */}
+      <div style={{ display: 'flex', gap: '10px', marginBottom: '16px', flexWrap: 'wrap' }}>
+        <div style={{ position: 'relative', flex: '1 1 200px', maxWidth: '300px' }}>
+          <Search size={15} style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: '#9ca3af' }} />
+          <input
+            type="text" placeholder="Search by name or email..."
+            value={searchQuery} onChange={e => setSearchQuery(e.target.value)}
+            style={{ width: '100%', padding: '8px 10px 8px 32px', borderRadius: '8px', border: '1px solid #e5e7eb', fontSize: '13px', outline: 'none', boxSizing: 'border-box' }}
+          />
+        </div>
+        <select value={planFilter} onChange={e => setPlanFilter(e.target.value)}
+          style={{ padding: '8px 12px', borderRadius: '8px', border: '1px solid #e5e7eb', fontSize: '13px', background: '#fff', cursor: 'pointer' }}>
+          <option value="">All Plans</option>
+          <option value="starter">Starter</option>
+          <option value="professional">Professional</option>
+          <option value="enterprise">Enterprise</option>
+        </select>
+        <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)}
+          style={{ padding: '8px 12px', borderRadius: '8px', border: '1px solid #e5e7eb', fontSize: '13px', background: '#fff', cursor: 'pointer' }}>
+          <option value="">All Status</option>
+          <option value="active">Active</option>
+          <option value="inactive">Inactive</option>
+          <option value="setup_pending">Setup Pending</option>
+        </select>
+      </div>
+
       {/* Users list */}
       <div style={{ background: '#fff', borderRadius: '14px', border: '1px solid #e5e7eb', overflow: 'hidden' }}>
         <div style={{ padding: '16px 20px', borderBottom: '1px solid #e5e7eb', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <h2 style={{ fontSize: '16px', fontWeight: '700', color: '#111827', margin: 0 }}>All Users</h2>
-          <span style={{ fontSize: '12px', color: '#6b7280' }}>{users.length} total ({nonAdminUsers.length} users, {users.length - nonAdminUsers.length} admins)</span>
+          <span style={{ fontSize: '12px', color: '#6b7280' }}>{nonAdminUsers.length} shown of {users.length} total</span>
         </div>
 
         {/* Column headers */}
@@ -574,6 +670,36 @@ export default function AdminUsers() {
                         }}
                       >
                         <Crown size={13} color="#7c3aed" />
+                      </button>
+                      <button
+                        onClick={(e) => { e.stopPropagation(); handleImpersonate(user); }}
+                        title="Impersonate User"
+                        style={{
+                          background: '#fffbeb', border: 'none', borderRadius: '6px',
+                          padding: '5px', cursor: 'pointer', display: 'flex'
+                        }}
+                      >
+                        <LogIn size={13} color="#d97706" />
+                      </button>
+                      <button
+                        onClick={(e) => { e.stopPropagation(); handlePauseCampaigns(user.id, user.name); }}
+                        title="Pause All Campaigns"
+                        style={{
+                          background: '#fef2f2', border: 'none', borderRadius: '6px',
+                          padding: '5px', cursor: 'pointer', display: 'flex'
+                        }}
+                      >
+                        <Pause size={13} color="#dc2626" />
+                      </button>
+                      <button
+                        onClick={(e) => { e.stopPropagation(); handleResumeCampaigns(user.id, user.name); }}
+                        title="Resume All Campaigns"
+                        style={{
+                          background: '#ecfdf5', border: 'none', borderRadius: '6px',
+                          padding: '5px', cursor: 'pointer', display: 'flex'
+                        }}
+                      >
+                        <Play size={13} color="#059669" />
                       </button>
                       <button
                         onClick={(e) => { e.stopPropagation(); handleDelete(user.id, user.name); }}
