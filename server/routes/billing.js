@@ -25,8 +25,8 @@ const PLANS = [
   {
     id: 'starter',
     name: 'Starter',
-    price: 25000, // cents = $250
-    priceDisplay: '$250',
+    price: 20000, // cents = $200
+    priceDisplay: '$200',
     interval: 'month',
     costPerMin: 0.35,
     maxCampaigns: 3,
