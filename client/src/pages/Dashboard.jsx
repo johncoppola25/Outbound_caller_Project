@@ -184,7 +184,7 @@ export default function Dashboard() {
             </div>
             <div style={{ background: 'rgba(255,255,255,0.06)', borderRadius: '10px', padding: '14px 16px', border: '1px solid rgba(255,255,255,0.08)' }}>
               <p style={{ fontSize: '22px', fontWeight: '800', color: '#f9fafb', letterSpacing: '-0.02em' }}>
-                {Math.floor((callingBalance.balance || 0) / 0.17)}
+                {Math.floor((callingBalance.balance || 0) / (callingBalance.costPerMin || 0.25))}
               </p>
               <p style={{ fontSize: '11px', color: '#9ca3af', fontWeight: '500', marginTop: '2px' }}>Minutes Remaining</p>
             </div>

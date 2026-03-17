@@ -63,6 +63,7 @@ export default function Layout() {
   const [showAddFunds, setShowAddFunds] = useState(false);
   const [addingFunds, setAddingFunds] = useState(false);
   const [autoFund, setAutoFund] = useState({ enabled: false, amount: 50, threshold: 20 });
+  const [costPerMin, setCostPerMin] = useState(0.25);
   const [showAutoFundSettings, setShowAutoFundSettings] = useState(false);
   const [lowBalanceAlert, setLowBalanceAlert] = useState(null);
   const isAdmin = user?.role === 'admin';
@@ -143,6 +144,7 @@ export default function Layout() {
       if (res.ok) {
         const data = await res.json();
         setCallingBalance(data.balance);
+        if (data.costPerMin) setCostPerMin(data.costPerMin);
         if (data.autoFund) setAutoFund(data.autoFund);
       }
     } catch (e) { /* ignore */ }
@@ -550,7 +552,7 @@ export default function Layout() {
                           onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
                         >
                           <span>Add ${amount}</span>
-                          <span style={{ fontSize: '11px', color: '#6b7280' }}>~{Math.floor(amount / 0.17)} min</span>
+                          <span style={{ fontSize: '11px', color: '#6b7280' }}>~{Math.floor(amount / costPerMin)} min</span>
                         </button>
                       ))}
                     </div>

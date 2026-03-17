@@ -415,7 +415,7 @@ export default function CallDetail() {
               {[
                 { icon: Calendar, label: 'Started', value: formatDateTime(call.started_at || call.created_at) },
                 { icon: Clock, label: 'Duration', value: formatDuration(call.duration_seconds) },
-                ...(call.duration_seconds > 0 ? [{ icon: DollarSign, label: 'Call Cost', value: `$${(Math.ceil(call.duration_seconds / 60) * 0.17).toFixed(2)} (${Math.ceil(call.duration_seconds / 60)} min @ $0.17/min)`, highlight: true }] : []),
+                ...(call.duration_seconds > 0 ? [{ icon: DollarSign, label: 'Call Cost', value: `$${(call.estimated_cost || (Math.ceil(call.duration_seconds / 60) * 0.25)).toFixed(2)} (${Math.ceil(call.duration_seconds / 60)} min)`, highlight: true }] : []),
                 ...(call.ended_at ? [{ icon: PhoneOff, label: 'Ended', value: formatDateTime(call.ended_at) }] : []),
                 ...(call.telnyx_call_id ? [{ icon: Activity, label: 'Telnyx ID', value: call.telnyx_call_id, mono: true }] : [])
               ].map(({ icon: Icon, label, value, mono, highlight }) => (

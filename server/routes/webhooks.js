@@ -79,15 +79,15 @@ router.post('/telnyx', async (req, res) => {
           WHERE id = ?
         `).run(duration, callId);
 
-        // Estimate cost: $0.15/min for user billing
-        const durationMins = Math.ceil(duration / 60);
-        const estimatedCost = durationMins * 0.15;
-        db.prepare('UPDATE calls SET estimated_cost = ? WHERE id = ?').run(estimatedCost, callId);
-
-        // Deduct from user's calling balance
-        const billingUser = await findUserForBilling();
+        // Deduct from user's calling balance (uses per-plan rate)
+        const callForBilling = db.prepare('SELECT campaign_id FROM calls WHERE id = ?').get(callId);
+        const campaignForBilling = callForBilling ? db.prepare('SELECT user_id FROM campaigns WHERE id = ?').get(callForBilling.campaign_id) : null;
+        const billingUser = campaignForBilling?.user_id || await findUserForBilling();
         if (billingUser) {
-          deductCallCost(billingUser, duration);
+          const result = await deductCallCost(billingUser, duration);
+          if (result) {
+            db.prepare('UPDATE calls SET estimated_cost = ? WHERE id = ?').run(result.cost, callId);
+          }
         }
 
         // Update contact status (only if not already a better status from function calls during the call)

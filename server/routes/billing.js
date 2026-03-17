@@ -23,20 +23,51 @@ const PLANS = [
     features: ['Full platform setup', 'Custom AI script configuration', 'Campaign creation', 'Contact import assistance', 'Training & onboarding']
   },
   {
-    id: 'monthly',
-    name: 'Monthly Platform Fee',
+    id: 'starter',
+    name: 'Starter',
+    price: 20000, // cents = $200
+    priceDisplay: '$200',
+    interval: 'month',
+    costPerMin: 0.35,
+    maxCampaigns: 3,
+    maxPhoneNumbers: 1,
+    features: ['Up to 3 campaigns', '1 phone number', 'AI-powered outbound calls', 'Call recording & transcripts', 'Voicemail detection', 'Analytics dashboard', 'Usage: $0.35 per calling minute']
+  },
+  {
+    id: 'professional',
+    name: 'Professional',
+    price: 40000, // cents = $400
+    priceDisplay: '$400',
+    interval: 'month',
+    popular: true,
+    costPerMin: 0.25,
+    maxCampaigns: 10,
+    maxPhoneNumbers: 3,
+    features: ['Up to 10 campaigns', '3 phone numbers', 'AI-powered outbound calls', 'Call recording & transcripts', 'Voicemail detection', 'Full analytics dashboard', 'Priority support', 'Custom AI scripts', 'Usage: $0.25 per calling minute']
+  },
+  {
+    id: 'enterprise',
+    name: 'Enterprise',
     price: 70000, // cents = $700
     priceDisplay: '$700',
     interval: 'month',
-    popular: true,
-    features: ['Full access to all platform features', 'AI-powered outbound calls', 'Call recording & transcripts', 'Voicemail detection', 'Full analytics dashboard', 'Priority support', 'Custom AI scripts', 'Multiple campaigns', 'Usage: $0.17 per calling minute']
+    costPerMin: 0.15,
+    maxCampaigns: -1, // unlimited
+    maxPhoneNumbers: 10,
+    features: ['Unlimited campaigns', '10 phone numbers', 'AI-powered outbound calls', 'Call recording & transcripts', 'Voicemail detection', 'Full analytics dashboard', 'Priority support', 'Custom AI scripts', 'Dedicated account manager', 'Usage: $0.15 per calling minute']
   }
 ];
+
+// Per-minute cost lookup by plan
+function getCostPerMin(planId) {
+  const plan = PLANS.find(p => p.id === planId);
+  return plan?.costPerMin || 0.25; // default to professional rate
+}
 
 // Per-user pricing overrides (by username)
 const USER_PRICING = {
   'Dozer19': {
-    monthly: { price: 15000, priceDisplay: '$150' } // $150/month for Kenny
+    starter: { price: 15000, priceDisplay: '$150' } // $150/month for Kenny
   }
 };
 
@@ -236,7 +267,7 @@ router.get('/subscription', async (req, res) => {
     // Keep subscription_status in sync
     if (sub.status === 'active') {
       db.prepare('UPDATE users SET subscription_status = ?, subscription_plan = ? WHERE id = ?')
-        .run('active', plan?.id || 'monthly', user.id);
+        .run('active', plan?.id || 'professional', user.id);
     }
 
     res.json({ subscription: sub, plan: plan || null, setupFeePaid: !!user.setup_fee_paid, bypass });
@@ -292,8 +323,8 @@ router.post('/create-checkout-session', async (req, res) => {
     const db = await getDb();
     const user = db.prepare('SELECT * FROM users WHERE id = ?').get(req.user.userId);
 
-    // Require setup fee before monthly subscription
-    if (planId === 'monthly' && !user?.setup_fee_paid) {
+    // Require setup fee before subscription
+    if (['starter', 'professional', 'enterprise'].includes(planId) && !user?.setup_fee_paid) {
       return res.status(400).json({ error: 'Please pay the setup fee first before subscribing.' });
     }
 
@@ -461,8 +492,11 @@ router.get('/balance', async (req, res) => {
   try {
     const db = await getDb();
     const user = db.prepare('SELECT calling_balance, auto_fund_enabled, auto_fund_amount, auto_fund_threshold FROM users WHERE id = ?').get(req.user.userId);
+    const costPerMin = getCostPerMin(user?.subscription_plan);
     res.json({
       balance: user?.calling_balance || 0,
+      costPerMin,
+      plan: user?.subscription_plan || null,
       autoFund: {
         enabled: !!user?.auto_fund_enabled,
         amount: user?.auto_fund_amount || 50,
@@ -619,9 +653,11 @@ export async function deductCallCost(userId, durationSeconds) {
   try {
     const db = await getDb();
     const minutes = Math.ceil(durationSeconds / 60);
-    const cost = minutes * 0.17; // $0.17 per minute
 
-    const user = db.prepare('SELECT calling_balance, auto_fund_enabled, auto_fund_amount, auto_fund_threshold, stripe_customer_id FROM users WHERE id = ?').get(userId);
+    // Get user's plan to determine per-minute rate
+    const user = db.prepare('SELECT calling_balance, auto_fund_enabled, auto_fund_amount, auto_fund_threshold, stripe_customer_id, subscription_plan FROM users WHERE id = ?').get(userId);
+    const rate = getCostPerMin(user?.subscription_plan);
+    const cost = minutes * rate;
     const newBalance = Math.max(0, (user?.calling_balance || 0) - cost);
     db.prepare('UPDATE users SET calling_balance = ? WHERE id = ?').run(newBalance, userId);
 

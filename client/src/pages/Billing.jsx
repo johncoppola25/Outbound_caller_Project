@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Helmet } from 'react-helmet-async';
-import { CreditCard, Check, Zap, ArrowRight, Download, Loader, AlertCircle, CheckCircle, ExternalLink, Lock, Shield } from 'lucide-react';
+import { CreditCard, Check, Zap, ArrowRight, Download, Loader, AlertCircle, CheckCircle, ExternalLink, Lock, Shield, Star } from 'lucide-react';
 import { apiFetch } from '../utils/api';
 
 export default function Billing() {
@@ -117,10 +117,10 @@ export default function Billing() {
 
   const isActive = subscription?.status === 'active' || subscription?.status === 'trialing';
   const setupPlan = plans.find(p => p.id === 'setup');
-  const monthlyPlan = plans.find(p => p.id === 'monthly');
+  const subscriptionPlans = plans.filter(p => p.interval === 'month');
 
   return (
-    <div style={{ animation: 'fadeIn 0.3s ease-out', maxWidth: '900px', margin: '0 auto' }}>
+    <div style={{ animation: 'fadeIn 0.3s ease-out', maxWidth: '1000px', margin: '0 auto' }}>
       {/* Header */}
       <div style={{ marginBottom: '24px' }}>
         <h1 style={{ fontSize: '28px', fontWeight: '800', color: '#111827', letterSpacing: '-0.03em' }}>Billing</h1>
@@ -132,7 +132,7 @@ export default function Billing() {
         <div style={{ padding: '16px 20px', background: '#ecfdf5', border: '1px solid #a7f3d0', borderRadius: '12px', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '10px' }}>
           <CheckCircle style={{ width: '20px', height: '20px', color: '#059669' }} />
           <p style={{ color: '#065f46', fontWeight: '600', fontSize: '14px' }}>
-            {successPlan === 'setup' ? 'Setup fee paid successfully! You can now subscribe to the monthly plan.' : 'Payment successful! Your subscription is now active.'}
+            {successPlan === 'setup' ? 'Setup fee paid successfully! You can now choose a subscription plan.' : 'Payment successful! Your subscription is now active.'}
           </p>
         </div>
       )}
@@ -171,9 +171,15 @@ export default function Billing() {
                 <p style={{ fontWeight: '700', color: '#34d399', textTransform: 'capitalize' }}>{subscription.status}</p>
               </div>
               <div>
-                <p style={{ fontSize: '11px', color: '#a5b4fc' }}>USAGE</p>
-                <p style={{ fontWeight: '700' }}>$0.17/min</p>
+                <p style={{ fontSize: '11px', color: '#a5b4fc' }}>USAGE RATE</p>
+                <p style={{ fontWeight: '700' }}>${currentPlan.costPerMin ? currentPlan.costPerMin.toFixed(2) : '0.25'}/min</p>
               </div>
+              {currentPlan.maxCampaigns && (
+                <div>
+                  <p style={{ fontSize: '11px', color: '#a5b4fc' }}>CAMPAIGNS</p>
+                  <p style={{ fontWeight: '700' }}>{currentPlan.maxCampaigns === -1 ? 'Unlimited' : `Up to ${currentPlan.maxCampaigns}`}</p>
+                </div>
+              )}
               {subscription.current_period_end && (
                 <div>
                   <p style={{ fontSize: '11px', color: '#a5b4fc' }}>RENEWS</p>
@@ -202,174 +208,204 @@ export default function Billing() {
       {/* Step-by-step flow if not fully subscribed */}
       {!isActive && (
         <div style={{ marginBottom: '32px' }}>
+          {/* STEP 1: Setup Fee */}
           <h2 style={{ fontSize: '18px', fontWeight: '700', color: '#111827', marginBottom: '20px' }}>Get Started</h2>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-            {/* STEP 1: Setup Fee */}
-            <div style={{
-              background: '#ffffff', borderRadius: '16px', padding: '28px',
-              border: setupFeePaid ? '2px solid #059669' : '2px solid #4f46e5',
-              position: 'relative', overflow: 'hidden',
-              boxShadow: !setupFeePaid ? '0 4px 20px rgba(79,70,229,0.12)' : '0 1px 3px rgba(0,0,0,0.03)'
-            }}>
-              <div style={{ display: 'flex', alignItems: 'flex-start', gap: '20px' }}>
-                {/* Step number */}
-                <div style={{
-                  width: '44px', height: '44px', borderRadius: '12px', flexShrink: 0,
-                  background: setupFeePaid ? '#059669' : '#4f46e5',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  color: '#ffffff', fontWeight: '800', fontSize: '18px'
-                }}>
-                  {setupFeePaid ? <Check style={{ width: '22px', height: '22px' }} /> : '1'}
-                </div>
-
-                <div style={{ flex: 1 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '4px' }}>
-                    <h3 style={{ fontSize: '20px', fontWeight: '700', color: '#111827' }}>
-                      {setupPlan?.name || 'Setup Fee'}
-                    </h3>
-                    <span style={{
-                      padding: '2px 10px', borderRadius: '6px', fontSize: '11px', fontWeight: '700',
-                      background: setupFeePaid ? '#ecfdf5' : '#eef2ff',
-                      color: setupFeePaid ? '#059669' : '#4f46e5',
-                      textTransform: 'uppercase'
-                    }}>
-                      {setupFeePaid ? 'Paid' : 'Required'}
-                    </span>
-                  </div>
-                  <div style={{ display: 'flex', alignItems: 'baseline', gap: '4px', marginBottom: '16px' }}>
-                    <span style={{ fontSize: '36px', fontWeight: '800', color: '#111827' }}>{setupPlan?.priceDisplay || '$1,000'}</span>
-                    <span style={{ fontSize: '14px', color: '#6b7280' }}>one-time</span>
-                  </div>
-
-                  <ul style={{ listStyle: 'none', padding: 0, margin: 0, marginBottom: '20px' }}>
-                    {(setupPlan?.features || []).map((feature, i) => (
-                      <li key={i} style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px', fontSize: '13px', color: '#4b5563' }}>
-                        <Check style={{ width: '16px', height: '16px', color: '#059669', flexShrink: 0 }} />
-                        {feature}
-                      </li>
-                    ))}
-                  </ul>
-
-                  {setupFeePaid ? (
-                    <div style={{
-                      padding: '12px 20px', background: '#ecfdf5', borderRadius: '10px',
-                      display: 'inline-flex', alignItems: 'center', gap: '8px',
-                      color: '#059669', fontWeight: '700', fontSize: '14px',
-                      border: '1px solid #a7f3d0'
-                    }}>
-                      <CheckCircle style={{ width: '16px', height: '16px' }} />
-                      Setup Fee Paid
-                    </div>
-                  ) : (
-                    <button
-                      onClick={() => handleSubscribe('setup')}
-                      disabled={checkoutLoading === 'setup'}
-                      style={{
-                        display: 'inline-flex', alignItems: 'center', gap: '8px',
-                        padding: '14px 32px',
-                        background: '#4f46e5', color: '#ffffff', border: 'none',
-                        borderRadius: '10px', fontSize: '15px', fontWeight: '700',
-                        cursor: checkoutLoading === 'setup' ? 'default' : 'pointer',
-                        transition: 'all 0.15s',
-                        opacity: checkoutLoading === 'setup' ? 0.7 : 1
-                      }}
-                    >
-                      {checkoutLoading === 'setup' ? (
-                        <Loader style={{ width: '16px', height: '16px', animation: 'spin 1s linear infinite' }} />
-                      ) : (
-                        <>
-                          Pay Setup Fee
-                          <ArrowRight style={{ width: '16px', height: '16px' }} />
-                        </>
-                      )}
-                    </button>
-                  )}
-                </div>
+          <div style={{
+            background: '#ffffff', borderRadius: '16px', padding: '28px',
+            border: setupFeePaid ? '2px solid #059669' : '2px solid #4f46e5',
+            position: 'relative', overflow: 'hidden',
+            boxShadow: !setupFeePaid ? '0 4px 20px rgba(79,70,229,0.12)' : '0 1px 3px rgba(0,0,0,0.03)',
+            marginBottom: '24px'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'flex-start', gap: '20px' }}>
+              <div style={{
+                width: '44px', height: '44px', borderRadius: '12px', flexShrink: 0,
+                background: setupFeePaid ? '#059669' : '#4f46e5',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                color: '#ffffff', fontWeight: '800', fontSize: '18px'
+              }}>
+                {setupFeePaid ? <Check style={{ width: '22px', height: '22px' }} /> : '1'}
               </div>
-            </div>
 
-            {/* STEP 2: Monthly Subscription */}
-            <div style={{
-              background: '#ffffff', borderRadius: '16px', padding: '28px',
-              border: setupFeePaid ? '2px solid #4f46e5' : '1px solid #e5e7eb',
-              position: 'relative', overflow: 'hidden',
-              opacity: setupFeePaid ? 1 : 0.5,
-              boxShadow: setupFeePaid ? '0 4px 20px rgba(79,70,229,0.12)' : '0 1px 3px rgba(0,0,0,0.03)'
-            }}>
-              {!setupFeePaid && (
-                <div style={{
-                  position: 'absolute', top: '0', left: '0', right: '0', bottom: '0',
-                  background: 'rgba(255,255,255,0.3)', zIndex: 2, borderRadius: '16px',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center'
-                }}>
-                  <div style={{
-                    background: '#ffffff', padding: '12px 24px', borderRadius: '10px',
-                    boxShadow: '0 4px 12px rgba(0,0,0,0.1)', display: 'flex', alignItems: 'center', gap: '8px',
-                    color: '#6b7280', fontWeight: '600', fontSize: '14px'
+              <div style={{ flex: 1 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '4px' }}>
+                  <h3 style={{ fontSize: '20px', fontWeight: '700', color: '#111827' }}>
+                    {setupPlan?.name || 'Setup Fee'}
+                  </h3>
+                  <span style={{
+                    padding: '2px 10px', borderRadius: '6px', fontSize: '11px', fontWeight: '700',
+                    background: setupFeePaid ? '#ecfdf5' : '#eef2ff',
+                    color: setupFeePaid ? '#059669' : '#4f46e5',
+                    textTransform: 'uppercase'
                   }}>
-                    <Lock style={{ width: '16px', height: '16px' }} />
-                    Complete Step 1 first
-                  </div>
+                    {setupFeePaid ? 'Paid' : 'Required'}
+                  </span>
                 </div>
-              )}
-
-              <div style={{ display: 'flex', alignItems: 'flex-start', gap: '20px' }}>
-                <div style={{
-                  width: '44px', height: '44px', borderRadius: '12px', flexShrink: 0,
-                  background: setupFeePaid ? '#4f46e5' : '#9ca3af',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  color: '#ffffff', fontWeight: '800', fontSize: '18px'
-                }}>
-                  2
+                <div style={{ display: 'flex', alignItems: 'baseline', gap: '4px', marginBottom: '16px' }}>
+                  <span style={{ fontSize: '36px', fontWeight: '800', color: '#111827' }}>{setupPlan?.priceDisplay || '$500'}</span>
+                  <span style={{ fontSize: '14px', color: '#6b7280' }}>one-time</span>
                 </div>
 
-                <div style={{ flex: 1 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '4px' }}>
-                    <h3 style={{ fontSize: '20px', fontWeight: '700', color: '#111827' }}>
-                      {monthlyPlan?.name || 'Monthly Subscription'}
-                    </h3>
-                  </div>
-                  <div style={{ display: 'flex', alignItems: 'baseline', gap: '4px', marginBottom: '16px' }}>
-                    <span style={{ fontSize: '36px', fontWeight: '800', color: '#111827' }}>{monthlyPlan?.priceDisplay || '$1,000'}</span>
-                    <span style={{ fontSize: '14px', color: '#6b7280' }}>/month</span>
-                    <span style={{ fontSize: '14px', color: '#6b7280', marginLeft: '8px' }}>+ $0.17/min usage</span>
-                  </div>
+                <ul style={{ listStyle: 'none', padding: 0, margin: 0, marginBottom: '20px' }}>
+                  {(setupPlan?.features || []).map((feature, i) => (
+                    <li key={i} style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px', fontSize: '13px', color: '#4b5563' }}>
+                      <Check style={{ width: '16px', height: '16px', color: '#059669', flexShrink: 0 }} />
+                      {feature}
+                    </li>
+                  ))}
+                </ul>
 
-                  <ul style={{ listStyle: 'none', padding: 0, margin: 0, marginBottom: '20px' }}>
-                    {(monthlyPlan?.features || []).map((feature, i) => (
-                      <li key={i} style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px', fontSize: '13px', color: '#4b5563' }}>
-                        <Check style={{ width: '16px', height: '16px', color: '#059669', flexShrink: 0 }} />
-                        {feature}
-                      </li>
-                    ))}
-                  </ul>
-
+                {setupFeePaid ? (
+                  <div style={{
+                    padding: '12px 20px', background: '#ecfdf5', borderRadius: '10px',
+                    display: 'inline-flex', alignItems: 'center', gap: '8px',
+                    color: '#059669', fontWeight: '700', fontSize: '14px',
+                    border: '1px solid #a7f3d0'
+                  }}>
+                    <CheckCircle style={{ width: '16px', height: '16px' }} />
+                    Setup Fee Paid
+                  </div>
+                ) : (
                   <button
-                    onClick={() => handleSubscribe('monthly')}
-                    disabled={!setupFeePaid || checkoutLoading === 'monthly'}
+                    onClick={() => handleSubscribe('setup')}
+                    disabled={checkoutLoading === 'setup'}
                     style={{
                       display: 'inline-flex', alignItems: 'center', gap: '8px',
                       padding: '14px 32px',
-                      background: setupFeePaid ? '#4f46e5' : '#9ca3af',
-                      color: '#ffffff', border: 'none',
+                      background: '#4f46e5', color: '#ffffff', border: 'none',
                       borderRadius: '10px', fontSize: '15px', fontWeight: '700',
-                      cursor: (!setupFeePaid || checkoutLoading === 'monthly') ? 'default' : 'pointer',
+                      cursor: checkoutLoading === 'setup' ? 'default' : 'pointer',
                       transition: 'all 0.15s',
-                      opacity: checkoutLoading === 'monthly' ? 0.7 : 1
+                      opacity: checkoutLoading === 'setup' ? 0.7 : 1
                     }}
                   >
-                    {checkoutLoading === 'monthly' ? (
+                    {checkoutLoading === 'setup' ? (
                       <Loader style={{ width: '16px', height: '16px', animation: 'spin 1s linear infinite' }} />
                     ) : (
                       <>
-                        Subscribe Now
+                        Pay Setup Fee
                         <ArrowRight style={{ width: '16px', height: '16px' }} />
                       </>
                     )}
                   </button>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* STEP 2: Choose a Plan */}
+          <div style={{ position: 'relative' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px' }}>
+              <div style={{
+                width: '44px', height: '44px', borderRadius: '12px', flexShrink: 0,
+                background: setupFeePaid ? '#4f46e5' : '#9ca3af',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                color: '#ffffff', fontWeight: '800', fontSize: '18px'
+              }}>
+                2
+              </div>
+              <h2 style={{ fontSize: '20px', fontWeight: '700', color: '#111827' }}>Choose Your Plan</h2>
+            </div>
+
+            {!setupFeePaid && (
+              <div style={{
+                position: 'absolute', top: '60px', left: '0', right: '0', bottom: '0',
+                background: 'rgba(255,255,255,0.5)', zIndex: 2, borderRadius: '16px',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                backdropFilter: 'blur(2px)'
+              }}>
+                <div style={{
+                  background: '#ffffff', padding: '12px 24px', borderRadius: '10px',
+                  boxShadow: '0 4px 12px rgba(0,0,0,0.1)', display: 'flex', alignItems: 'center', gap: '8px',
+                  color: '#6b7280', fontWeight: '600', fontSize: '14px'
+                }}>
+                  <Lock style={{ width: '16px', height: '16px' }} />
+                  Complete Step 1 first
                 </div>
               </div>
+            )}
+
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))',
+              gap: '16px',
+              opacity: setupFeePaid ? 1 : 0.5
+            }}>
+              {subscriptionPlans.map((plan) => {
+                const isPopular = plan.popular;
+                return (
+                  <div key={plan.id} style={{
+                    background: '#ffffff',
+                    borderRadius: '16px',
+                    padding: '28px',
+                    border: isPopular ? '2px solid #4f46e5' : '1px solid #e5e7eb',
+                    position: 'relative',
+                    overflow: 'hidden',
+                    boxShadow: isPopular ? '0 4px 20px rgba(79,70,229,0.12)' : '0 1px 3px rgba(0,0,0,0.03)',
+                    display: 'flex',
+                    flexDirection: 'column'
+                  }}>
+                    {isPopular && (
+                      <div style={{
+                        position: 'absolute', top: '14px', right: '14px',
+                        padding: '3px 10px', borderRadius: '6px',
+                        background: '#eef2ff', color: '#4f46e5',
+                        fontSize: '10px', fontWeight: '700', textTransform: 'uppercase',
+                        display: 'flex', alignItems: 'center', gap: '4px'
+                      }}>
+                        <Star style={{ width: '10px', height: '10px' }} />
+                        Most Popular
+                      </div>
+                    )}
+
+                    <h3 style={{ fontSize: '20px', fontWeight: '700', color: '#111827', marginBottom: '4px' }}>
+                      {plan.name}
+                    </h3>
+
+                    <div style={{ display: 'flex', alignItems: 'baseline', gap: '4px', marginBottom: '20px' }}>
+                      <span style={{ fontSize: '36px', fontWeight: '800', color: '#111827' }}>{plan.priceDisplay}</span>
+                      <span style={{ fontSize: '14px', color: '#6b7280' }}>/month</span>
+                    </div>
+
+                    <ul style={{ listStyle: 'none', padding: 0, margin: 0, marginBottom: '24px', flex: 1 }}>
+                      {(plan.features || []).map((feature, i) => (
+                        <li key={i} style={{
+                          display: 'flex', alignItems: 'center', gap: '8px',
+                          marginBottom: '10px', fontSize: '13px', color: '#4b5563'
+                        }}>
+                          <Check style={{ width: '16px', height: '16px', color: '#059669', flexShrink: 0 }} />
+                          {feature}
+                        </li>
+                      ))}
+                    </ul>
+
+                    <button
+                      onClick={() => handleSubscribe(plan.id)}
+                      disabled={!setupFeePaid || checkoutLoading === plan.id}
+                      style={{
+                        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
+                        padding: '14px 24px', width: '100%',
+                        background: isPopular ? '#4f46e5' : '#111827',
+                        color: '#ffffff', border: 'none',
+                        borderRadius: '10px', fontSize: '15px', fontWeight: '700',
+                        cursor: (!setupFeePaid || checkoutLoading === plan.id) ? 'default' : 'pointer',
+                        transition: 'all 0.15s',
+                        opacity: checkoutLoading === plan.id ? 0.7 : 1
+                      }}
+                    >
+                      {checkoutLoading === plan.id ? (
+                        <Loader style={{ width: '16px', height: '16px', animation: 'spin 1s linear infinite' }} />
+                      ) : (
+                        <>
+                          Subscribe
+                          <ArrowRight style={{ width: '16px', height: '16px' }} />
+                        </>
+                      )}
+                    </button>
+                  </div>
+                );
+              })}
             </div>
           </div>
         </div>
