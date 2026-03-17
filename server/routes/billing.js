@@ -25,8 +25,8 @@ const PLANS = [
   {
     id: 'starter',
     name: 'Starter',
-    price: 20000, // cents = $200
-    priceDisplay: '$200',
+    price: 25000, // cents = $250
+    priceDisplay: '$250',
     interval: 'month',
     costPerMin: 0.35,
     maxCampaigns: 3,
@@ -62,6 +62,17 @@ const PLANS = [
 function getCostPerMin(planId) {
   const plan = PLANS.find(p => p.id === planId);
   return plan?.costPerMin || 0.25; // default to professional rate
+}
+
+// Get plan limits for enforcement
+export function getPlanLimits(planId) {
+  const plan = PLANS.find(p => p.id === planId);
+  if (!plan) return { maxCampaigns: 0, maxPhoneNumbers: 0, name: 'No Plan' };
+  return {
+    maxCampaigns: plan.maxCampaigns ?? 0,
+    maxPhoneNumbers: plan.maxPhoneNumbers ?? 0,
+    name: plan.name
+  };
 }
 
 // Per-user pricing overrides (by username)

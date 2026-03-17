@@ -2,6 +2,7 @@ import express from 'express';
 import { v4 as uuidv4 } from 'uuid';
 import { getDb } from '../db/init.js';
 import { telnyxRequest } from '../services/telnyx.js';
+import { getPlanLimits } from './billing.js';
 
 const router = express.Router();
 
@@ -55,9 +56,27 @@ router.post('/purchase', async (req, res) => {
     const db = await getDb();
     const user = db.prepare('SELECT * FROM users WHERE id = ?').get(req.user.userId);
 
+    // Enforce phone number limit based on subscription plan
+    const bypass = user.role === 'admin' || user.email === 'johnc@apbsecurity.com' || user.email === 'john.coppola25@gmail.com';
+    if (!bypass) {
+      if (!user.subscription_plan || user.subscription_status !== 'active') {
+        return res.status(403).json({ error: 'You need an active subscription to purchase phone numbers. Please subscribe to a plan first.', upgrade: true });
+      }
+      const limits = getPlanLimits(user.subscription_plan);
+      const currentNumbers = db.prepare('SELECT COUNT(*) as cnt FROM user_phone_numbers WHERE user_id = ?').get(user.id);
+      if (currentNumbers.cnt >= limits.maxPhoneNumbers) {
+        return res.status(403).json({
+          error: `Your ${limits.name} plan allows up to ${limits.maxPhoneNumbers} phone number${limits.maxPhoneNumbers === 1 ? '' : 's'}. Please upgrade your plan to purchase more.`,
+          upgrade: true,
+          currentCount: currentNumbers.cnt,
+          limit: limits.maxPhoneNumbers
+        });
+      }
+    }
+
     // Check balance ($5 to purchase)
     const purchaseCost = 5.00;
-    if ((user.calling_balance || 0) < purchaseCost && user.email !== 'johnc@apbsecurity.com' && user.email !== 'john.coppola25@gmail.com' && user.role !== 'admin') {
+    if ((user.calling_balance || 0) < purchaseCost && !bypass) {
       return res.status(402).json({ error: `Insufficient balance. You need at least $${purchaseCost.toFixed(2)} to purchase a number.` });
     }
 
@@ -76,7 +95,7 @@ router.post('/purchase', async (req, res) => {
     const telnyxId = orderedNumber?.id || null;
 
     // Deduct balance
-    if (user.email !== 'johnc@apbsecurity.com' && user.email !== 'john.coppola25@gmail.com' && user.role !== 'admin') {
+    if (!bypass) {
       const newBalance = (user.calling_balance || 0) - purchaseCost;
       db.prepare('UPDATE users SET calling_balance = ? WHERE id = ?').run(newBalance, user.id);
     }

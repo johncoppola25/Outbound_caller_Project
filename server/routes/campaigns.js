@@ -2,6 +2,7 @@ import express from 'express';
 import { v4 as uuidv4 } from 'uuid';
 import { getDb } from '../db/init.js';
 import { createAIAssistant, updateAIAssistant, listPhoneNumbers, testConnection, listAIAssistants, createCallControlApp, listCallControlApps, assignPhoneNumberToApp } from '../services/telnyx.js';
+import { getPlanLimits } from './billing.js';
 
 const router = express.Router();
 
@@ -115,6 +116,29 @@ router.post('/', async (req, res) => {
   try {
     const db = await getDb();
     const { name, type, description, ai_prompt, voice, language, caller_id, greeting, time_limit_secs, voicemail_detection, voicemail_message, background_audio, bot_name, calling_hours_start, calling_hours_end, calling_timezone, calling_days } = req.body;
+
+    // Enforce campaign limit based on user's subscription plan
+    const user = db.prepare('SELECT * FROM users WHERE id = ?').get(req.user.userId);
+    if (user && user.role !== 'admin') {
+      const limits = getPlanLimits(user.subscription_plan);
+      if (!user.subscription_plan || user.subscription_status !== 'active') {
+        // Allow free/bypass accounts
+        const bypass = user.email === 'johnc@apbsecurity.com' || user.email === 'john.coppola25@gmail.com';
+        if (!bypass) {
+          return res.status(403).json({ error: 'You need an active subscription to create campaigns. Please subscribe to a plan first.', upgrade: true });
+        }
+      } else if (limits.maxCampaigns !== -1) {
+        const currentCount = db.prepare('SELECT COUNT(*) as cnt FROM campaigns WHERE user_id = ?').get(req.user.userId);
+        if (currentCount.cnt >= limits.maxCampaigns) {
+          return res.status(403).json({
+            error: `Your ${limits.name} plan allows up to ${limits.maxCampaigns} campaign${limits.maxCampaigns === 1 ? '' : 's'}. Please upgrade your plan to create more.`,
+            upgrade: true,
+            currentCount: currentCount.cnt,
+            limit: limits.maxCampaigns
+          });
+        }
+      }
+    }
 
     console.log('📝 Creating campaign:', name);
 

@@ -49,10 +49,22 @@ export default function CreateCampaignModal({ onClose, onCreated }) {
     setFormData({ ...formData, name: template.name, type: template.type, description: template.description, ai_prompt: template.ai_prompt });
   }
 
+  const [error, setError] = useState(null);
+
   async function handleSubmit() {
     setSaving(true);
-    try { const res = await apiFetch('/api/campaigns', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(formData) }); const campaign = await res.json(); onCreated(campaign); }
-    catch (err) { console.error('Error:', err); } finally { setSaving(false); }
+    setError(null);
+    try {
+      const res = await apiFetch('/api/campaigns', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(formData) });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error || 'Failed to create campaign');
+        if (data.upgrade) setError(data.error + ' Go to Billing to upgrade.');
+        return;
+      }
+      onCreated(data);
+    } catch (err) { console.error('Error:', err); setError('Failed to create campaign'); }
+    finally { setSaving(false); }
   }
 
   return (
@@ -217,6 +229,13 @@ export default function CreateCampaignModal({ onClose, onCreated }) {
             </div>
           )}
         </div>
+
+        {/* Error message */}
+        {error && (
+          <div style={{ margin: '0 24px 12px', padding: '12px 16px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: '8px', fontSize: '13px', color: '#dc2626', fontWeight: '600' }}>
+            {error}
+          </div>
+        )}
 
         {/* Footer */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 24px', borderTop: '1px solid #e5e7eb', background: '#f9fafb' }}>
