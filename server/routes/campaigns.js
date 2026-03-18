@@ -123,7 +123,7 @@ router.post('/', async (req, res) => {
       const limits = getPlanLimits(user.subscription_plan);
       if (!user.subscription_plan || user.subscription_status !== 'active') {
         // Allow free/bypass accounts
-        const bypass = user.email === 'johnc@apbsecurity.com' || user.email === 'john.coppola25@gmail.com' || user.email === 'kenny@estatereach.com';
+        const bypass = user.email === 'john.coppola25@gmail.com' || user.email === 'kenny@estatereach.com';
         if (!bypass) {
           return res.status(403).json({ error: 'You need an active subscription to create campaigns. Please subscribe to a plan first.', upgrade: true });
         }

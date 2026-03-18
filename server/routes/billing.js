@@ -245,7 +245,7 @@ router.get('/subscription', async (req, res) => {
     const user = db.prepare('SELECT * FROM users WHERE id = ?').get(req.user.userId);
 
     // Server-side bypass check: admin role or free accounts (checked from DB, not JWT)
-    const bypass = user?.role === 'admin' || user?.email === 'johnc@apbsecurity.com' || user?.email === 'john.coppola25@gmail.com' || user?.email === 'kenny@estatereach.com';
+    const bypass = user?.role === 'admin' || user?.email === 'john.coppola25@gmail.com' || user?.email === 'kenny@estatereach.com';
 
     if (!user?.stripe_customer_id) {
       return res.json({ subscription: null, plan: null, setupFeePaid: !!user?.setup_fee_paid, bypass });

@@ -57,7 +57,7 @@ router.post('/purchase', async (req, res) => {
     const user = db.prepare('SELECT * FROM users WHERE id = ?').get(req.user.userId);
 
     // Enforce phone number limit based on subscription plan
-    const bypass = user.role === 'admin' || user.email === 'johnc@apbsecurity.com' || user.email === 'john.coppola25@gmail.com' || user.email === 'kenny@estatereach.com';
+    const bypass = user.role === 'admin' || user.email === 'john.coppola25@gmail.com' || user.email === 'kenny@estatereach.com';
     if (!bypass) {
       if (!user.subscription_plan || user.subscription_status !== 'active') {
         return res.status(403).json({ error: 'You need an active subscription to purchase phone numbers. Please subscribe to a plan first.', upgrade: true });
