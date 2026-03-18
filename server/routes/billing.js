@@ -59,8 +59,12 @@ const PLANS = [
   }
 ];
 
-// Per-minute cost lookup by plan
-function getCostPerMin(planId) {
+// Per-minute cost lookup by plan (with user override support)
+function getCostPerMin(planId, userName) {
+  if (userName) {
+    const override = USER_PRICING[userName]?.[planId];
+    if (override?.costPerMin) return override.costPerMin;
+  }
   const plan = PLANS.find(p => p.id === planId);
   return plan?.costPerMin || 0.25; // default to professional rate
 }
@@ -79,7 +83,8 @@ export function getPlanLimits(planId) {
 // Per-user pricing overrides (by username)
 const USER_PRICING = {
   'Dozer19': {
-    starter: { price: 15000, priceDisplay: '$150' } // $150/month for Kenny
+    singlePlan: true, // Only show one plan
+    starter: { price: 15000, priceDisplay: '$150', nameOverride: 'All Access', costPerMin: 0.15, maxCampaigns: -1, maxPhoneNumbers: 10, features: ['Unlimited campaigns', '10 phone numbers', 'AI-powered outbound calls', 'Call recording & transcripts', 'Voicemail detection', 'Full analytics dashboard', 'Priority support', 'Custom AI scripts', 'Usage: $0.15 per calling minute'] }
   }
 };
 
@@ -200,14 +205,24 @@ router.get('/plans', async (req, res) => {
     const setupFeePaid = !!user?.setup_fee_paid;
     const userOverrides = USER_PRICING[user?.name] || {};
 
-    const plans = await Promise.all(PLANS.map(async (plan) => {
+    // Filter plans for single-plan users (e.g. Dozer19 only sees one plan)
+    const plansToShow = userOverrides.singlePlan
+      ? PLANS.filter(p => userOverrides[p.id])
+      : PLANS;
+
+    const plans = await Promise.all(plansToShow.map(async (plan) => {
       const override = userOverrides[plan.id];
       if (override) {
         const userPrice = await ensureUserPrice(user.name, plan.id);
         return {
           ...plan,
+          name: override.nameOverride || plan.name,
           price: override.price,
           priceDisplay: override.priceDisplay,
+          costPerMin: override.costPerMin || plan.costPerMin,
+          maxCampaigns: override.maxCampaigns ?? plan.maxCampaigns,
+          maxPhoneNumbers: override.maxPhoneNumbers ?? plan.maxPhoneNumbers,
+          features: override.features || plan.features,
           stripePriceId: userPrice?.priceId || prices[plan.id]?.priceId || null
         };
       }
@@ -230,7 +245,7 @@ router.get('/subscription', async (req, res) => {
     const user = db.prepare('SELECT * FROM users WHERE id = ?').get(req.user.userId);
 
     // Server-side bypass check: admin role or free accounts (checked from DB, not JWT)
-    const bypass = user?.role === 'admin' || user?.email === 'johnc@apbsecurity.com' || user?.email === 'john.coppola25@gmail.com';
+    const bypass = user?.role === 'admin' || user?.email === 'johnc@apbsecurity.com' || user?.email === 'john.coppola25@gmail.com' || user?.email === 'kenny@estatereach.com';
 
     if (!user?.stripe_customer_id) {
       return res.json({ subscription: null, plan: null, setupFeePaid: !!user?.setup_fee_paid, bypass });
@@ -510,8 +525,8 @@ router.get('/invoices', async (req, res) => {
 router.get('/balance', async (req, res) => {
   try {
     const db = await getDb();
-    const user = db.prepare('SELECT calling_balance, auto_fund_enabled, auto_fund_amount, auto_fund_threshold FROM users WHERE id = ?').get(req.user.userId);
-    const costPerMin = getCostPerMin(user?.subscription_plan);
+    const user = db.prepare('SELECT calling_balance, auto_fund_enabled, auto_fund_amount, auto_fund_threshold, subscription_plan, name FROM users WHERE id = ?').get(req.user.userId);
+    const costPerMin = getCostPerMin(user?.subscription_plan, user?.name);
     res.json({
       balance: user?.calling_balance || 0,
       costPerMin,
@@ -679,7 +694,7 @@ export async function deductCallCost(userId, durationSeconds) {
 
     // Get user's plan to determine per-minute rate
     const user = db.prepare('SELECT email, name, calling_balance, auto_fund_enabled, auto_fund_amount, auto_fund_threshold, stripe_customer_id, subscription_plan FROM users WHERE id = ?').get(userId);
-    const rate = getCostPerMin(user?.subscription_plan);
+    const rate = getCostPerMin(user?.subscription_plan, user?.name);
     const cost = minutes * rate;
     const newBalance = Math.max(0, (user?.calling_balance || 0) - cost);
     db.prepare('UPDATE users SET calling_balance = ? WHERE id = ?').run(newBalance, userId);
