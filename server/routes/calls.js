@@ -320,7 +320,7 @@ router.post('/initiate', async (req, res) => {
 
     // Check calling balance (skip for admin and free accounts)
     const callingUser = db.prepare('SELECT calling_balance, role, name, email FROM users WHERE id = ?').get(req.user.userId);
-    if (callingUser && callingUser.role !== 'admin' && callingUser.email !== 'john.coppola25@gmail.com' && callingUser.email !== 'kenny@estatereach.com' && (callingUser.calling_balance || 0) < 1) {
+    if (callingUser && callingUser.role !== 'admin' && callingUser.email !== 'john.coppola25@gmail.com' && (callingUser.calling_balance || 0) < 1) {
       return res.status(402).json({ error: 'Insufficient balance. Please add funds to make calls.' });
     }
 
@@ -426,7 +426,7 @@ router.post('/start-campaign/:campaignId', async (req, res) => {
 
     // Check calling balance (skip for admin and free accounts)
     const callingUser = db.prepare('SELECT calling_balance, role, name, email FROM users WHERE id = ?').get(req.user.userId);
-    if (callingUser && callingUser.role !== 'admin' && callingUser.email !== 'john.coppola25@gmail.com' && callingUser.email !== 'kenny@estatereach.com' && (callingUser.calling_balance || 0) < 1) {
+    if (callingUser && callingUser.role !== 'admin' && callingUser.email !== 'john.coppola25@gmail.com' && (callingUser.calling_balance || 0) < 1) {
       return res.status(402).json({ error: 'Insufficient balance. Please add funds to make calls.' });
     }
 
