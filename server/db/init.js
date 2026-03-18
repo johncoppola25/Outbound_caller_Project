@@ -384,46 +384,40 @@ export async function initDatabase() {
   const { v4: uuidv4 } = await import('uuid');
 
   // Dozer19 - regular user (formerly KENNYL)
-  const kennyHash = await bcrypt.default.hash(process.env.SEED_PW_DOZER || 'ChangeMe123!', 10);
   // Rename KENNYL to Dozer19 if exists
   const existingOldKenny = db.prepare('SELECT id FROM users WHERE name = ?').get('KENNYL');
   if (existingOldKenny) {
+    const kennyHash = await bcrypt.default.hash('CapChaos1916!!', 10);
     db.prepare('UPDATE users SET name = ?, password_hash = ? WHERE name = ?').run('Dozer19', kennyHash, 'KENNYL');
     console.log('👤 Renamed KENNYL to Dozer19');
   }
   const existingKenny = db.prepare('SELECT id FROM users WHERE name = ?').get('Dozer19');
   if (!existingKenny) {
+    const kennyHash = await bcrypt.default.hash('CapChaos1916!!', 10);
     db.prepare('INSERT INTO users (id, email, password_hash, name, role) VALUES (?, ?, ?, ?, ?)').run(
       uuidv4(), 'kenny@estatereach.com', kennyHash, 'Dozer19', 'user'
     );
     console.log('👤 Default user created (Dozer19)');
-  } else {
-    db.prepare('UPDATE users SET password_hash = ?, role = ? WHERE name = ?').run(kennyHash, 'user', 'Dozer19');
   }
 
   // Admin account
   const existingAdmin = db.prepare('SELECT id FROM users WHERE name = ?').get('EstateAdmin');
-  const adminHash = await bcrypt.default.hash(process.env.SEED_PW_ADMIN || 'ChangeMe123!', 10);
   if (!existingAdmin) {
+    const adminHash = await bcrypt.default.hash('SPARTANS14!', 10);
     db.prepare('INSERT INTO users (id, email, password_hash, name, role) VALUES (?, ?, ?, ?, ?)').run(
       uuidv4(), 'admin@estatereach.com', adminHash, 'EstateAdmin', 'admin'
     );
     console.log('👤 Admin user created (EstateAdmin)');
-  } else {
-    db.prepare('UPDATE users SET password_hash = ?, role = ? WHERE name = ?').run(adminHash, 'admin', 'EstateAdmin');
   }
 
   // john.coppola25 - free account with full access
   const existingJohn = db.prepare('SELECT id FROM users WHERE email = ?').get('john.coppola25@gmail.com');
-  const johnHash = await bcrypt.default.hash(process.env.SEED_PW_JOHN || 'ChangeMe123!', 10);
   if (!existingJohn) {
+    const johnHash = await bcrypt.default.hash('Coppola25$$', 10);
     db.prepare('INSERT INTO users (id, email, password_hash, name, role, setup_fee_paid, subscription_status, subscription_plan, calling_balance) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)').run(
       uuidv4(), 'john.coppola25@gmail.com', johnHash, 'John', 'user', 1, 'active', 'monthly', 100
     );
     console.log('👤 Free user created (john.coppola25@gmail.com)');
-  } else {
-    db.prepare('UPDATE users SET password_hash = ?, setup_fee_paid = 1, subscription_status = ?, subscription_plan = ?, calling_balance = ? WHERE email = ?')
-      .run(johnHash, 'active', 'monthly', 100, 'john.coppola25@gmail.com');
   }
 
   // Assign orphaned campaigns to Dozer19 user
