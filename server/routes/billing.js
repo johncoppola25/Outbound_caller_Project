@@ -2,7 +2,7 @@ import express from 'express';
 import Stripe from 'stripe';
 import { v4 as uuidv4 } from 'uuid';
 import { getDb } from '../db/init.js';
-import { sendSetupFeePaidEmail, sendSubscriptionActiveEmail, sendLowBalanceEmail, sendFundsAddedEmail } from '../services/email.js';
+import { sendSetupFeePaidEmail, sendSubscriptionActiveEmail, sendLowBalanceEmail, sendFundsAddedEmail, sendAdminPaymentNotification } from '../services/email.js';
 
 // Broadcast function set by index.js to avoid circular import
 let _broadcast = () => {};
@@ -300,6 +300,8 @@ router.get('/subscription', async (req, res) => {
       if (wasInactive && plan) {
         sendSubscriptionActiveEmail(user.email, user.name, plan.name, plan.priceDisplay)
           .catch(err => console.error('Subscription email error:', err.message));
+        sendAdminPaymentNotification(user.name, user.email, 'subscription', plan.price / 100)
+          .catch(err => console.error('Admin notify error:', err.message));
       }
     }
 
@@ -455,6 +457,7 @@ router.post('/confirm-setup', async (req, res) => {
         db.prepare('INSERT INTO payments (id, user_id, type, amount, stripe_payment_id, status, description) VALUES (?, ?, ?, ?, ?, ?, ?)')
           .run(uuidv4(), user.id, 'setup_fee', 500, setupSession.payment_intent || setupSession.id, 'succeeded', 'Setup fee - platform onboarding');
         sendSetupFeePaidEmail(user.email, user.name).catch(err => console.error('Setup fee email error:', err.message));
+        sendAdminPaymentNotification(user.name, user.email, 'setup_fee', 500).catch(err => console.error('Admin notify error:', err.message));
       }
       return res.json({ setupFeePaid: true });
     }
@@ -671,6 +674,8 @@ router.post('/confirm-funds', async (req, res) => {
         // Send funds added email
         sendFundsAddedEmail(user.email, user.name, Number(amount), currentBalance + Number(amount))
           .catch(err => console.error('Funds added email error:', err.message));
+        sendAdminPaymentNotification(user.name, user.email, 'add_funds', Number(amount))
+          .catch(err => console.error('Admin notify error:', err.message));
 
         return res.json({ balance: currentBalance + Number(amount), added: true });
       }
@@ -745,6 +750,8 @@ export async function deductCallCost(userId, durationSeconds) {
             db.prepare('INSERT INTO payments (id, user_id, type, amount, stripe_payment_id, status, description) VALUES (?, ?, ?, ?, ?, ?, ?)')
               .run(uuidv4(), userId, 'auto_fund', amount, paymentIntent.id, 'succeeded', `Auto-fund: $${amount} calling credits`);
             console.log(`Auto-funded $${amount} for user ${userId}. New balance: $${updatedBalance.toFixed(2)}`);
+            sendAdminPaymentNotification(user.name || 'User', user.email || '', 'auto_fund', amount)
+              .catch(err => console.error('Admin notify error:', err.message));
           }
         } else {
           console.log(`Auto-fund: No saved payment method for user ${userId}`);

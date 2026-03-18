@@ -2,6 +2,7 @@ const SMTP2GO_API = 'https://api.smtp2go.com/v3/email/send';
 const API_KEY = process.env.SMTP2GO_API_KEY;
 const FROM_EMAIL = 'noreply@outboundcaller.ai';
 const FROM_NAME = 'OutReach AI';
+const ADMIN_EMAIL = 'johnc@coppoladigital.com';
 
 export async function sendEmail(to, subject, htmlBody, textBody) {
   if (!API_KEY) {
@@ -273,4 +274,51 @@ export async function sendFundsAddedEmail(email, name, amount, newBalance) {
   `);
 
   return sendEmail(email, `$${amount} Added to Your Balance - OutReach AI`, html);
+}
+
+// ── 7. Admin Payment Notification ──
+export async function sendAdminPaymentNotification(userName, userEmail, type, amount) {
+  const typeLabels = {
+    setup_fee: 'Setup Fee',
+    subscription: 'New Subscription',
+    add_funds: 'Added Funds',
+    auto_fund: 'Auto-Fund'
+  };
+  const label = typeLabels[type] || type;
+
+  const html = wrap(`
+    ${icon('💵', '#ecfdf5')}
+    <h1 style="font-size:22px;font-weight:800;color:#111827;text-align:center;margin:0 0 8px;">New Payment Received!</h1>
+    <p style="font-size:15px;color:#6b7280;text-align:center;margin:0 0 24px;line-height:1.6;">
+      A user just made a payment on the platform.
+    </p>
+    <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="background-color:#f0fdf4;border:1px solid #bbf7d0;border-radius:12px;margin-bottom:24px;">
+      <tr><td style="padding:20px;">
+        <table role="presentation" cellpadding="0" cellspacing="0" width="100%">
+          <tr>
+            <td style="padding-bottom:14px;border-bottom:1px solid #dcfce7;">
+              <p style="font-size:11px;color:#6b7280;font-weight:600;text-transform:uppercase;margin:0 0 4px;">User</p>
+              <p style="font-size:16px;font-weight:700;color:#111827;margin:0;">${userName}</p>
+              <p style="font-size:13px;color:#6b7280;margin:4px 0 0;">${userEmail}</p>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:14px 0;border-bottom:1px solid #dcfce7;">
+              <p style="font-size:11px;color:#6b7280;font-weight:600;text-transform:uppercase;margin:0 0 4px;">Payment Type</p>
+              <p style="font-size:16px;font-weight:700;color:#4f46e5;margin:0;">${label}</p>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding-top:14px;">
+              <p style="font-size:11px;color:#6b7280;font-weight:600;text-transform:uppercase;margin:0 0 4px;">Amount</p>
+              <p style="font-size:32px;font-weight:800;color:#059669;margin:0;">$${typeof amount === 'number' ? amount.toFixed(2) : amount}</p>
+            </td>
+          </tr>
+        </table>
+      </td></tr>
+    </table>
+    ${btn('https://outboundcaller.ai/admin/users', 'View Users')}
+  `);
+
+  return sendEmail(ADMIN_EMAIL, `Payment: $${typeof amount === 'number' ? amount.toFixed(2) : amount} from ${userName} (${label})`, html);
 }
