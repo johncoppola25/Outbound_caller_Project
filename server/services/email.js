@@ -322,3 +322,35 @@ export async function sendAdminPaymentNotification(userName, userEmail, type, am
 
   return sendEmail(ADMIN_EMAIL, `Payment: $${typeof amount === 'number' ? amount.toFixed(2) : amount} from ${userName} (${label})`, html);
 }
+
+// ── 8. Admin New Signup Notification ──
+export async function sendAdminNewSignupNotification(userName, userEmail) {
+  const html = wrap(`
+    ${icon('🆕', '#eef2ff')}
+    <h1 style="font-size:22px;font-weight:800;color:#111827;text-align:center;margin:0 0 8px;">New User Signed Up!</h1>
+    <p style="font-size:15px;color:#6b7280;text-align:center;margin:0 0 24px;line-height:1.6;">
+      A new user just created an account on the platform.
+    </p>
+    <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="background-color:#eef2ff;border:1px solid #c7d2fe;border-radius:12px;margin-bottom:24px;">
+      <tr><td style="padding:20px;">
+        <table role="presentation" cellpadding="0" cellspacing="0" width="100%">
+          <tr>
+            <td style="padding-bottom:14px;border-bottom:1px solid #c7d2fe;">
+              <p style="font-size:11px;color:#6b7280;font-weight:600;text-transform:uppercase;margin:0 0 4px;">Name</p>
+              <p style="font-size:18px;font-weight:700;color:#111827;margin:0;">${userName}</p>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding-top:14px;">
+              <p style="font-size:11px;color:#6b7280;font-weight:600;text-transform:uppercase;margin:0 0 4px;">Email</p>
+              <p style="font-size:16px;font-weight:600;color:#4f46e5;margin:0;">${userEmail}</p>
+            </td>
+          </tr>
+        </table>
+      </td></tr>
+    </table>
+    ${btn('https://outboundcaller.ai/admin/users', 'View Users')}
+  `);
+
+  return sendEmail(ADMIN_EMAIL, `New Signup: ${userName} (${userEmail})`, html);
+}

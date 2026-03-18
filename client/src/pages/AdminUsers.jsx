@@ -534,7 +534,7 @@ export default function AdminUsers() {
         {/* Column headers */}
         <div style={{
           display: 'grid',
-          gridTemplateColumns: 'minmax(160px, 1.3fr) 80px 80px 80px 80px 90px 90px 90px 110px',
+          gridTemplateColumns: 'minmax(150px, 1.3fr) 70px 90px 80px 70px 80px 80px 90px 120px',
           alignItems: 'center', padding: '8px 20px', gap: '8px',
           background: '#f9fafb', borderBottom: '1px solid #e5e7eb'
         }}>
@@ -561,7 +561,7 @@ export default function AdminUsers() {
                 onClick={() => user.role !== 'admin' && viewUserDetails(user)}
                 style={{
                   display: 'grid',
-                  gridTemplateColumns: 'minmax(160px, 1.3fr) 80px 80px 80px 80px 90px 90px 90px 110px',
+                  gridTemplateColumns: 'minmax(150px, 1.3fr) 70px 90px 80px 70px 80px 80px 90px 120px',
                   alignItems: 'center', padding: '12px 20px', gap: '8px',
                   cursor: user.role !== 'admin' ? 'pointer' : 'default',
                   background: isExpanded ? '#f9fafb' : 'transparent',

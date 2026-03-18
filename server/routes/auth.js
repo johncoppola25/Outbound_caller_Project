@@ -4,7 +4,7 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { getDb } from '../db/init.js';
 import { authenticateToken, getJwtSecret } from '../middleware/auth.js';
-import { sendWelcomeEmail } from '../services/email.js';
+import { sendWelcomeEmail, sendAdminNewSignupNotification } from '../services/email.js';
 import { logActivity } from '../services/activityLog.js';
 
 const router = express.Router();
@@ -59,6 +59,7 @@ router.post('/register', async (req, res) => {
 
     // Send welcome email (async, don't block signup)
     sendWelcomeEmail(email, name).catch(err => console.error('Welcome email error:', err.message));
+    sendAdminNewSignupNotification(name, email).catch(err => console.error('Admin signup notify error:', err.message));
 
     const displayName = username || name;
     const token = jwt.sign(
