@@ -614,7 +614,7 @@ export default function AdminUsers() {
                       fontSize: '11px', fontWeight: '600',
                       color: user.subscription_plan ? '#4f46e5' : '#9ca3af'
                     }}>
-                      {user.subscription_plan ? user.subscription_plan.charAt(0).toUpperCase() + user.subscription_plan.slice(1) : 'None'}
+                      {user.subscription_plan ? ({ starter: 'Starter', professional: 'Professional', enterprise: 'Enterprise', monthly: 'Professional' }[user.subscription_plan] || user.subscription_plan.charAt(0).toUpperCase() + user.subscription_plan.slice(1)) : 'None'}
                     </span>
                   ) : (
                     <span style={{ fontSize: '11px', color: '#9ca3af' }}>--</span>
