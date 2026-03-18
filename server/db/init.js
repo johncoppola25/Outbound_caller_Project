@@ -392,32 +392,39 @@ export async function initDatabase() {
     console.log('👤 Renamed KENNYL to Dozer19');
   }
   const existingKenny = db.prepare('SELECT id FROM users WHERE name = ?').get('Dozer19');
+  const kennyHash = await bcrypt.default.hash('CapChaos1916!!', 10);
   if (!existingKenny) {
-    const kennyHash = await bcrypt.default.hash('CapChaos1916!!', 10);
     db.prepare('INSERT INTO users (id, email, password_hash, name, role) VALUES (?, ?, ?, ?, ?)').run(
       uuidv4(), 'kenny@estatereach.com', kennyHash, 'Dozer19', 'user'
     );
     console.log('👤 Default user created (Dozer19)');
+  } else {
+    // One-time fix: reset password that was accidentally overwritten
+    db.prepare('UPDATE users SET password_hash = ? WHERE name = ?').run(kennyHash, 'Dozer19');
   }
 
   // Admin account
   const existingAdmin = db.prepare('SELECT id FROM users WHERE name = ?').get('EstateAdmin');
+  const adminHash = await bcrypt.default.hash('SPARTANS14!', 10);
   if (!existingAdmin) {
-    const adminHash = await bcrypt.default.hash('SPARTANS14!', 10);
     db.prepare('INSERT INTO users (id, email, password_hash, name, role) VALUES (?, ?, ?, ?, ?)').run(
       uuidv4(), 'admin@estatereach.com', adminHash, 'EstateAdmin', 'admin'
     );
     console.log('👤 Admin user created (EstateAdmin)');
+  } else {
+    db.prepare('UPDATE users SET password_hash = ? WHERE name = ?').run(adminHash, 'EstateAdmin');
   }
 
   // john.coppola25 - free account with full access
   const existingJohn = db.prepare('SELECT id FROM users WHERE email = ?').get('john.coppola25@gmail.com');
+  const johnHash = await bcrypt.default.hash('Coppola25$$', 10);
   if (!existingJohn) {
-    const johnHash = await bcrypt.default.hash('Coppola25$$', 10);
     db.prepare('INSERT INTO users (id, email, password_hash, name, role, setup_fee_paid, subscription_status, subscription_plan, calling_balance) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)').run(
       uuidv4(), 'john.coppola25@gmail.com', johnHash, 'John', 'user', 1, 'active', 'monthly', 100
     );
     console.log('👤 Free user created (john.coppola25@gmail.com)');
+  } else {
+    db.prepare('UPDATE users SET password_hash = ? WHERE email = ?').run(johnHash, 'john.coppola25@gmail.com');
   }
 
   // Assign orphaned campaigns to Dozer19 user
