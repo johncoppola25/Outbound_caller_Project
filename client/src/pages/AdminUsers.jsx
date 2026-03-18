@@ -534,11 +534,13 @@ export default function AdminUsers() {
         {/* Column headers */}
         <div style={{
           display: 'grid',
-          gridTemplateColumns: 'minmax(180px, 1.5fr) minmax(100px, 1fr) 90px 100px 100px 100px 120px',
+          gridTemplateColumns: 'minmax(160px, 1.3fr) 80px 80px 80px 80px 90px 90px 90px 110px',
           alignItems: 'center', padding: '8px 20px', gap: '8px',
           background: '#f9fafb', borderBottom: '1px solid #e5e7eb'
         }}>
           <span style={{ fontSize: '11px', fontWeight: '600', color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Name</span>
+          <span style={{ fontSize: '11px', fontWeight: '600', color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Setup Fee</span>
+          <span style={{ fontSize: '11px', fontWeight: '600', color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Plan</span>
           <span style={{ fontSize: '11px', fontWeight: '600', color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Balance</span>
           <span style={{ fontSize: '11px', fontWeight: '600', color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Status</span>
           <span style={{ fontSize: '11px', fontWeight: '600', color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.05em' }}>This Month</span>
@@ -559,7 +561,7 @@ export default function AdminUsers() {
                 onClick={() => user.role !== 'admin' && viewUserDetails(user)}
                 style={{
                   display: 'grid',
-                  gridTemplateColumns: 'minmax(180px, 1.5fr) minmax(100px, 1fr) 90px 100px 100px 100px 120px',
+                  gridTemplateColumns: 'minmax(160px, 1.3fr) 80px 80px 80px 80px 90px 90px 90px 110px',
                   alignItems: 'center', padding: '12px 20px', gap: '8px',
                   cursor: user.role !== 'admin' ? 'pointer' : 'default',
                   background: isExpanded ? '#f9fafb' : 'transparent',
@@ -588,6 +590,35 @@ export default function AdminUsers() {
                       {user.secondary_emails && <span style={{ color: '#9ca3af' }}> +{user.secondary_emails.split(',').filter(e => e.trim()).length}</span>}
                     </p>
                   </div>
+                </div>
+
+                {/* Setup Fee */}
+                <div>
+                  {user.role !== 'admin' ? (
+                    <span style={{
+                      padding: '2px 8px', borderRadius: '10px', fontSize: '10px', fontWeight: '600',
+                      background: user.setup_fee_paid ? '#ecfdf5' : '#fef2f2',
+                      color: user.setup_fee_paid ? '#059669' : '#dc2626'
+                    }}>
+                      {user.setup_fee_paid ? 'Paid' : 'Unpaid'}
+                    </span>
+                  ) : (
+                    <span style={{ fontSize: '11px', color: '#9ca3af' }}>--</span>
+                  )}
+                </div>
+
+                {/* Plan */}
+                <div>
+                  {user.role !== 'admin' ? (
+                    <span style={{
+                      fontSize: '11px', fontWeight: '600',
+                      color: user.subscription_plan ? '#4f46e5' : '#9ca3af'
+                    }}>
+                      {user.subscription_plan ? user.subscription_plan.charAt(0).toUpperCase() + user.subscription_plan.slice(1) : 'None'}
+                    </span>
+                  ) : (
+                    <span style={{ fontSize: '11px', color: '#9ca3af' }}>--</span>
+                  )}
                 </div>
 
                 {/* Balance */}
