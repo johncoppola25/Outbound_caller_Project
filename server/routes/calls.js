@@ -427,6 +427,12 @@ router.post('/test-call', async (req, res) => {
       return res.status(400).json({ error: 'Campaign ID and phone number are required.' });
     }
 
+    // Auto-format phone number - add +1 if no country code
+    let formattedPhone = phone_number.replace(/[\s\-\(\)]/g, '');
+    if (!formattedPhone.startsWith('+')) {
+      formattedPhone = formattedPhone.startsWith('1') ? `+${formattedPhone}` : `+1${formattedPhone}`;
+    }
+
     // Check calling balance (skip for admin and free accounts)
     const callingUser = db.prepare('SELECT calling_balance, role, email FROM users WHERE id = ?').get(req.user.userId);
     if (callingUser && callingUser.role !== 'admin' && callingUser.email !== 'john.coppola25@gmail.com' && (callingUser.calling_balance || 0) < 1) {
@@ -448,7 +454,7 @@ router.post('/test-call', async (req, res) => {
     db.prepare(`
       INSERT INTO contacts (id, campaign_id, first_name, last_name, phone, notes, status)
       VALUES (?, ?, ?, ?, ?, ?, 'called')
-    `).run(contactId, campaign_id, testName, 'Call', phone_number, 'Test call from Prompt tab');
+    `).run(contactId, campaign_id, testName, 'Call', formattedPhone, 'Test call from Prompt tab');
 
     // Create call record
     const callId = uuidv4();
@@ -463,13 +469,13 @@ router.post('/test-call', async (req, res) => {
         call_id: callId,
         campaign_id: campaign_id,
         contact_id: contactId,
-        to: phone_number,
+        to: formattedPhone,
         from: campaign.caller_id,
         assistant_id: campaign.telnyx_assistant_id,
         contact: {
           first_name: testName,
           last_name: 'Call',
-          phone: phone_number,
+          phone: formattedPhone,
           email: '',
           property_address: '',
           notes: 'Test call'
