@@ -202,6 +202,7 @@ export default function CampaignDetail() {
   const [aiEditLoading, setAiEditLoading] = useState(false);
   const [aiEditPreview, setAiEditPreview] = useState(null);
   const [aiEditError, setAiEditError] = useState(null);
+  const [aiEditSuccess, setAiEditSuccess] = useState(false);
 
   // Test Call
   const [testCallOpen, setTestCallOpen] = useState(false);
@@ -539,6 +540,7 @@ export default function CampaignDetail() {
     setAiEditLoading(true);
     setAiEditError(null);
     setAiEditPreview(null);
+    setAiEditSuccess(false);
     try {
       const res = await apiFetch('/api/campaigns/ai-edit-prompt', {
         method: 'POST',
@@ -563,9 +565,29 @@ export default function CampaignDetail() {
   function applyAiEdit() {
     if (aiEditPreview) {
       setInlinePrompt(aiEditPreview);
+
+      // Auto-detect voice change requests and switch voice setting
+      const instruction = aiEditInstruction.toLowerCase();
+      const wantsFemale = /\b(girl|female|woman|she|her voice)\b/.test(instruction);
+      const wantsMale = /\b(guy|male|man|he|his voice|boy)\b/.test(instruction);
+      if (wantsFemale && !wantsMale) {
+        // Switch to a female voice if currently male
+        const maleVoices = ['orion', 'perseus', 'atlas', 'helios'];
+        if (maleVoices.includes(inlineVoice)) {
+          setInlineVoice('astra');
+        }
+      } else if (wantsMale && !wantsFemale) {
+        const femaleVoices = ['astra', 'andromeda', 'luna', 'athena'];
+        if (femaleVoices.includes(inlineVoice)) {
+          setInlineVoice('orion');
+        }
+      }
+
       setAiEditPreview(null);
       setAiEditInstruction('');
-      setAiEditOpen(false);
+      setAiEditSuccess(true);
+      // Keep panel open to show success, auto-hide after 8 seconds
+      setTimeout(() => setAiEditSuccess(false), 8000);
     }
   }
 
@@ -1756,6 +1778,24 @@ export default function CampaignDetail() {
                         color: '#374151', lineHeight: '1.6'
                       }}>
                         {aiEditPreview}
+                      </div>
+                    </div>
+                  )}
+
+                  {aiEditSuccess && (
+                    <div style={{
+                      display: 'flex', alignItems: 'center', gap: '10px',
+                      padding: '14px 18px', background: '#ecfdf5', border: '1px solid #6ee7b7',
+                      borderRadius: '10px', marginTop: '12px'
+                    }}>
+                      <CheckCircle2 style={{ width: '20px', height: '20px', color: '#059669', flexShrink: 0 }} />
+                      <div>
+                        <p style={{ fontSize: '14px', fontWeight: '700', color: '#065f46', margin: 0 }}>
+                          Changes applied to prompt!
+                        </p>
+                        <p style={{ fontSize: '13px', color: '#047857', margin: '2px 0 0 0' }}>
+                          Now click <strong>"Save Prompt"</strong> to sync your changes with Telnyx.
+                        </p>
                       </div>
                     </div>
                   )}
