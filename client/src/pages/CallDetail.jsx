@@ -4,7 +4,7 @@ import { useParams, Link } from 'react-router-dom';
 import {
   ArrowLeft, Phone, User, Calendar, Clock, Mail, Volume2, RefreshCw,
   CheckCircle, XCircle, AlertCircle, PhoneOff, Voicemail, MessageSquare,
-  FileText, Activity, Loader, DollarSign, Download, Mic
+  FileText, Activity, Loader, DollarSign, Download, Mic, Sparkles, Send, Check, X
 } from 'lucide-react';
 import { useWebSocket } from '../context/WebSocketContext';
 import { useAuth } from '../context/AuthContext';
@@ -38,6 +38,13 @@ export default function CallDetail() {
   const [savingOutcome, setSavingOutcome] = useState(false);
   const [lastSyncDebug, setLastSyncDebug] = useState(null);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+  const [aiFixOpen, setAiFixOpen] = useState(false);
+  const [aiFixIssue, setAiFixIssue] = useState('');
+  const [aiFixLoading, setAiFixLoading] = useState(false);
+  const [aiFixPreview, setAiFixPreview] = useState(null);
+  const [aiFixError, setAiFixError] = useState(null);
+  const [aiFixSuccess, setAiFixSuccess] = useState(false);
+  const [campaignPrompt, setCampaignPrompt] = useState(null);
   const { subscribe } = useWebSocket();
   const pollRef = useRef(null);
   const hasSyncedRef = useRef(false);
@@ -111,6 +118,77 @@ export default function CallDetail() {
 
   function formatDuration(seconds) { if (!seconds) return 'N/A'; const m = Math.floor(seconds / 60); const s = Math.round(seconds % 60); return m === 0 ? `${s}s` : `${m}m ${s}s`; }
   function formatDateTime(ds) { if (!ds) return 'N/A'; return new Date(ds).toLocaleString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true }); }
+
+  // AI Fix Prompt from transcript
+  async function handleOpenAiFix() {
+    setAiFixOpen(true);
+    setAiFixIssue('');
+    setAiFixPreview(null);
+    setAiFixError(null);
+    setAiFixSuccess(false);
+    // Fetch the campaign's current prompt
+    if (!campaignPrompt && call.campaign_id) {
+      try {
+        const res = await apiFetch(`/api/campaigns/${call.campaign_id}`);
+        const data = await res.json();
+        setCampaignPrompt(data.ai_prompt || '');
+      } catch (e) {
+        console.error('Failed to fetch campaign prompt:', e);
+      }
+    }
+  }
+
+  async function handleAiFix() {
+    if (!aiFixIssue.trim() || !call.transcript) return;
+    setAiFixLoading(true);
+    setAiFixError(null);
+    setAiFixPreview(null);
+    try {
+      const res = await apiFetch('/api/campaigns/ai-edit-prompt', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          currentPrompt: campaignPrompt,
+          instruction: `Here is a real call transcript showing the issue:\n\n${call.transcript}\n\n---\n\nThe user's issue with this call: ${aiFixIssue.trim()}\n\nPlease fix the prompt so this issue doesn't happen in future calls.`
+        })
+      });
+      const data = await res.json();
+      if (res.ok && data.editedPrompt) {
+        setAiFixPreview(data.editedPrompt);
+      } else {
+        setAiFixError(data.error || 'Failed to generate fix.');
+      }
+    } catch (e) {
+      setAiFixError('Network error. Please try again.');
+    } finally {
+      setAiFixLoading(false);
+    }
+  }
+
+  async function applyAiFix() {
+    if (!aiFixPreview || !call.campaign_id) return;
+    setAiFixLoading(true);
+    try {
+      const res = await apiFetch(`/api/campaigns/${call.campaign_id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ai_prompt: aiFixPreview })
+      });
+      if (res.ok) {
+        setCampaignPrompt(aiFixPreview);
+        setAiFixSuccess(true);
+        setAiFixPreview(null);
+        setAiFixIssue('');
+        setTimeout(() => { setAiFixSuccess(false); setAiFixOpen(false); }, 2000);
+      } else {
+        setAiFixError('Failed to save prompt.');
+      }
+    } catch (e) {
+      setAiFixError('Network error saving prompt.');
+    } finally {
+      setAiFixLoading(false);
+    }
+  }
 
   function formatTranscript(transcript) {
     if (!transcript) return null;
@@ -327,12 +405,97 @@ export default function CallDetail() {
                 <h2 style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '15px', fontWeight: '700', color: '#111827' }}>
                   <MessageSquare style={{ width: '16px', height: '16px', color: '#7c3aed' }} /> Transcript
                 </h2>
-                <button onClick={syncFromTelnyx} disabled={syncing}
-                  style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', padding: '4px 10px', background: 'none', color: '#4f46e5', border: '1px solid #e5e7eb', borderRadius: '6px', cursor: syncing ? 'default' : 'pointer', fontSize: '11px', fontWeight: '600', opacity: syncing ? 0.6 : 1 }}>
-                  <RefreshCw style={{ width: '12px', height: '12px', animation: syncing ? 'spin 1s linear infinite' : 'none' }} />
-                  {syncing ? 'Syncing...' : 'Refresh'}
-                </button>
+                <div style={{ display: 'flex', gap: '6px' }}>
+                  {call.transcript && (
+                    <button onClick={handleOpenAiFix}
+                      style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', padding: '4px 10px', background: aiFixOpen ? '#7c3aed' : '#f5f3ff', color: aiFixOpen ? '#fff' : '#7c3aed', border: '1px solid #c4b5fd', borderRadius: '6px', cursor: 'pointer', fontSize: '11px', fontWeight: '600' }}>
+                      <Sparkles style={{ width: '12px', height: '12px' }} />
+                      Fix with AI
+                    </button>
+                  )}
+                  <button onClick={syncFromTelnyx} disabled={syncing}
+                    style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', padding: '4px 10px', background: 'none', color: '#4f46e5', border: '1px solid #e5e7eb', borderRadius: '6px', cursor: syncing ? 'default' : 'pointer', fontSize: '11px', fontWeight: '600', opacity: syncing ? 0.6 : 1 }}>
+                    <RefreshCw style={{ width: '12px', height: '12px', animation: syncing ? 'spin 1s linear infinite' : 'none' }} />
+                    {syncing ? 'Syncing...' : 'Refresh'}
+                  </button>
+                </div>
               </div>
+              {/* AI Fix Panel */}
+              {aiFixOpen && call.transcript && (
+                <div style={{ marginBottom: '14px', padding: '18px', background: '#faf5ff', borderRadius: '12px', border: '1px solid #c4b5fd' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
+                    <Sparkles style={{ width: '18px', height: '18px', color: '#7c3aed' }} />
+                    <h4 style={{ fontSize: '14px', fontWeight: '700', color: '#5b21b6', margin: 0 }}>Fix Prompt from Transcript</h4>
+                  </div>
+                  <p style={{ fontSize: '12px', color: '#6b7280', marginBottom: '12px', lineHeight: '1.5' }}>
+                    Describe what went wrong in this call. AI will analyze the transcript and fix your campaign prompt so it doesn't happen again.
+                  </p>
+
+                  {/* Quick suggestion chips */}
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '12px' }}>
+                    {['AI sounded robotic', 'Awkward pauses in speech', 'AI said something wrong', 'Didn\'t handle objection well', 'Opening was too long', 'AI was too pushy'].map(chip => (
+                      <button key={chip} onClick={() => setAiFixIssue(chip)}
+                        style={{ padding: '5px 10px', background: aiFixIssue === chip ? '#7c3aed' : '#fff', color: aiFixIssue === chip ? '#fff' : '#6b7280', border: '1px solid #ddd6fe', borderRadius: '16px', fontSize: '11px', cursor: 'pointer', fontWeight: '500' }}>
+                        {chip}
+                      </button>
+                    ))}
+                  </div>
+
+                  <div style={{ display: 'flex', gap: '8px', marginBottom: '12px' }}>
+                    <input
+                      type="text"
+                      value={aiFixIssue}
+                      onChange={(e) => setAiFixIssue(e.target.value)}
+                      onKeyDown={(e) => { if (e.key === 'Enter' && !aiFixLoading) handleAiFix(); }}
+                      placeholder="Describe the issue..."
+                      style={{ flex: 1, padding: '10px 14px', border: '1px solid #c4b5fd', borderRadius: '8px', fontSize: '13px', outline: 'none', background: '#fff', color: '#111827' }}
+                      disabled={aiFixLoading}
+                    />
+                    <button onClick={handleAiFix} disabled={aiFixLoading || !aiFixIssue.trim()}
+                      style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '10px 16px', background: '#7c3aed', color: '#fff', border: 'none', borderRadius: '8px', fontWeight: '600', fontSize: '12px', cursor: (aiFixLoading || !aiFixIssue.trim()) ? 'not-allowed' : 'pointer', opacity: (aiFixLoading || !aiFixIssue.trim()) ? 0.6 : 1 }}>
+                      {aiFixLoading ? (
+                        <><div style={{ width: '14px', height: '14px', border: '2px solid rgba(255,255,255,0.3)', borderTopColor: '#fff', borderRadius: '50%', animation: 'spin 1s linear infinite' }}></div> Fixing...</>
+                      ) : (
+                        <><Send style={{ width: '13px', height: '13px' }} /> Fix Prompt</>
+                      )}
+                    </button>
+                  </div>
+
+                  {aiFixError && (
+                    <div style={{ padding: '10px 14px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: '8px', color: '#dc2626', fontSize: '12px', marginBottom: '12px' }}>
+                      {aiFixError}
+                    </div>
+                  )}
+
+                  {aiFixSuccess && (
+                    <div style={{ padding: '12px 14px', background: '#ecfdf5', border: '1px solid #a7f3d0', borderRadius: '8px', color: '#059669', fontSize: '13px', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <Check style={{ width: '16px', height: '16px' }} /> Prompt updated! Future calls will use the fixed prompt.
+                    </div>
+                  )}
+
+                  {aiFixPreview && (
+                    <div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                        <p style={{ fontSize: '12px', fontWeight: '600', color: '#5b21b6', margin: 0 }}>Preview of fixed prompt:</p>
+                        <div style={{ display: 'flex', gap: '8px' }}>
+                          <button onClick={() => { setAiFixPreview(null); }}
+                            style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '5px 12px', background: '#fee2e2', color: '#dc2626', border: 'none', borderRadius: '8px', fontSize: '11px', fontWeight: '600', cursor: 'pointer' }}>
+                            <X style={{ width: '12px', height: '12px' }} /> Discard
+                          </button>
+                          <button onClick={applyAiFix}
+                            style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '5px 12px', background: '#059669', color: '#fff', border: 'none', borderRadius: '8px', fontSize: '11px', fontWeight: '600', cursor: 'pointer' }}>
+                            <Check style={{ width: '12px', height: '12px' }} /> Apply & Save
+                          </button>
+                        </div>
+                      </div>
+                      <div style={{ background: '#fff', border: '1px solid #c4b5fd', borderRadius: '8px', padding: '14px', maxHeight: '300px', overflowY: 'auto', fontSize: '13px', color: '#111827', lineHeight: '1.6', whiteSpace: 'pre-wrap' }}>
+                        {aiFixPreview}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
               {call.transcript ? (
                 <div style={{ background: '#f9fafb', borderRadius: '10px', padding: '14px', maxHeight: '500px', overflowY: 'auto', border: '1px solid #e5e7eb' }}>
                   {formatTranscript(call.transcript)}
