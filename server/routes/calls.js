@@ -497,6 +497,7 @@ router.post('/test-call', async (req, res) => {
       console.error('Test call Telnyx error:', telnyxError);
       db.prepare(`UPDATE calls SET status = 'failed' WHERE id = ?`).run(callId);
       db.prepare(`INSERT INTO call_events (call_id, event_type, event_data) VALUES (?, 'call_failed', ?)`).run(callId, JSON.stringify({ error: telnyxError.message }));
+      return res.status(500).json({ error: `Call failed: ${telnyxError.message}` });
     }
 
     const call = db.prepare(`
