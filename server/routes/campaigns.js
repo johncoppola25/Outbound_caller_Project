@@ -111,6 +111,87 @@ router.get('/:id', async (req, res) => {
   }
 });
 
+// AI-powered prompt generation from questions
+router.post('/ai-generate-prompt', async (req, res) => {
+  try {
+    const { business_type, call_purpose, target_audience, desired_outcome, tone, special_instructions, campaign_name, campaign_type, bot_name } = req.body;
+    if (!business_type || !call_purpose) {
+      return res.status(400).json({ error: 'Business type and call purpose are required.' });
+    }
+
+    const apiKey = process.env.OPENAI_API_KEY;
+    if (!apiKey) {
+      return res.status(500).json({ error: 'OpenAI API key not configured.' });
+    }
+
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`
+      },
+      body: JSON.stringify({
+        model: 'gpt-4o-mini',
+        messages: [
+          {
+            role: 'system',
+            content: `You are an expert AI phone calling script writer. You create professional, natural-sounding call scripts for AI callers that make real outbound phone calls.
+
+Your scripts must:
+- Sound like a real human on the phone — use contractions, short sentences, natural pauses
+- Follow a clear flow: Opening → Discovery → Value Proposition → Handle Objections → Close/Next Steps
+- Include proper greeting using [First Name] or {{contact.first_name}} for personalization
+- Use [Bot Name] for the AI caller's name
+- Use [Property Address] or {{contact.property_address}} if relevant
+- Include a section for handling common objections
+- Include compliance/opt-out language ("If you're not interested, no worries at all")
+- Be optimized for text-to-speech: no parentheses, no abbreviations, no complex punctuation
+- Use markdown formatting with ## headers and ### sub-headers
+- Include VOICE & TONE section, CALL OPENING, DISCOVERY QUESTIONS, VALUE PROPOSITION, OBJECTION HANDLING, and CLOSING sections
+- Keep it conversational — not salesy or robotic
+
+Return ONLY the prompt text. No explanations, no code fences, no preamble.`
+          },
+          {
+            role: 'user',
+            content: `Generate a complete AI calling script based on these answers:
+
+Business type: ${business_type}
+Purpose of calling: ${call_purpose}
+${target_audience ? `Who we're calling: ${target_audience}` : ''}
+${desired_outcome ? `Goal of the call: ${desired_outcome}` : ''}
+Tone: ${tone || 'friendly'}
+${bot_name ? `AI caller name: ${bot_name}` : ''}
+${campaign_name ? `Campaign name: ${campaign_name}` : ''}
+${campaign_type ? `Campaign type: ${campaign_type.replace(/_/g, ' ')}` : ''}
+${special_instructions ? `Special instructions: ${special_instructions}` : ''}
+
+Create a complete, professional AI calling script.`
+          }
+        ],
+        temperature: 0.7,
+        max_tokens: 4000
+      })
+    });
+
+    const data = await response.json();
+    if (!response.ok) {
+      console.error('OpenAI error:', data);
+      return res.status(500).json({ error: 'Failed to generate prompt.' });
+    }
+
+    const prompt = data.choices?.[0]?.message?.content?.trim();
+    if (!prompt) {
+      return res.status(500).json({ error: 'No prompt generated.' });
+    }
+
+    res.json({ prompt });
+  } catch (error) {
+    console.error('Generate prompt error:', error);
+    res.status(500).json({ error: 'Failed to generate prompt.' });
+  }
+});
+
 // AI-powered prompt editing
 router.post('/ai-edit-prompt', async (req, res) => {
   try {

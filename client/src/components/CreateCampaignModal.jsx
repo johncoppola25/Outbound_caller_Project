@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { X, Sparkles, ChevronRight, ChevronLeft, Phone } from 'lucide-react';
+import { X, Sparkles, ChevronRight, ChevronLeft, Phone, Wand2, Send } from 'lucide-react';
 import { apiFetch } from '../utils/api';
 
 const steps = ['Template', 'Details', 'AI Prompt'];
@@ -24,6 +24,18 @@ export default function CreateCampaignModal({ onClose, onCreated }) {
     greeting: 'Hello,', time_limit_secs: 600, voicemail_detection: true, bot_name: 'Julia'
   });
   const [saving, setSaving] = useState(false);
+
+  // AI Generate Prompt
+  const [generateMode, setGenerateMode] = useState(false);
+  const [generateLoading, setGenerateLoading] = useState(false);
+  const [generateAnswers, setGenerateAnswers] = useState({
+    business_type: '',
+    call_purpose: '',
+    target_audience: '',
+    desired_outcome: '',
+    tone: 'friendly',
+    special_instructions: ''
+  });
 
   useEffect(() => { fetchTemplates(); fetchMyNumbers(); }, []);
 
@@ -65,6 +77,31 @@ export default function CreateCampaignModal({ onClose, onCreated }) {
       onCreated(data);
     } catch (err) { console.error('Error:', err); setError('Failed to create campaign'); }
     finally { setSaving(false); }
+  }
+
+  async function handleGeneratePrompt() {
+    setGenerateLoading(true);
+    try {
+      const res = await apiFetch('/api/campaigns/ai-generate-prompt', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ...generateAnswers,
+          campaign_name: formData.name,
+          campaign_type: formData.type,
+          bot_name: formData.bot_name
+        })
+      });
+      const data = await res.json();
+      if (res.ok && data.prompt) {
+        setFormData(prev => ({ ...prev, ai_prompt: data.prompt }));
+        setGenerateMode(false);
+      }
+    } catch (e) {
+      console.error('Generate error:', e);
+    } finally {
+      setGenerateLoading(false);
+    }
   }
 
   return (
@@ -206,26 +243,133 @@ export default function CreateCampaignModal({ onClose, onCreated }) {
           {/* Step 3: AI Prompt */}
           {currentStep === 2 && (
             <div>
-              <div>
-                <label style={labelStyle}>AI Assistant Prompt</label>
-                <p style={{ fontSize: '13px', color: '#4b5563', marginBottom: '10px' }}>Define how the AI should interact with contacts.</p>
-                <textarea value={formData.ai_prompt} onChange={(e) => setFormData({ ...formData, ai_prompt: e.target.value })}
-                  style={{ ...inputStyle, minHeight: '280px', fontFamily: 'monospace', fontSize: '13px', resize: 'vertical', lineHeight: '1.5' }}
-                  placeholder="You are a friendly real estate assistant..." />
-              </div>
-              <div style={{ marginTop: '14px', padding: '14px', background: '#fffbeb', border: '1px solid #fde68a', borderRadius: '8px' }}>
-                <h4 style={{ fontWeight: '600', color: '#b45309', marginBottom: '8px', fontSize: '13px' }}>Best Practices:</h4>
-                <ul style={{ fontSize: '12px', color: '#4b5563', paddingLeft: '18px', margin: 0, lineHeight: '1.8' }}>
-                  <li><strong style={{ color: '#111827' }}>Identity:</strong> Define who the AI is and why they're calling</li>
-                  <li><strong style={{ color: '#111827' }}>Flow:</strong> Opening - Discovery - Value - Objections - Close</li>
-                  <li><strong style={{ color: '#111827' }}>Variables:</strong> Use {"{{contact.first_name}}"} for personalization</li>
-                  <li><strong style={{ color: '#111827' }}>Objections:</strong> Include common objections and responses</li>
-                  <li><strong style={{ color: '#111827' }}>Compliance:</strong> Add opt-out handling</li>
-                </ul>
-              </div>
-              <div style={{ marginTop: '10px', padding: '10px 12px', background: '#eef2ff', border: '1px solid #c7d2fe', borderRadius: '8px' }}>
-                <p style={{ fontSize: '12px', color: '#4f46e5', margin: 0 }}><strong>Tip:</strong> Select "Pre-Foreclosure" template for a complete example!</p>
-              </div>
+              {!generateMode ? (
+                <>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                    <div>
+                      <label style={labelStyle}>AI Assistant Prompt</label>
+                      <p style={{ fontSize: '13px', color: '#4b5563' }}>Define how the AI should interact with contacts.</p>
+                    </div>
+                    <button
+                      onClick={() => setGenerateMode(true)}
+                      style={{
+                        display: 'inline-flex', alignItems: 'center', gap: '6px',
+                        padding: '8px 16px', background: '#7c3aed', color: '#fff',
+                        border: 'none', borderRadius: '8px', fontWeight: '600',
+                        fontSize: '12px', cursor: 'pointer',
+                        boxShadow: '0 2px 8px rgba(124,58,237,0.3)'
+                      }}
+                    >
+                      <Wand2 style={{ width: '14px', height: '14px' }} />
+                      Generate with AI
+                    </button>
+                  </div>
+                  <textarea value={formData.ai_prompt} onChange={(e) => setFormData({ ...formData, ai_prompt: e.target.value })}
+                    style={{ ...inputStyle, minHeight: '280px', fontFamily: 'monospace', fontSize: '13px', resize: 'vertical', lineHeight: '1.5' }}
+                    placeholder="You are a friendly real estate assistant..." />
+                  <div style={{ marginTop: '14px', padding: '14px', background: '#fffbeb', border: '1px solid #fde68a', borderRadius: '8px' }}>
+                    <h4 style={{ fontWeight: '600', color: '#b45309', marginBottom: '8px', fontSize: '13px' }}>Best Practices:</h4>
+                    <ul style={{ fontSize: '12px', color: '#4b5563', paddingLeft: '18px', margin: 0, lineHeight: '1.8' }}>
+                      <li><strong style={{ color: '#111827' }}>Identity:</strong> Define who the AI is and why they're calling</li>
+                      <li><strong style={{ color: '#111827' }}>Flow:</strong> Opening - Discovery - Value - Objections - Close</li>
+                      <li><strong style={{ color: '#111827' }}>Variables:</strong> Use {"{{contact.first_name}}"} for personalization</li>
+                      <li><strong style={{ color: '#111827' }}>Objections:</strong> Include common objections and responses</li>
+                      <li><strong style={{ color: '#111827' }}>Compliance:</strong> Add opt-out handling</li>
+                    </ul>
+                  </div>
+                  <div style={{ marginTop: '10px', padding: '10px 12px', background: '#eef2ff', border: '1px solid #c7d2fe', borderRadius: '8px' }}>
+                    <p style={{ fontSize: '12px', color: '#4f46e5', margin: 0 }}><strong>Tip:</strong> Select "Pre-Foreclosure" template for a complete example!</p>
+                  </div>
+                </>
+              ) : (
+                <div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
+                    <Wand2 style={{ width: '20px', height: '20px', color: '#7c3aed' }} />
+                    <h3 style={{ fontSize: '16px', fontWeight: '700', color: '#5b21b6', margin: 0 }}>Generate Prompt with AI</h3>
+                  </div>
+                  <p style={{ fontSize: '13px', color: '#6b7280', marginBottom: '16px' }}>
+                    Answer a few questions and AI will create a professional calling script for you.
+                  </p>
+
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                    <div>
+                      <label style={labelStyle}>What does your business do?</label>
+                      <input type="text" value={generateAnswers.business_type}
+                        onChange={(e) => setGenerateAnswers(prev => ({ ...prev, business_type: e.target.value }))}
+                        style={inputStyle} placeholder="e.g., Real estate investing, solar sales, insurance" />
+                    </div>
+
+                    <div>
+                      <label style={labelStyle}>Why are you calling these people?</label>
+                      <input type="text" value={generateAnswers.call_purpose}
+                        onChange={(e) => setGenerateAnswers(prev => ({ ...prev, call_purpose: e.target.value }))}
+                        style={inputStyle} placeholder="e.g., To buy their property, schedule a consultation, follow up on a lead" />
+                    </div>
+
+                    <div>
+                      <label style={labelStyle}>Who are you calling?</label>
+                      <input type="text" value={generateAnswers.target_audience}
+                        onChange={(e) => setGenerateAnswers(prev => ({ ...prev, target_audience: e.target.value }))}
+                        style={inputStyle} placeholder="e.g., Homeowners in pre-foreclosure, business owners, past customers" />
+                    </div>
+
+                    <div>
+                      <label style={labelStyle}>What's the goal of the call?</label>
+                      <input type="text" value={generateAnswers.desired_outcome}
+                        onChange={(e) => setGenerateAnswers(prev => ({ ...prev, desired_outcome: e.target.value }))}
+                        style={inputStyle} placeholder="e.g., Schedule a meeting, get their email, confirm interest" />
+                    </div>
+
+                    <div>
+                      <label style={labelStyle}>Tone</label>
+                      <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                        {['friendly', 'professional', 'casual', 'empathetic', 'urgent'].map(t => (
+                          <button key={t} onClick={() => setGenerateAnswers(prev => ({ ...prev, tone: t }))}
+                            style={{
+                              padding: '6px 14px', borderRadius: '20px', fontSize: '12px', fontWeight: '600',
+                              background: generateAnswers.tone === t ? '#7c3aed' : '#f5f3ff',
+                              color: generateAnswers.tone === t ? '#fff' : '#7c3aed',
+                              border: '1px solid #c4b5fd', cursor: 'pointer', textTransform: 'capitalize'
+                            }}>
+                            {t}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div>
+                      <label style={labelStyle}>Anything else the AI should know? <span style={{ fontWeight: '400', color: '#9ca3af' }}>(optional)</span></label>
+                      <textarea value={generateAnswers.special_instructions}
+                        onChange={(e) => setGenerateAnswers(prev => ({ ...prev, special_instructions: e.target.value }))}
+                        style={{ ...inputStyle, minHeight: '60px', resize: 'vertical' }}
+                        placeholder="e.g., Don't mention price, always ask for their email, mention we're local" />
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'flex', gap: '10px', marginTop: '18px' }}>
+                    <button onClick={() => setGenerateMode(false)}
+                      style={{ padding: '10px 18px', background: '#f3f4f6', color: '#4b5563', border: '1px solid #e5e7eb', borderRadius: '8px', fontWeight: '600', fontSize: '13px', cursor: 'pointer' }}>
+                      Back to Manual
+                    </button>
+                    <button onClick={handleGeneratePrompt}
+                      disabled={generateLoading || !generateAnswers.business_type.trim() || !generateAnswers.call_purpose.trim()}
+                      style={{
+                        flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
+                        padding: '10px 18px', background: '#7c3aed', color: '#fff',
+                        border: 'none', borderRadius: '8px', fontWeight: '600', fontSize: '13px',
+                        cursor: (generateLoading || !generateAnswers.business_type.trim() || !generateAnswers.call_purpose.trim()) ? 'not-allowed' : 'pointer',
+                        opacity: (generateLoading || !generateAnswers.business_type.trim() || !generateAnswers.call_purpose.trim()) ? 0.6 : 1,
+                        boxShadow: '0 2px 8px rgba(124,58,237,0.3)'
+                      }}>
+                      {generateLoading ? (
+                        <><div style={{ width: '16px', height: '16px', border: '2px solid rgba(255,255,255,0.3)', borderTopColor: '#fff', borderRadius: '50%', animation: 'spin 1s linear infinite' }}></div> Generating...</>
+                      ) : (
+                        <><Sparkles style={{ width: '16px', height: '16px' }} /> Generate Prompt</>
+                      )}
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </div>
