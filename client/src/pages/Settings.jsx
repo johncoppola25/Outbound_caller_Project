@@ -3,7 +3,7 @@ import { Helmet } from 'react-helmet-async';
 import { Link } from 'react-router-dom';
 import {
   User, Lock, CreditCard, ShieldOff, Save, Eye, EyeOff,
-  CheckCircle, AlertCircle, RefreshCw, ExternalLink
+  CheckCircle, AlertCircle, RefreshCw, ExternalLink, Camera, Trash2, XCircle
 } from 'lucide-react';
 import { apiFetch } from '../utils/api';
 import { useAuth } from '../context/AuthContext';
@@ -38,6 +38,10 @@ export default function Settings() {
   const [dncList, setDncList] = useState([]);
   const [dncPhone, setDncPhone] = useState('');
   const [dncLoading, setDncLoading] = useState(true);
+
+  // Avatar
+  const [avatarLoading, setAvatarLoading] = useState(false);
+  const [avatarMsg, setAvatarMsg] = useState(null);
 
   // Full user data from /me (includes created_at)
   const [fullUser, setFullUser] = useState(null);
@@ -185,6 +189,59 @@ export default function Settings() {
     setPasswordLoading(false);
   }
 
+  async function handleAvatarUpload(e) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 2 * 1024 * 1024) {
+      setAvatarMsg({ type: 'error', text: 'Image must be under 2MB.' });
+      return;
+    }
+    setAvatarLoading(true);
+    setAvatarMsg(null);
+    try {
+      const formData = new FormData();
+      formData.append('avatar', file);
+      const token = localStorage.getItem('outreach_token') || sessionStorage.getItem('outreach_token');
+      const res = await fetch('/api/auth/avatar', {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}` },
+        body: formData
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setFullUser(prev => ({ ...prev, avatar_url: data.avatar_url }));
+        // Update auth context so sidebar avatar updates immediately
+        const wasRemembered = !!localStorage.getItem('outreach_token');
+        const currentUser = JSON.parse((localStorage.getItem('outreach_user') || sessionStorage.getItem('outreach_user')) || '{}');
+        login(localStorage.getItem('outreach_token') || sessionStorage.getItem('outreach_token'), { ...currentUser, avatar_url: data.avatar_url }, wasRemembered);
+        setAvatarMsg({ type: 'success', text: 'Profile picture updated!' });
+        setTimeout(() => setAvatarMsg(null), 3000);
+      } else {
+        setAvatarMsg({ type: 'error', text: data.error || 'Failed to upload.' });
+      }
+    } catch {
+      setAvatarMsg({ type: 'error', text: 'Failed to upload image.' });
+    }
+    setAvatarLoading(false);
+    e.target.value = '';
+  }
+
+  async function handleAvatarRemove() {
+    setAvatarLoading(true);
+    try {
+      const res = await apiFetch('/api/auth/avatar', { method: 'DELETE' });
+      if (res.ok) {
+        setFullUser(prev => ({ ...prev, avatar_url: null }));
+        const wasRemembered = !!localStorage.getItem('outreach_token');
+        const currentUser = JSON.parse((localStorage.getItem('outreach_user') || sessionStorage.getItem('outreach_user')) || '{}');
+        login(localStorage.getItem('outreach_token') || sessionStorage.getItem('outreach_token'), { ...currentUser, avatar_url: null }, wasRemembered);
+        setAvatarMsg({ type: 'success', text: 'Profile picture removed.' });
+        setTimeout(() => setAvatarMsg(null), 3000);
+      }
+    } catch { /* ignore */ }
+    setAvatarLoading(false);
+  }
+
   const profileChanged = editName !== (fullUser?.name || user?.name || '') || editEmail !== (fullUser?.email || user?.email || '');
 
   const cardStyle = {
@@ -279,6 +336,63 @@ export default function Settings() {
           <div>
             <h2 style={{ fontSize: '16px', fontWeight: '700', color: '#111827' }}>Account Information</h2>
             <p style={{ fontSize: '13px', color: '#4b5563' }}>Your profile details</p>
+          </div>
+        </div>
+
+        {/* Profile Picture */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '18px', padding: '16px', background: '#f9fafb', borderRadius: '10px', border: '1px solid #e5e7eb' }}>
+          <div style={{ position: 'relative' }}>
+            {displayUser?.avatar_url ? (
+              <img
+                src={displayUser.avatar_url}
+                alt="Profile"
+                style={{ width: '64px', height: '64px', borderRadius: '50%', objectFit: 'cover', border: '2px solid #e5e7eb' }}
+              />
+            ) : (
+              <div style={{
+                width: '64px', height: '64px', borderRadius: '50%', background: '#4f46e5',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontSize: '22px', fontWeight: '700', color: '#fff', border: '2px solid #e5e7eb'
+              }}>
+                {(displayUser?.name || 'U')[0].toUpperCase()}
+              </div>
+            )}
+          </div>
+          <div style={{ flex: 1 }}>
+            <p style={{ fontSize: '14px', fontWeight: '600', color: '#111827', margin: '0 0 4px' }}>Profile Picture</p>
+            <p style={{ fontSize: '12px', color: '#6b7280', margin: '0 0 10px' }}>JPG, PNG, GIF or WebP. Max 2MB.</p>
+            <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+              <label style={{
+                display: 'inline-flex', alignItems: 'center', gap: '6px',
+                padding: '6px 14px', background: '#4f46e5', color: '#fff',
+                borderRadius: '8px', fontSize: '12px', fontWeight: '600',
+                cursor: avatarLoading ? 'not-allowed' : 'pointer', opacity: avatarLoading ? 0.6 : 1
+              }}>
+                <Camera style={{ width: '13px', height: '13px' }} />
+                {avatarLoading ? 'Uploading...' : 'Upload Photo'}
+                <input type="file" accept="image/*" onChange={handleAvatarUpload} style={{ display: 'none' }} disabled={avatarLoading} />
+              </label>
+              {displayUser?.avatar_url && (
+                <button
+                  onClick={handleAvatarRemove}
+                  disabled={avatarLoading}
+                  style={{
+                    display: 'inline-flex', alignItems: 'center', gap: '6px',
+                    padding: '6px 14px', background: '#fff', color: '#dc2626',
+                    border: '1px solid #fecaca', borderRadius: '8px',
+                    fontSize: '12px', fontWeight: '600', cursor: 'pointer'
+                  }}
+                >
+                  <Trash2 style={{ width: '13px', height: '13px' }} />
+                  Remove
+                </button>
+              )}
+            </div>
+            {avatarMsg && (
+              <p style={{ fontSize: '12px', color: avatarMsg.type === 'error' ? '#dc2626' : '#059669', marginTop: '6px' }}>
+                {avatarMsg.text}
+              </p>
+            )}
           </div>
         </div>
 
@@ -557,10 +671,10 @@ export default function Settings() {
                 <ExternalLink style={{ width: '14px', height: '14px' }} />
                 Manage Billing
               </Link>
-              {subscription?.status === 'active' && !subscription?.cancel_at_period_end && (
+              {(subscription?.status === 'active' || billingPlan) && !subscription?.cancel_at_period_end && (
                 <button
                   onClick={cancelSubscription}
-                  disabled={cancelingPlan}
+                  disabled={cancelingPlan || !subscription?.status}
                   style={{
                     display: 'inline-flex', alignItems: 'center', gap: '8px',
                     padding: '9px 18px',
@@ -570,11 +684,12 @@ export default function Settings() {
                     borderRadius: '8px',
                     fontSize: '13px',
                     fontWeight: '600',
-                    cursor: cancelingPlan ? 'not-allowed' : 'pointer',
-                    opacity: cancelingPlan ? 0.6 : 1,
+                    cursor: (cancelingPlan || !subscription?.status) ? 'not-allowed' : 'pointer',
+                    opacity: (cancelingPlan || !subscription?.status) ? 0.6 : 1,
                     boxShadow: '0 1px 3px rgba(0,0,0,0.03)'
                   }}
                 >
+                  <XCircle style={{ width: '14px', height: '14px' }} />
                   {cancelingPlan ? 'Canceling...' : 'Cancel Plan'}
                 </button>
               )}

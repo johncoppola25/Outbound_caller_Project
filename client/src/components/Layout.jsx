@@ -461,11 +461,15 @@ export default function Layout() {
         <div style={{ padding: '10px', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '6px 10px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <div style={{
-                width: '32px', height: '32px', background: '#4f46e5', borderRadius: '8px',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontSize: '11px', fontWeight: '700', color: 'white'
-              }}>{(user?.name || 'U')[0].toUpperCase()}</div>
+              {user?.avatar_url ? (
+                <img src={user.avatar_url} alt="" style={{ width: '32px', height: '32px', borderRadius: '8px', objectFit: 'cover' }} />
+              ) : (
+                <div style={{
+                  width: '32px', height: '32px', background: '#4f46e5', borderRadius: '8px',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  fontSize: '11px', fontWeight: '700', color: 'white'
+                }}>{(user?.name || 'U')[0].toUpperCase()}</div>
+              )}
               <div>
                 <p style={{ fontSize: '12px', fontWeight: '600', color: '#e5e7eb' }}>{user?.name || 'User'}</p>
                 <p style={{ fontSize: '10px', color: '#6b7280' }}>{isAdmin ? 'Admin' : 'User'}</p>

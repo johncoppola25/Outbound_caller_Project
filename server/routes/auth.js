@@ -2,10 +2,35 @@ import express from 'express';
 import { v4 as uuidv4 } from 'uuid';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
+import multer from 'multer';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import { getDb } from '../db/init.js';
 import { authenticateToken, getJwtSecret } from '../middleware/auth.js';
 import { sendWelcomeEmail, sendAdminNewSignupNotification } from '../services/email.js';
 import { logActivity } from '../services/activityLog.js';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// Avatar upload config
+const avatarStorage = multer.diskStorage({
+  destination: path.join(__dirname, '../../uploads/avatars'),
+  filename: (req, file, cb) => {
+    const ext = path.extname(file.originalname).toLowerCase();
+    cb(null, `${req.user.userId}${ext}`);
+  }
+});
+const avatarUpload = multer({
+  storage: avatarStorage,
+  limits: { fileSize: 2 * 1024 * 1024 }, // 2MB
+  fileFilter: (req, file, cb) => {
+    const allowed = ['.jpg', '.jpeg', '.png', '.gif', '.webp'];
+    const ext = path.extname(file.originalname).toLowerCase();
+    if (allowed.includes(ext)) cb(null, true);
+    else cb(new Error('Only image files are allowed (jpg, png, gif, webp).'));
+  }
+});
 
 const router = express.Router();
 
@@ -135,7 +160,8 @@ router.post('/login', async (req, res) => {
         email: user.email,
         name: user.name,
         company: user.company,
-        role: user.role
+        role: user.role,
+        avatar_url: user.avatar_url || null
       }
     });
   } catch (err) {
@@ -148,7 +174,7 @@ router.post('/login', async (req, res) => {
 router.get('/me', authenticateToken, async (req, res) => {
   try {
     const db = await getDb();
-    const user = db.prepare('SELECT id, email, name, company, role, created_at FROM users WHERE id = ?').get(req.user.userId);
+    const user = db.prepare('SELECT id, email, name, company, role, created_at, avatar_url FROM users WHERE id = ?').get(req.user.userId);
 
     if (!user) {
       return res.status(404).json({ error: 'User not found.' });
@@ -242,6 +268,48 @@ router.put('/password', authenticateToken, async (req, res) => {
   } catch (err) {
     console.error('Update password error:', err);
     res.status(500).json({ error: 'Failed to update password.' });
+  }
+});
+
+// POST /api/auth/avatar - Upload profile picture
+router.post('/avatar', authenticateToken, async (req, res) => {
+  // Ensure avatars directory exists
+  const fs = (await import('fs')).default;
+  const avatarDir = path.join(__dirname, '../../uploads/avatars');
+  if (!fs.existsSync(avatarDir)) {
+    fs.mkdirSync(avatarDir, { recursive: true });
+  }
+
+  avatarUpload.single('avatar')(req, res, async (err) => {
+    if (err) {
+      return res.status(400).json({ error: err.message || 'Failed to upload image.' });
+    }
+    if (!req.file) {
+      return res.status(400).json({ error: 'No image file provided.' });
+    }
+
+    try {
+      const db = await getDb();
+      const avatarUrl = `/uploads/avatars/${req.file.filename}`;
+      db.prepare('UPDATE users SET avatar_url = ? WHERE id = ?').run(avatarUrl, req.user.userId);
+
+      res.json({ avatar_url: avatarUrl });
+    } catch (e) {
+      console.error('Avatar save error:', e);
+      res.status(500).json({ error: 'Failed to save avatar.' });
+    }
+  });
+});
+
+// DELETE /api/auth/avatar - Remove profile picture
+router.delete('/avatar', authenticateToken, async (req, res) => {
+  try {
+    const db = await getDb();
+    db.prepare('UPDATE users SET avatar_url = NULL WHERE id = ?').run(req.user.userId);
+    res.json({ success: true });
+  } catch (e) {
+    console.error('Avatar remove error:', e);
+    res.status(500).json({ error: 'Failed to remove avatar.' });
   }
 });
 
