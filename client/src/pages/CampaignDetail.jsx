@@ -203,6 +203,7 @@ export default function CampaignDetail() {
   const [aiEditPreview, setAiEditPreview] = useState(null);
   const [aiEditError, setAiEditError] = useState(null);
   const [aiEditSuccess, setAiEditSuccess] = useState(false);
+  const [aiEditSuccessMsg, setAiEditSuccessMsg] = useState('');
 
   // Test Call
   const [testCallOpen, setTestCallOpen] = useState(false);
@@ -535,24 +536,35 @@ export default function CampaignDetail() {
   }
 
   // AI-powered prompt editing
+  const [aiEditChanges, setAiEditChanges] = useState(null); // stores greeting/voice/botName changes from AI
   async function handleAiEdit() {
     if (!aiEditInstruction.trim()) return;
     setAiEditLoading(true);
     setAiEditError(null);
     setAiEditPreview(null);
     setAiEditSuccess(false);
+    setAiEditChanges(null);
     try {
       const res = await apiFetch('/api/campaigns/ai-edit-prompt', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           currentPrompt: inlinePrompt,
-          instruction: aiEditInstruction.trim()
+          instruction: aiEditInstruction.trim(),
+          currentGreeting: inlineGreeting,
+          currentBotName: inlineBotName,
+          currentVoice: inlineVoice
         })
       });
       const data = await res.json();
       if (res.ok && data.editedPrompt) {
         setAiEditPreview(data.editedPrompt);
+        // Store additional changes (greeting, voice, bot name) if AI suggested them
+        setAiEditChanges({
+          greeting: data.editedGreeting || null,
+          botName: data.editedBotName || null,
+          voice: data.editedVoice || null
+        });
       } else {
         setAiEditError(data.error || 'Failed to edit prompt.');
       }
@@ -566,27 +578,35 @@ export default function CampaignDetail() {
     if (aiEditPreview) {
       setInlinePrompt(aiEditPreview);
 
-      // Auto-detect voice change requests and switch voice setting
-      const instruction = aiEditInstruction.toLowerCase();
-      const wantsFemale = /\b(girl|female|woman|she|her voice)\b/.test(instruction);
-      const wantsMale = /\b(guy|male|man|he|his voice|boy)\b/.test(instruction);
-      if (wantsFemale && !wantsMale) {
-        // Switch to a female voice if currently male
-        const maleVoices = ['orion', 'perseus', 'atlas', 'helios'];
-        if (maleVoices.includes(inlineVoice)) {
-          setInlineVoice('astra');
-        }
-      } else if (wantsMale && !wantsFemale) {
-        const femaleVoices = ['astra', 'andromeda', 'luna', 'athena'];
-        if (femaleVoices.includes(inlineVoice)) {
-          setInlineVoice('orion');
+      // Apply additional changes from AI (greeting, voice, bot name)
+      const changes = aiEditChanges || {};
+      const appliedExtras = [];
+
+      if (changes.greeting) {
+        setInlineGreeting(changes.greeting);
+        appliedExtras.push('greeting');
+      }
+      if (changes.botName) {
+        setInlineBotName(changes.botName);
+        appliedExtras.push('bot name');
+      }
+      if (changes.voice) {
+        const validVoices = ['astra', 'andromeda', 'luna', 'athena', 'orion', 'perseus', 'atlas', 'helios'];
+        if (validVoices.includes(changes.voice)) {
+          setInlineVoice(changes.voice);
+          appliedExtras.push('voice');
         }
       }
 
       setAiEditPreview(null);
       setAiEditInstruction('');
+      setAiEditChanges(null);
       setAiEditSuccess(true);
-      // Keep panel open to show success, auto-hide after 8 seconds
+      if (appliedExtras.length > 0) {
+        setAiEditSuccessMsg(`Changes applied to prompt, ${appliedExtras.join(', ')}! Now click "Save Prompt" to sync.`);
+      } else {
+        setAiEditSuccessMsg('Changes applied to prompt! Now click "Save Prompt" to sync.');
+      }
       setTimeout(() => setAiEditSuccess(false), 8000);
     }
   }
@@ -681,12 +701,22 @@ export default function CampaignDetail() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           currentPrompt: inlinePrompt,
-          instruction: `Here is a real call transcript showing the issue:\n\n${selectedTranscript.transcript}\n\n---\n\nThe user's issue with this call: ${transcriptFixIssue.trim()}\n\nPlease fix the prompt so this issue doesn't happen in future calls.`
+          instruction: `Here is a real call transcript showing the issue:\n\n${selectedTranscript.transcript}\n\n---\n\nThe user's issue with this call: ${transcriptFixIssue.trim()}\n\nPlease fix the prompt so this issue doesn't happen in future calls.`,
+          currentGreeting: inlineGreeting,
+          currentBotName: inlineBotName,
+          currentVoice: inlineVoice
         })
       });
       const data = await res.json();
       if (res.ok && data.editedPrompt) {
         setTranscriptFixPreview(data.editedPrompt);
+        // Apply greeting/voice/botName changes from transcript fix too
+        if (data.editedGreeting) setInlineGreeting(data.editedGreeting);
+        if (data.editedBotName) setInlineBotName(data.editedBotName);
+        if (data.editedVoice) {
+          const validVoices = ['astra', 'andromeda', 'luna', 'athena', 'orion', 'perseus', 'atlas', 'helios'];
+          if (validVoices.includes(data.editedVoice)) setInlineVoice(data.editedVoice);
+        }
       } else {
         setTranscriptFixError(data.error || 'Failed to generate fix.');
       }
@@ -1818,6 +1848,26 @@ export default function CampaignDetail() {
                           </button>
                         </div>
                       </div>
+                      {/* Show additional setting changes */}
+                      {aiEditChanges && (aiEditChanges.greeting || aiEditChanges.botName || aiEditChanges.voice) && (
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '8px' }}>
+                          {aiEditChanges.greeting && (
+                            <span style={{ padding: '4px 10px', background: '#dbeafe', color: '#1e40af', borderRadius: '6px', fontSize: '12px', fontWeight: '600' }}>
+                              Greeting → "{aiEditChanges.greeting}"
+                            </span>
+                          )}
+                          {aiEditChanges.voice && (
+                            <span style={{ padding: '4px 10px', background: '#ede9fe', color: '#5b21b6', borderRadius: '6px', fontSize: '12px', fontWeight: '600' }}>
+                              Voice → {aiEditChanges.voice}
+                            </span>
+                          )}
+                          {aiEditChanges.botName && (
+                            <span style={{ padding: '4px 10px', background: '#fef3c7', color: '#92400e', borderRadius: '6px', fontSize: '12px', fontWeight: '600' }}>
+                              Bot name → "{aiEditChanges.botName}"
+                            </span>
+                          )}
+                        </div>
+                      )}
                       <div style={{
                         maxHeight: '300px', overflowY: 'auto', padding: '14px',
                         background: '#fff', border: '1px solid #a7f3d0', borderRadius: '8px',
@@ -1836,14 +1886,9 @@ export default function CampaignDetail() {
                       borderRadius: '10px', marginTop: '12px'
                     }}>
                       <CheckCircle2 style={{ width: '20px', height: '20px', color: '#059669', flexShrink: 0 }} />
-                      <div>
-                        <p style={{ fontSize: '14px', fontWeight: '700', color: '#065f46', margin: 0 }}>
-                          Changes applied to prompt!
-                        </p>
-                        <p style={{ fontSize: '13px', color: '#047857', margin: '2px 0 0 0' }}>
-                          Now click <strong>"Save Prompt"</strong> to sync your changes with Telnyx.
-                        </p>
-                      </div>
+                      <p style={{ fontSize: '14px', fontWeight: '600', color: '#065f46', margin: 0 }}>
+                        {aiEditSuccessMsg || 'Changes applied! Now click "Save Prompt" to sync.'}
+                      </p>
                     </div>
                   )}
                 </div>

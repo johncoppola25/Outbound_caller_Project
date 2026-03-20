@@ -45,6 +45,8 @@ export default function CallDetail() {
   const [aiFixError, setAiFixError] = useState(null);
   const [aiFixSuccess, setAiFixSuccess] = useState(false);
   const [campaignPrompt, setCampaignPrompt] = useState(null);
+  const [campaignData, setCampaignData] = useState(null);
+  const [aiFixExtras, setAiFixExtras] = useState(null);
   const { subscribe } = useWebSocket();
   const pollRef = useRef(null);
   const hasSyncedRef = useRef(false);
@@ -126,12 +128,13 @@ export default function CallDetail() {
     setAiFixPreview(null);
     setAiFixError(null);
     setAiFixSuccess(false);
-    // Always fetch the campaign's latest prompt (may have been edited since last open)
+    // Always fetch the campaign's latest data (may have been edited since last open)
     if (call.campaign_id) {
       try {
         const res = await apiFetch(`/api/campaigns/${call.campaign_id}`);
         const data = await res.json();
         setCampaignPrompt(data.ai_prompt || '');
+        setCampaignData(data);
       } catch (e) {
         console.error('Failed to fetch campaign prompt:', e);
       }
@@ -149,12 +152,19 @@ export default function CallDetail() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           currentPrompt: campaignPrompt,
-          instruction: `Here is a real call transcript showing the issue:\n\n${call.transcript}\n\n---\n\nThe user's issue with this call: ${aiFixIssue.trim()}\n\nPlease fix the prompt so this issue doesn't happen in future calls.`
+          instruction: `Here is a real call transcript showing the issue:\n\n${call.transcript}\n\n---\n\nThe user's issue with this call: ${aiFixIssue.trim()}\n\nPlease fix the prompt so this issue doesn't happen in future calls.`,
+          currentGreeting: campaignData?.greeting,
+          currentBotName: campaignData?.bot_name,
+          currentVoice: campaignData?.voice
         })
       });
       const data = await res.json();
       if (res.ok && data.editedPrompt) {
         setAiFixPreview(data.editedPrompt);
+        // Store extra changes for apply
+        if (data.editedGreeting || data.editedBotName || data.editedVoice) {
+          setAiFixExtras({ greeting: data.editedGreeting, botName: data.editedBotName, voice: data.editedVoice });
+        }
       } else {
         setAiFixError(data.error || 'Failed to generate fix.');
       }
@@ -169,10 +179,14 @@ export default function CallDetail() {
     if (!aiFixPreview || !call.campaign_id) return;
     setAiFixLoading(true);
     try {
+      const saveBody = { ai_prompt: aiFixPreview };
+      if (aiFixExtras?.greeting) saveBody.greeting = aiFixExtras.greeting;
+      if (aiFixExtras?.botName) saveBody.bot_name = aiFixExtras.botName;
+      if (aiFixExtras?.voice) saveBody.voice = aiFixExtras.voice;
       const res = await apiFetch(`/api/campaigns/${call.campaign_id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ai_prompt: aiFixPreview })
+        body: JSON.stringify(saveBody)
       });
       if (res.ok) {
         setCampaignPrompt(aiFixPreview);

@@ -201,7 +201,7 @@ Create a complete, professional AI calling script that sounds natural and human.
 // AI-powered prompt editing
 router.post('/ai-edit-prompt', async (req, res) => {
   try {
-    const { currentPrompt, instruction } = req.body;
+    const { currentPrompt, instruction, currentGreeting, currentBotName, currentVoice } = req.body;
     if (!currentPrompt || !instruction) {
       return res.status(400).json({ error: 'Current prompt and instruction are required.' });
     }
@@ -210,6 +210,13 @@ router.post('/ai-edit-prompt', async (req, res) => {
     if (!apiKey) {
       return res.status(500).json({ error: 'OpenAI API key not configured.' });
     }
+
+    // Build context about current settings so the AI can modify them too
+    const settingsContext = [];
+    if (currentGreeting) settingsContext.push(`CURRENT GREETING (first words the AI says when the call connects): "${currentGreeting}"`);
+    if (currentBotName) settingsContext.push(`CURRENT BOT NAME: "${currentBotName}"`);
+    if (currentVoice) settingsContext.push(`CURRENT VOICE: "${currentVoice}" (female voices: astra, andromeda, luna, athena; male voices: orion, perseus, atlas, helios)`);
+    const settingsBlock = settingsContext.length > 0 ? `\n\nCURRENT SETTINGS:\n${settingsContext.join('\n')}` : '';
 
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
@@ -224,29 +231,45 @@ router.post('/ai-edit-prompt', async (req, res) => {
             role: 'system',
             content: `You are an expert AI phone calling script editor. You help users fix and improve their AI caller prompts/scripts. The user will describe a problem or change they want in plain, casual English — your job is to understand what they mean and fix the prompt accordingly.
 
-IMPORTANT CONTEXT: This prompt controls an AI that makes real phone calls to real people. The AI reads this script to know how to behave on the call. Common issues users report:
+IMPORTANT CONTEXT: This prompt controls an AI that makes real phone calls to real people. There are TWO parts that control what the AI says:
+1. **GREETING** — the very first words the AI says when the call connects (e.g., "Hello," or "Hi there,"). This is a separate setting from the prompt.
+2. **PROMPT** — the full script/instructions that tell the AI how to behave on the call.
+
+If the user wants to change the opening/first words/greeting, you MUST update the greeting too, not just the prompt.
+
+Common issues users report:
+- "Change hi to hello" or "say hello instead of hi" → Change it in BOTH the greeting AND the prompt opening
 - "The AI keeps saying [something weird]" → Find and remove or reword that part
 - "It sounds robotic/unnatural" → Make the dialogue more conversational and human
 - "Make it smoother/friendlier/more professional" → Adjust the VOICE & TONE section and rewrite dialogue lines
-- "It pauses too much" or "awkward pauses" → Remove filler phrases, unnecessary confirmations, or overly long sentences that cause TTS pauses
-- "Change the name to X" → Update the name everywhere in the script
+- "It pauses too much" or "awkward pauses" → Remove filler phrases, unnecessary confirmations, or overly long sentences
+- "Change the name to X" → Update the name everywhere in the script AND update the bot name
+- "Make it a girl/female voice" → Change the voice setting to a female voice
+- "Make it a guy/male voice" → Change the voice setting to a male voice
 - "Add a part about X" → Add it in the most logical section
 - "The opening is too long" → Shorten the CALL OPENING section
-- "It doesn't handle objections well" → Improve or add the objection handling section
+
+RESPONSE FORMAT — You MUST respond with valid JSON:
+{
+  "editedPrompt": "the full modified prompt text here",
+  "editedGreeting": "new greeting if changed, or null if unchanged",
+  "editedBotName": "new bot name if changed, or null if unchanged",
+  "editedVoice": "new voice name if changed (astra/andromeda/luna/athena/orion/perseus/atlas/helios), or null if unchanged"
+}
 
 Rules:
 - Only modify what the user asks to change — don't rewrite the entire thing unnecessarily
 - Keep all existing sections and structure unless told to remove them
 - PRESERVE all contact variable placeholders EXACTLY: {{contact.first_name}}, {{contact.last_name}}, {{contact.phone}}, {{contact.email}}, {{contact.property_address}}, {{contact.notes}}, {{callback_phone}}, [Owner Name], [First Name], [Last Name], [Bot Name], [Your Name], [AI Name], [Agent Name], [Property Address]
 - Keep the markdown formatting (## headers, ### sub-headers, bullet points)
-- Return ONLY the modified prompt text — no explanations, no code fences, no preamble like "Here's your updated prompt"
+- Return ONLY the JSON object — no explanations, no code fences, no preamble
 - Make everything sound natural for spoken phone conversation — short sentences, contractions, casual but professional
-- For TTS optimization: avoid parentheses, abbreviations, and complex punctuation that text-to-speech engines struggle with
-- When fixing "pauses" or "awkward" speech: simplify sentences, remove redundant phrases, and keep responses concise`
+- For TTS optimization: avoid parentheses, abbreviations, and complex punctuation
+- When fixing "pauses" or "awkward" speech: simplify sentences, remove redundant phrases, keep responses concise`
           },
           {
             role: 'user',
-            content: `Here is the current prompt:\n\n${currentPrompt}\n\n---\n\nPlease make this change: ${instruction}`
+            content: `Here is the current prompt:\n\n${currentPrompt}${settingsBlock}\n\n---\n\nPlease make this change: ${instruction}`
           }
         ],
         temperature: 0.7,
@@ -260,12 +283,31 @@ Rules:
       return res.status(500).json({ error: 'Failed to process prompt edit.' });
     }
 
-    const editedPrompt = data.choices?.[0]?.message?.content?.trim();
-    if (!editedPrompt) {
+    const rawContent = data.choices?.[0]?.message?.content?.trim();
+    if (!rawContent) {
       return res.status(500).json({ error: 'No response from AI.' });
     }
 
-    res.json({ editedPrompt });
+    // Try to parse as JSON (new structured format)
+    try {
+      // Strip code fences if AI wrapped it
+      const jsonStr = rawContent.replace(/^```json?\n?/i, '').replace(/\n?```$/i, '').trim();
+      const parsed = JSON.parse(jsonStr);
+      if (parsed.editedPrompt) {
+        return res.json({
+          editedPrompt: parsed.editedPrompt,
+          editedGreeting: parsed.editedGreeting || null,
+          editedBotName: parsed.editedBotName || null,
+          editedVoice: parsed.editedVoice || null
+        });
+      }
+    } catch (e) {
+      // Not JSON — AI returned plain text (backwards compatible)
+      console.log('AI returned plain text instead of JSON, using as prompt');
+    }
+
+    // Fallback: treat entire response as the edited prompt
+    res.json({ editedPrompt: rawContent });
   } catch (error) {
     console.error('AI prompt edit error:', error.message);
     res.status(500).json({ error: 'Failed to edit prompt with AI.' });
