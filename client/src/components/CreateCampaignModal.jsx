@@ -29,6 +29,7 @@ export default function CreateCampaignModal({ onClose, onCreated }) {
   const [generateMode, setGenerateMode] = useState(false);
   const [generateLoading, setGenerateLoading] = useState(false);
   const [generateAnswers, setGenerateAnswers] = useState({
+    company_name: '',
     business_type: '',
     call_purpose: '',
     target_audience: '',
@@ -293,6 +294,13 @@ export default function CreateCampaignModal({ onClose, onCreated }) {
 
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
                     <div>
+                      <label style={labelStyle}>Your company/business name</label>
+                      <input type="text" value={generateAnswers.company_name}
+                        onChange={(e) => setGenerateAnswers(prev => ({ ...prev, company_name: e.target.value }))}
+                        style={inputStyle} placeholder="e.g., Coldwell Banker Realty, SunPower Solar, ABC Insurance" />
+                    </div>
+
+                    <div>
                       <label style={labelStyle}>What does your business do?</label>
                       <input type="text" value={generateAnswers.business_type}
                         onChange={(e) => setGenerateAnswers(prev => ({ ...prev, business_type: e.target.value }))}
@@ -352,13 +360,13 @@ export default function CreateCampaignModal({ onClose, onCreated }) {
                       Back to Manual
                     </button>
                     <button onClick={handleGeneratePrompt}
-                      disabled={generateLoading || !generateAnswers.business_type.trim() || !generateAnswers.call_purpose.trim()}
+                      disabled={generateLoading || !generateAnswers.company_name.trim() || !generateAnswers.business_type.trim() || !generateAnswers.call_purpose.trim()}
                       style={{
                         flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
                         padding: '10px 18px', background: '#7c3aed', color: '#fff',
                         border: 'none', borderRadius: '8px', fontWeight: '600', fontSize: '13px',
-                        cursor: (generateLoading || !generateAnswers.business_type.trim() || !generateAnswers.call_purpose.trim()) ? 'not-allowed' : 'pointer',
-                        opacity: (generateLoading || !generateAnswers.business_type.trim() || !generateAnswers.call_purpose.trim()) ? 0.6 : 1,
+                        cursor: (generateLoading || !generateAnswers.company_name.trim() || !generateAnswers.business_type.trim() || !generateAnswers.call_purpose.trim()) ? 'not-allowed' : 'pointer',
+                        opacity: (generateLoading || !generateAnswers.company_name.trim() || !generateAnswers.business_type.trim() || !generateAnswers.call_purpose.trim()) ? 0.6 : 1,
                         boxShadow: '0 2px 8px rgba(124,58,237,0.3)'
                       }}>
                       {generateLoading ? (

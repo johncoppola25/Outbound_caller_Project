@@ -114,7 +114,7 @@ router.get('/:id', async (req, res) => {
 // AI-powered prompt generation from questions
 router.post('/ai-generate-prompt', async (req, res) => {
   try {
-    const { business_type, call_purpose, target_audience, desired_outcome, tone, special_instructions, campaign_name, campaign_type, bot_name } = req.body;
+    const { company_name, business_type, call_purpose, target_audience, desired_outcome, tone, special_instructions, campaign_name, campaign_type, bot_name } = req.body;
     if (!business_type || !call_purpose) {
       return res.status(400).json({ error: 'Business type and call purpose are required.' });
     }
@@ -137,36 +137,42 @@ router.post('/ai-generate-prompt', async (req, res) => {
             role: 'system',
             content: `You are an expert AI phone calling script writer. You create professional, natural-sounding call scripts for AI callers that make real outbound phone calls.
 
-Your scripts must:
-- Sound like a real human on the phone — use contractions, short sentences, natural pauses
+CRITICAL RULES:
+- The AI caller MUST introduce themselves with their name AND the company name in the opening. Example: "Hi, this is Julia from Coldwell Banker Realty."
+- NEVER use generic placeholders like "the company" or "test campaign" — always use the actual company name provided
+- Sound like a real human on the phone — use contractions, short sentences, conversational language
 - Follow a clear flow: Opening → Discovery → Value Proposition → Handle Objections → Close/Next Steps
-- Include proper greeting using [First Name] or {{contact.first_name}} for personalization
+- Use [First Name] for the contact's name personalization
 - Use [Bot Name] for the AI caller's name
-- Use [Property Address] or {{contact.property_address}} if relevant
-- Include a section for handling common objections
-- Include compliance/opt-out language ("If you're not interested, no worries at all")
-- Be optimized for text-to-speech: no parentheses, no abbreviations, no complex punctuation
+- Use [Property Address] or {{contact.property_address}} if the business involves real estate or properties
+- Include a strong section for handling common objections with natural responses
+- Include compliance/opt-out language ("If you're not interested, totally understand, no worries at all")
+- Be optimized for text-to-speech: no parentheses, no abbreviations, no complex punctuation, no ellipsis
 - Use markdown formatting with ## headers and ### sub-headers
-- Include VOICE & TONE section, CALL OPENING, DISCOVERY QUESTIONS, VALUE PROPOSITION, OBJECTION HANDLING, and CLOSING sections
-- Keep it conversational — not salesy or robotic
+- Include these sections: IDENTITY & PURPOSE, VOICE & TONE, CALL OPENING, DISCOVERY QUESTIONS, VALUE PROPOSITION, OBJECTION HANDLING, CLOSING, and RULES
+- The RULES section should include things like: never be pushy, always be respectful, if they say no move on gracefully, keep responses concise
+- Keep it conversational and professional — not salesy, not robotic, not overly enthusiastic
+- Make the script detailed enough (at least 40 lines) to handle a full real conversation
 
-Return ONLY the prompt text. No explanations, no code fences, no preamble.`
+Return ONLY the prompt text. No explanations, no code fences, no preamble like "Here's your script".`
           },
           {
             role: 'user',
             content: `Generate a complete AI calling script based on these answers:
 
+Company/Business name: ${company_name || 'Not provided — ask the AI to use [Company Name] placeholder'}
 Business type: ${business_type}
 Purpose of calling: ${call_purpose}
 ${target_audience ? `Who we're calling: ${target_audience}` : ''}
 ${desired_outcome ? `Goal of the call: ${desired_outcome}` : ''}
 Tone: ${tone || 'friendly'}
-${bot_name ? `AI caller name: ${bot_name}` : ''}
-${campaign_name ? `Campaign name: ${campaign_name}` : ''}
+AI caller name: ${bot_name || 'Julia'}
 ${campaign_type ? `Campaign type: ${campaign_type.replace(/_/g, ' ')}` : ''}
 ${special_instructions ? `Special instructions: ${special_instructions}` : ''}
 
-Create a complete, professional AI calling script.`
+IMPORTANT: The AI must say "Hi, this is [Bot Name] from ${company_name || '[Company Name]'}" in the opening. Use the exact company name "${company_name}" throughout the script — never say "the company" or use the campaign name instead.
+
+Create a complete, professional AI calling script that sounds natural and human.`
           }
         ],
         temperature: 0.7,
