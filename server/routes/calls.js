@@ -452,13 +452,13 @@ router.post('/test-call', async (req, res) => {
       return res.status(400).json({ error: 'Please click "Save Prompt" first to sync with Telnyx before making a test call.' });
     }
 
-    // Create a temporary test contact
+    // Create a temporary test contact (marked as test so it's hidden from contacts list)
     const contactId = uuidv4();
     const testName = first_name || 'Test';
     db.prepare(`
       INSERT INTO contacts (id, campaign_id, first_name, last_name, phone, notes, status)
-      VALUES (?, ?, ?, ?, ?, ?, 'called')
-    `).run(contactId, campaign_id, testName, 'Call', formattedPhone, 'Test call from Prompt tab');
+      VALUES (?, ?, ?, ?, ?, ?, 'test_call')
+    `).run(contactId, campaign_id, testName, 'Call', formattedPhone, '__test_call__');
 
     // Create call record
     const callId = uuidv4();

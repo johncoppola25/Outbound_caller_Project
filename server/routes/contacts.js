@@ -57,7 +57,7 @@ router.get('/campaign/:campaignId', async (req, res) => {
     const { status, search, page = 1, limit = 50 } = req.query;
     const offset = (page - 1) * limit;
     
-    let query = 'SELECT * FROM contacts WHERE campaign_id = ?';
+    let query = "SELECT * FROM contacts WHERE campaign_id = ? AND (notes IS NULL OR notes != '__test_call__')";
     const params = [req.params.campaignId];
     
     if (status) {

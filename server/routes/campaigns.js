@@ -71,7 +71,7 @@ router.get('/', async (req, res) => {
     const filterUserId = isAdmin && req.query.userId ? req.query.userId : (isAdmin ? null : req.user.userId);
     const campaigns = db.prepare(`
       SELECT c.*,
-        (SELECT COUNT(*) FROM contacts WHERE campaign_id = c.id) as contact_count,
+        (SELECT COUNT(*) FROM contacts WHERE campaign_id = c.id AND (notes IS NULL OR notes != '__test_call__')) as contact_count,
         (SELECT COUNT(*) FROM calls WHERE campaign_id = c.id) as call_count,
         (SELECT COUNT(*) FROM calls WHERE campaign_id = c.id AND status = 'completed') as completed_calls
       FROM campaigns c
@@ -93,7 +93,7 @@ router.get('/:id', async (req, res) => {
     const isAdmin = req.user.role === 'admin';
     const campaign = db.prepare(`
       SELECT c.*,
-        (SELECT COUNT(*) FROM contacts WHERE campaign_id = c.id) as contact_count,
+        (SELECT COUNT(*) FROM contacts WHERE campaign_id = c.id AND (notes IS NULL OR notes != '__test_call__')) as contact_count,
         (SELECT COUNT(*) FROM calls WHERE campaign_id = c.id) as call_count,
         (SELECT COUNT(*) FROM calls WHERE campaign_id = c.id AND status = 'completed') as completed_calls
       FROM campaigns c
