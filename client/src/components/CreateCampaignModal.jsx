@@ -346,6 +346,14 @@ export default function CreateCampaignModal({ onClose, onCreated }) {
                     </div>
 
                     <div>
+                      <label style={labelStyle}>AI caller name</label>
+                      <input type="text" value={formData.bot_name}
+                        onChange={(e) => setFormData(prev => ({ ...prev, bot_name: e.target.value }))}
+                        style={inputStyle} placeholder="e.g., Julia, Derek, Sarah" />
+                      <p style={{ fontSize: '11px', color: '#9ca3af', marginTop: '4px' }}>The name the AI uses on the call</p>
+                    </div>
+
+                    <div>
                       <label style={labelStyle}>Anything else the AI should know? <span style={{ fontWeight: '400', color: '#9ca3af' }}>(optional)</span></label>
                       <textarea value={generateAnswers.special_instructions}
                         onChange={(e) => setGenerateAnswers(prev => ({ ...prev, special_instructions: e.target.value }))}
