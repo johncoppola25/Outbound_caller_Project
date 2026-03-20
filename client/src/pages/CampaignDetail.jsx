@@ -1518,9 +1518,31 @@ export default function CampaignDetail() {
                     <Sparkles style={{ width: '18px', height: '18px', color: '#7c3aed' }} />
                     <h4 style={{ fontSize: '15px', fontWeight: '700', color: '#5b21b6', margin: 0 }}>AI Prompt Editor</h4>
                   </div>
-                  <p style={{ fontSize: '13px', color: '#6b7280', marginBottom: '12px' }}>
-                    Describe what you want to change in plain English. For example: "Make the tone more friendly", "Change the agent name to Mike", "Add a section about pricing", "Make the opening shorter".
+                  <p style={{ fontSize: '13px', color: '#6b7280', marginBottom: '10px' }}>
+                    Describe what you want to change in plain English — like you're telling a person what to fix.
                   </p>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '12px' }}>
+                    {[
+                      'Make it sound more natural',
+                      'Shorten the opening',
+                      'Make the tone friendlier',
+                      'Fix awkward pauses',
+                      'Add objection handling',
+                      'Make it more professional'
+                    ].map(suggestion => (
+                      <button
+                        key={suggestion}
+                        onClick={() => setAiEditInstruction(suggestion)}
+                        style={{
+                          padding: '4px 10px', background: '#fff', border: '1px solid #ddd6fe',
+                          borderRadius: '16px', fontSize: '11px', color: '#7c3aed',
+                          cursor: 'pointer', fontWeight: '500'
+                        }}
+                      >
+                        {suggestion}
+                      </button>
+                    ))}
+                  </div>
                   <div style={{ display: 'flex', gap: '8px', marginBottom: '12px' }}>
                     <input
                       type="text"
