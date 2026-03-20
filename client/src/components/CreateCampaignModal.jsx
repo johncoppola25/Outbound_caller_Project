@@ -435,7 +435,9 @@ export default function CreateCampaignModal({ onClose, onCreated }) {
                 boxShadow: saving || !formData.name || !formData.ai_prompt ? 'none' : '0 4px 12px rgba(79,70,229,0.3)'
               }}
             >
-              {saving ? 'Creating...' : 'Create Campaign'}
+              {saving ? (
+                <><div style={{ width: '16px', height: '16px', border: '2px solid rgba(255,255,255,0.3)', borderTopColor: '#fff', borderRadius: '50%', animation: 'spin 1s linear infinite', marginRight: '8px' }}></div> Creating Campaign...</>
+              ) : 'Create Campaign'}
             </button>
           )}
         </div>
