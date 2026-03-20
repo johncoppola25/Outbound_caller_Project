@@ -13,16 +13,9 @@ import { logActivity } from '../services/activityLog.js';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Avatar upload config
-const avatarStorage = multer.diskStorage({
-  destination: path.join(__dirname, '../../uploads/avatars'),
-  filename: (req, file, cb) => {
-    const ext = path.extname(file.originalname).toLowerCase();
-    cb(null, `${req.user.userId}${ext}`);
-  }
-});
+// Avatar upload config - store in memory as base64 (no filesystem dependency)
 const avatarUpload = multer({
-  storage: avatarStorage,
+  storage: multer.memoryStorage(),
   limits: { fileSize: 2 * 1024 * 1024 }, // 2MB
   fileFilter: (req, file, cb) => {
     const allowed = ['.jpg', '.jpeg', '.png', '.gif', '.webp'];
@@ -271,15 +264,8 @@ router.put('/password', authenticateToken, async (req, res) => {
   }
 });
 
-// POST /api/auth/avatar - Upload profile picture
+// POST /api/auth/avatar - Upload profile picture (stored as base64 in DB)
 router.post('/avatar', authenticateToken, async (req, res) => {
-  // Ensure avatars directory exists
-  const fs = (await import('fs')).default;
-  const avatarDir = path.join(__dirname, '../../uploads/avatars');
-  if (!fs.existsSync(avatarDir)) {
-    fs.mkdirSync(avatarDir, { recursive: true });
-  }
-
   avatarUpload.single('avatar')(req, res, async (err) => {
     if (err) {
       return res.status(400).json({ error: err.message || 'Failed to upload image.' });
@@ -290,7 +276,9 @@ router.post('/avatar', authenticateToken, async (req, res) => {
 
     try {
       const db = await getDb();
-      const avatarUrl = `/uploads/avatars/${req.file.filename}`;
+      const base64 = req.file.buffer.toString('base64');
+      const mimeType = req.file.mimetype || 'image/jpeg';
+      const avatarUrl = `data:${mimeType};base64,${base64}`;
       db.prepare('UPDATE users SET avatar_url = ? WHERE id = ?').run(avatarUrl, req.user.userId);
 
       res.json({ avatar_url: avatarUrl });
