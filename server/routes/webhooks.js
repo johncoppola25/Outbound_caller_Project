@@ -448,14 +448,20 @@ router.post('/ai-tool/mark_not_interested', async (req, res) => {
       if (add_to_dnc) {
         const contact = db.prepare('SELECT phone FROM contacts WHERE id = ?').get(call.contact_id);
         if (contact?.phone) {
-          db.prepare('INSERT OR IGNORE INTO do_not_call (phone, reason) VALUES (?, ?)').run(contact.phone, reason || 'Not interested');
+          db.prepare('INSERT OR IGNORE INTO do_not_call (phone, reason) VALUES (?, ?)')
+            .run(contact.phone, reason || 'Requested do not call');
+          console.log('🚫 Added to DNC list:', contact.phone, '- Reason:', reason || 'Requested do not call');
         }
       }
 
       broadcast({ type: 'call_update', call: db.prepare('SELECT * FROM calls WHERE id = ?').get(call.id) });
+    } else {
+      console.warn('⚠️ mark_not_interested: Could not find active call for contact:', contact_name);
     }
 
-    res.json({ success: true, message: 'Noted. Thank them and say goodbye.' });
+    res.json({ success: true, message: add_to_dnc
+      ? 'Done. Their number has been removed from our calling list. Please apologize, let them know they won\'t be called again, and say goodbye.'
+      : 'Noted. Thank them for their time and say goodbye politely.' });
   } catch (error) {
     console.error('AI tool mark_not_interested error:', error);
     res.json({ success: true, message: 'Noted.' });

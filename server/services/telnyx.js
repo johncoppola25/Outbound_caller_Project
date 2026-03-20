@@ -120,7 +120,7 @@ function buildAssistantTools(webhookBaseUrl, phoneNumber) {
       type: 'webhook',
       webhook: {
         name: 'mark_not_interested',
-        description: 'Mark this contact as not interested. Call this when the contact clearly states they are not interested, before hanging up.',
+        description: 'Mark this contact as not interested and optionally add to Do Not Call list. You MUST call this tool when the contact says ANY of these: "don\'t call me", "stop calling", "remove me from your list", "put me on do not call", "take me off your list", "I\'m not interested", "no thank you", "lose my number", "don\'t call again", "never call me again". Set add_to_dnc to true when they explicitly ask to not be called again.',
         url: `${webhookBaseUrl}/api/webhooks/ai-tool/mark_not_interested`,
         method: 'POST',
         headers: [
@@ -129,11 +129,11 @@ function buildAssistantTools(webhookBaseUrl, phoneNumber) {
         body_parameters: {
           type: 'object',
           properties: {
-            reason: { type: 'string', description: 'Why they are not interested' },
-            add_to_dnc: { type: 'boolean', description: 'True if they asked to never be called again' },
+            reason: { type: 'string', description: 'Why they are not interested, e.g. "Asked to not be called again" or "Not interested in the offer"' },
+            add_to_dnc: { type: 'boolean', description: 'Set to true if they said anything like: don\'t call me, stop calling, remove me, do not call, take me off your list, never call again. When in doubt, set to true.' },
             contact_name: { type: 'string', description: 'The name of the person on the call' }
           },
-          required: ['reason']
+          required: ['reason', 'add_to_dnc']
         },
         async: false,
         timeout_ms: 5000
@@ -224,13 +224,15 @@ export async function createAIAssistant(campaign) {
     const tools = buildAssistantTools(webhookBaseUrl, phoneNumber);
     console.log('   Tools configured:', tools.map(t => t.type).join(', '));
 
-    // Append call flow instructions to ensure proper hangup and pacing behavior
+    // Append call flow instructions to ensure proper hangup, DNC, and pacing behavior
     const callFlowInstructions = `
 
 RULES:
 - One question at a time. Wait for response. Keep it short and natural.
 - After goodbye, IMMEDIATELY use the hangup tool. Never stay on the line after saying bye.
-- Never say "hangup" out loud. Say bye naturally, then use the tool silently.`;
+- Never say "hangup" out loud. Say bye naturally, then use the tool silently.
+- If someone says "don't call me", "stop calling", "remove me from your list", "do not call", or anything similar, you MUST: (1) apologize and say you'll remove them, (2) use the mark_not_interested tool with add_to_dnc set to true, (3) say goodbye and hang up.
+- If someone says they're not interested but does NOT ask to be removed, use mark_not_interested with add_to_dnc set to false, then say goodbye politely.`;
 
     const fullInstructions = instructionsToSend + callFlowInstructions;
 
@@ -522,7 +524,9 @@ Greeting already asked for ${firstName}. When they confirm (yes/speaking/this is
 RULES:
 - One question at a time. Wait for response. Keep it short and natural.
 - After goodbye, IMMEDIATELY use the hangup tool. Never stay on the line after saying bye.
-- Never say "hangup" out loud. Say bye naturally, then use the tool silently.`;
+- Never say "hangup" out loud. Say bye naturally, then use the tool silently.
+- If someone says "don't call me", "stop calling", "remove me from your list", "do not call", or anything similar, you MUST: (1) apologize and say you'll remove them, (2) use the mark_not_interested tool with add_to_dnc set to true, (3) say goodbye and hang up.
+- If someone says they're not interested but does NOT ask to be removed, use mark_not_interested with add_to_dnc set to false, then say goodbye politely.`;
 
       const webhookBaseUrl = process.env.WEBHOOK_BASE_URL || process.env.NGROK_URL || process.env.RENDER_EXTERNAL_URL || '';
       const callTools = buildAssistantTools(webhookBaseUrl, fromNumber);
