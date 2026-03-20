@@ -126,8 +126,8 @@ export default function CallDetail() {
     setAiFixPreview(null);
     setAiFixError(null);
     setAiFixSuccess(false);
-    // Fetch the campaign's current prompt
-    if (!campaignPrompt && call.campaign_id) {
+    // Always fetch the campaign's latest prompt (may have been edited since last open)
+    if (call.campaign_id) {
       try {
         const res = await apiFetch(`/api/campaigns/${call.campaign_id}`);
         const data = await res.json();

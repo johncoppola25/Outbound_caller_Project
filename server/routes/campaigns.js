@@ -424,7 +424,11 @@ router.put('/:id', async (req, res) => {
                         (voice_speed !== undefined && voice_speed !== currentCampaign.voice_speed) ||
                         (greeting && greeting !== currentCampaign.greeting) ||
                         (time_limit_secs && time_limit_secs !== currentCampaign.time_limit_secs) ||
-                        (voicemail_detection !== undefined && voicemail_detection !== !!currentCampaign.voicemail_detection);
+                        (voicemail_detection !== undefined && voicemail_detection !== !!currentCampaign.voicemail_detection) ||
+                        (language && language !== currentCampaign.language) ||
+                        (bot_name && bot_name !== currentCampaign.bot_name) ||
+                        (background_audio && background_audio !== currentCampaign.background_audio) ||
+                        (voicemail_message && voicemail_message !== currentCampaign.voicemail_message);
 
     if (currentCampaign.telnyx_assistant_id && shouldUpdate) {
       // Update existing Telnyx assistant

@@ -596,12 +596,44 @@ export default function CampaignDetail() {
     setAiEditError(null);
   }
 
-  // Test Call handler
+  // Test Call handler - auto-saves unsaved prompt changes before calling
   async function handleTestCall() {
     if (!testCallPhone.trim()) return;
     setTestCallLoading(true);
     setTestCallResult(null);
     try {
+      // Auto-save prompt if there are unsaved changes so the test call uses the latest
+      const hasUnsavedChanges = inlinePrompt !== (campaign.ai_prompt || '') ||
+        inlineGreeting !== (campaign.greeting || 'Hello,') ||
+        inlineBotName !== (campaign.bot_name || 'Julia') ||
+        inlineVoice !== (campaign.voice || 'astra');
+
+      if (hasUnsavedChanges) {
+        setTestCallResult({ success: true, message: 'Saving prompt changes first...' });
+        const saveRes = await apiFetch(`/api/campaigns/${id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            ai_prompt: inlinePrompt,
+            greeting: inlineGreeting,
+            bot_name: inlineBotName,
+            voice: inlineVoice,
+            voice_speed: parseFloat(inlineVoiceSpeed),
+            language: inlineLanguage,
+            time_limit_secs: parseInt(inlineTimeLimitSecs),
+            voicemail_detection: inlineVoicemailDetection,
+            voicemail_message: inlineVoicemailMessage || null
+          })
+        });
+        if (saveRes.ok) {
+          const updated = await saveRes.json();
+          setCampaign(updated);
+          setPromptSaved(true);
+          setTimeout(() => setPromptSaved(false), 5000);
+        }
+      }
+
+      setTestCallResult({ success: true, message: 'Initiating call...' });
       const res = await apiFetch('/api/calls/test-call', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -630,6 +662,7 @@ export default function CampaignDetail() {
     setTranscriptFixOpen(!transcriptFixOpen);
     setAiEditOpen(false);
     setTestCallOpen(false);
+    setAiEditSuccess(false);
     setSelectedTranscript(null);
     setTranscriptFixIssue('');
     setTranscriptFixPreview(null);
@@ -671,7 +704,7 @@ export default function CampaignDetail() {
       setTranscriptFixPreview(null);
       setTranscriptFixIssue('');
       setSelectedTranscript(null);
-      setTimeout(() => { setTranscriptFixSuccess(false); setTranscriptFixOpen(false); }, 2000);
+      setTimeout(() => { setTranscriptFixSuccess(false); }, 8000);
     }
   }
 
@@ -730,7 +763,11 @@ export default function CampaignDetail() {
         console.log('Prompt saved successfully:', updated);
         setCampaign(updated);
         setPromptSaved(true);
-        alert('✅ Prompt saved and synced to Telnyx!');
+        if (updated.telnyx_warning) {
+          alert('Prompt saved locally, but Telnyx sync failed: ' + updated.telnyx_warning);
+        } else {
+          alert('Prompt saved and synced to Telnyx!');
+        }
         // Reset the saved indicator after 5 seconds
         setTimeout(() => setPromptSaved(false), 5000);
       } else {
@@ -1537,7 +1574,17 @@ export default function CampaignDetail() {
                     </span>
                   )}
                   <button
-                    onClick={() => { setAiEditOpen(!aiEditOpen); setTranscriptFixOpen(false); setTestCallOpen(false); }}
+                    onClick={() => {
+                      const opening = !aiEditOpen;
+                      setAiEditOpen(opening);
+                      setTranscriptFixOpen(false);
+                      setTestCallOpen(false);
+                      if (!opening) {
+                        setAiEditPreview(null);
+                        setAiEditError(null);
+                        setAiEditSuccess(false);
+                      }
+                    }}
                     style={{
                       display: 'inline-flex', alignItems: 'center',
                       padding: '10px 20px',
@@ -2067,7 +2114,7 @@ export default function CampaignDetail() {
                     resize: 'vertical', 
                     boxSizing: 'border-box',
                     backgroundColor: inlinePrompt !== campaign.ai_prompt ? '#fffbeb' : '#f9fafb',
-                    color: '#9ca3af'
+                    color: '#1f2937'
                   }}
                   placeholder="Enter your AI prompt here..."
                 />
