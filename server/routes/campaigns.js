@@ -414,47 +414,72 @@ router.put('/:id', async (req, res) => {
       req.params.id
     );
     
-    // If campaign has a Telnyx assistant, always sync changes to Telnyx
+    // Sync changes to Telnyx - update existing assistant or create new one if missing
     let telnyxUpdateError = null;
     let newAssistantId = null;
-    
-    if (currentCampaign.telnyx_assistant_id) {
-      // Check if any relevant field changed
-      const shouldUpdate = (name && name !== currentCampaign.name) || 
-                          (ai_prompt && ai_prompt !== currentCampaign.ai_prompt) ||
-                          (voice && voice !== currentCampaign.voice) ||
-                          (voice_speed !== undefined && voice_speed !== currentCampaign.voice_speed) ||
-                          (greeting && greeting !== currentCampaign.greeting) ||
-                          (time_limit_secs && time_limit_secs !== currentCampaign.time_limit_secs) ||
-                          (voicemail_detection !== undefined && voicemail_detection !== !!currentCampaign.voicemail_detection);
-      
-      if (shouldUpdate) {
-        try {
-          console.log('🔄 Syncing changes to Telnyx assistant...');
-          // Pass ALL campaign settings to Telnyx (use new values or fall back to current)
-          const result = await updateAIAssistant(currentCampaign.telnyx_assistant_id, {
-            name: name || currentCampaign.name,
-            ai_prompt: ai_prompt || currentCampaign.ai_prompt,
-            voice: voice || currentCampaign.voice,
-            voice_speed: voice_speed || currentCampaign.voice_speed || 1.0,
-            greeting: greeting || currentCampaign.greeting,
-            time_limit_secs: time_limit_secs || currentCampaign.time_limit_secs,
-            voicemail_detection: voicemail_detection !== undefined ? voicemail_detection : !!currentCampaign.voicemail_detection,
-            voicemail_message: voicemail_message || currentCampaign.voicemail_message,
-            caller_id: caller_id || currentCampaign.caller_id
-          });
-          newAssistantId = result.extractedId || result.data?.id;
-          console.log('✅ Telnyx assistant updated, new ID:', newAssistantId);
-          
-          // Update the assistant ID in the database if it changed
-          if (newAssistantId && newAssistantId !== currentCampaign.telnyx_assistant_id) {
-            db.prepare('UPDATE campaigns SET telnyx_assistant_id = ? WHERE id = ?')
-              .run(newAssistantId, req.params.id);
-          }
-        } catch (err) {
-          telnyxUpdateError = err.message;
-          console.error('⚠️ Failed to update Telnyx assistant:', err.message);
+
+    const shouldUpdate = (name && name !== currentCampaign.name) ||
+                        (ai_prompt && ai_prompt !== currentCampaign.ai_prompt) ||
+                        (voice && voice !== currentCampaign.voice) ||
+                        (voice_speed !== undefined && voice_speed !== currentCampaign.voice_speed) ||
+                        (greeting && greeting !== currentCampaign.greeting) ||
+                        (time_limit_secs && time_limit_secs !== currentCampaign.time_limit_secs) ||
+                        (voicemail_detection !== undefined && voicemail_detection !== !!currentCampaign.voicemail_detection);
+
+    if (currentCampaign.telnyx_assistant_id && shouldUpdate) {
+      // Update existing Telnyx assistant
+      try {
+        console.log('🔄 Syncing changes to Telnyx assistant...');
+        const result = await updateAIAssistant(currentCampaign.telnyx_assistant_id, {
+          name: name || currentCampaign.name,
+          ai_prompt: ai_prompt || currentCampaign.ai_prompt,
+          voice: voice || currentCampaign.voice,
+          voice_speed: voice_speed || currentCampaign.voice_speed || 1.0,
+          greeting: greeting || currentCampaign.greeting,
+          time_limit_secs: time_limit_secs || currentCampaign.time_limit_secs,
+          voicemail_detection: voicemail_detection !== undefined ? voicemail_detection : !!currentCampaign.voicemail_detection,
+          voicemail_message: voicemail_message || currentCampaign.voicemail_message,
+          caller_id: caller_id || currentCampaign.caller_id
+        });
+        newAssistantId = result.extractedId || result.data?.id;
+        console.log('✅ Telnyx assistant updated, new ID:', newAssistantId);
+
+        if (newAssistantId && newAssistantId !== currentCampaign.telnyx_assistant_id) {
+          db.prepare('UPDATE campaigns SET telnyx_assistant_id = ? WHERE id = ?')
+            .run(newAssistantId, req.params.id);
         }
+      } catch (err) {
+        telnyxUpdateError = err.message;
+        console.error('⚠️ Failed to update Telnyx assistant:', err.message);
+      }
+    } else if (!currentCampaign.telnyx_assistant_id) {
+      // No Telnyx assistant yet - create one now
+      try {
+        console.log('🤖 Creating Telnyx AI Assistant (was missing for this campaign)...');
+        const assistant = await createAIAssistant({
+          name: name || currentCampaign.name,
+          description: description || currentCampaign.description,
+          ai_prompt: ai_prompt || currentCampaign.ai_prompt,
+          voice: voice || currentCampaign.voice,
+          language: language || currentCampaign.language,
+          voicemail_detection: voicemail_detection !== undefined ? voicemail_detection : !!currentCampaign.voicemail_detection,
+          voicemail_message: voicemail_message || currentCampaign.voicemail_message,
+          greeting: greeting || currentCampaign.greeting,
+          time_limit_secs: time_limit_secs || currentCampaign.time_limit_secs,
+          voice_speed: voice_speed || currentCampaign.voice_speed || 1.0,
+          background_audio: background_audio || currentCampaign.background_audio,
+          caller_id: caller_id || currentCampaign.caller_id
+        });
+        newAssistantId = assistant.extractedId || assistant.data?.id || assistant.id || null;
+        console.log('✅ Telnyx Assistant created, ID:', newAssistantId);
+
+        if (newAssistantId) {
+          db.prepare('UPDATE campaigns SET telnyx_assistant_id = ? WHERE id = ?')
+            .run(newAssistantId, req.params.id);
+        }
+      } catch (err) {
+        telnyxUpdateError = err.message;
+        console.error('⚠️ Failed to create Telnyx assistant:', err.message);
       }
     }
     

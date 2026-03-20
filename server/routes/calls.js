@@ -448,8 +448,37 @@ router.post('/test-call', async (req, res) => {
       return res.status(404).json({ error: 'Campaign not found.' });
     }
 
+    // Auto-create Telnyx assistant if missing
     if (!campaign.telnyx_assistant_id) {
-      return res.status(400).json({ error: 'Please click "Save Prompt" first to sync with Telnyx before making a test call.' });
+      try {
+        console.log('🤖 Test call: auto-creating Telnyx assistant for campaign', campaign_id);
+        const { createAIAssistant } = await import('../services/telnyx.js');
+        const assistant = await createAIAssistant({
+          name: campaign.name,
+          description: campaign.description,
+          ai_prompt: campaign.ai_prompt,
+          voice: campaign.voice,
+          language: campaign.language,
+          voicemail_detection: !!campaign.voicemail_detection,
+          voicemail_message: campaign.voicemail_message,
+          greeting: campaign.greeting,
+          time_limit_secs: campaign.time_limit_secs,
+          voice_speed: campaign.voice_speed || 1.0,
+          background_audio: campaign.background_audio,
+          caller_id: campaign.caller_id
+        });
+        const newAssistantId = assistant.extractedId || assistant.data?.id || assistant.id || null;
+        if (newAssistantId) {
+          db.prepare('UPDATE campaigns SET telnyx_assistant_id = ? WHERE id = ?').run(newAssistantId, campaign_id);
+          campaign.telnyx_assistant_id = newAssistantId;
+          console.log('✅ Auto-created Telnyx assistant:', newAssistantId);
+        } else {
+          return res.status(500).json({ error: 'Failed to create AI assistant for this campaign. Please try saving the prompt first.' });
+        }
+      } catch (err) {
+        console.error('❌ Failed to auto-create Telnyx assistant:', err.message);
+        return res.status(500).json({ error: `Failed to setup AI assistant: ${err.message}` });
+      }
     }
 
     // Create a temporary test contact (marked as test so it's hidden from contacts list)
