@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
-import { Phone, BarChart3, Calendar, Mic, Bot, ArrowRight, Check, Star, Clock, DollarSign, Users, PhoneCall, MessageSquare, Target, TrendingUp, Menu, X, Play, CheckCircle, Zap } from 'lucide-react';
+import { Phone, BarChart3, Calendar, Mic, Bot, ArrowRight, Check, Star, Clock, DollarSign, Users, PhoneCall, MessageSquare, Target, TrendingUp, Menu, X, Play, CheckCircle, Zap, Sparkles, Wrench } from 'lucide-react';
 
 export default function Landing() {
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
@@ -318,7 +318,9 @@ export default function Landing() {
               { icon: Mic, title: 'Call Recording & Transcripts', desc: 'Every call recorded with full AI-generated transcripts you can review anytime.', color: '#d946ef' },
               { icon: MessageSquare, title: 'Voicemail Detection', desc: 'AI detects voicemail and leaves a professional message automatically.', color: '#f59e0b' },
               { icon: BarChart3, title: 'Real-Time Analytics', desc: 'Track call outcomes, appointment rates, costs, and lead scores on a live dashboard.', color: '#0ea5e9' },
-              { icon: Target, title: 'Smart Lead Scoring', desc: 'AI scores leads automatically based on call outcomes and engagement level.', color: '#ef4444' }
+              { icon: Target, title: 'Smart Lead Scoring', desc: 'AI scores leads automatically based on call outcomes and engagement level.', color: '#ef4444' },
+              { icon: Sparkles, title: 'AI Script Generator', desc: 'Answer a few questions and AI builds a complete professional calling script for you instantly.', color: '#7c3aed' },
+              { icon: Wrench, title: 'AI Script Fixer', desc: 'Something off in your calls? AI analyzes real transcripts and fixes your script automatically.', color: '#0d9488' }
             ].map((feature, i) => (
               <div key={i} style={{
                 padding: isMobile ? '20px' : '28px', borderRadius: isMobile ? '12px' : '16px',
@@ -428,6 +430,7 @@ export default function Landing() {
                     'Call recording & transcripts',
                     'Voicemail detection',
                     'Analytics dashboard',
+                    'AI script generator & fixer',
                   ].map((f, i) => (
                     <li key={i} style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px', fontSize: '13px', color: '#374151' }}>
                       <Check size={15} color="#059669" style={{ flexShrink: 0 }} /> {f}
@@ -484,7 +487,7 @@ export default function Landing() {
                     'Voicemail detection',
                     'Full analytics dashboard',
                     'Priority support',
-                    'Custom AI scripts',
+                    'AI script generator & fixer',
                   ].map((f, i) => (
                     <li key={i} style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px', fontSize: '13px', color: '#374151' }}>
                       <Check size={15} color="#059669" style={{ flexShrink: 0 }} /> {f}
@@ -532,7 +535,7 @@ export default function Landing() {
                     'Voicemail detection',
                     'Full analytics dashboard',
                     'Priority support',
-                    'Custom AI scripts',
+                    'AI script generator & fixer',
                     'Dedicated account manager',
                   ].map((f, i) => (
                     <li key={i} style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px', fontSize: '13px', color: '#374151' }}>
