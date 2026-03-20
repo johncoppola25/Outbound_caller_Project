@@ -428,6 +428,7 @@ export default function Landing() {
                     'Call recording & transcripts',
                     'Voicemail detection',
                     'Analytics dashboard',
+                    'AI script generator',
                   ].map((f, i) => (
                     <li key={i} style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px', fontSize: '13px', color: '#374151' }}>
                       <Check size={15} color="#059669" style={{ flexShrink: 0 }} /> {f}
@@ -484,7 +485,8 @@ export default function Landing() {
                     'Voicemail detection',
                     'Full analytics dashboard',
                     'Priority support',
-                    'Custom AI scripts',
+                    'AI script generator & editor',
+                    'AI fix from call transcripts',
                   ].map((f, i) => (
                     <li key={i} style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px', fontSize: '13px', color: '#374151' }}>
                       <Check size={15} color="#059669" style={{ flexShrink: 0 }} /> {f}
@@ -532,7 +534,8 @@ export default function Landing() {
                     'Voicemail detection',
                     'Full analytics dashboard',
                     'Priority support',
-                    'Custom AI scripts',
+                    'AI script generator & editor',
+                    'AI fix from call transcripts',
                     'Dedicated account manager',
                   ].map((f, i) => (
                     <li key={i} style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px', fontSize: '13px', color: '#374151' }}>
