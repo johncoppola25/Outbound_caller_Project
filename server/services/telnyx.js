@@ -445,6 +445,8 @@ function replaceContactVariables(text, contact, botName, campaign) {
     .replace(/\{Full\s*Name\}/gi, fullName)
     .replace(/\{Property\s*Address\}/gi, contact?.property_address || '')
     // AI caller / bot name replacements (uses campaign's bot_name)
+    .replace(/\{\{bot_name\}\}/g, aiName)
+    .replace(/\{bot_name\}/gi, aiName)
     .replace(/\[Your\s*Name\]/gi, aiName)
     .replace(/\[Bot\s*Name\]/gi, aiName)
     .replace(/\[Agent\s*Name\]/gi, aiName)

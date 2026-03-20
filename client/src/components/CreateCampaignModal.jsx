@@ -161,7 +161,7 @@ export default function CreateCampaignModal({ onClose, onCreated }) {
               <p style={{ color: '#4b5563', marginBottom: '14px', fontSize: '14px' }}>Choose a template or start from scratch:</p>
 
               <div
-                onClick={() => { setSelectedTemplate(null); setFormData({ ...formData, name: '', type: 'reminder', description: '', ai_prompt: '' }); }}
+                onClick={() => { setSelectedTemplate(null); setFormData({ ...formData, name: '', type: 'outreach', description: '', ai_prompt: '' }); }}
                 style={{
                   padding: '14px', border: `1px solid ${!selectedTemplate ? '#4f46e5' : '#e5e7eb'}`,
                   background: !selectedTemplate ? '#eef2ff' : '#ffffff',
