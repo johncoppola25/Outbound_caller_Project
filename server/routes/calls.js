@@ -448,6 +448,10 @@ router.post('/test-call', async (req, res) => {
       return res.status(404).json({ error: 'Campaign not found.' });
     }
 
+    if (!campaign.telnyx_assistant_id) {
+      return res.status(400).json({ error: 'Please click "Save Prompt" first to sync with Telnyx before making a test call.' });
+    }
+
     // Create a temporary test contact
     const contactId = uuidv4();
     const testName = first_name || 'Test';
