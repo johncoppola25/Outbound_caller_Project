@@ -417,6 +417,96 @@ router.post('/initiate', async (req, res) => {
   }
 });
 
+// Test call - call a phone number with the campaign's current prompt
+router.post('/test-call', async (req, res) => {
+  try {
+    const db = await getDb();
+    const { campaign_id, phone_number, first_name } = req.body;
+
+    if (!campaign_id || !phone_number) {
+      return res.status(400).json({ error: 'Campaign ID and phone number are required.' });
+    }
+
+    // Check calling balance (skip for admin and free accounts)
+    const callingUser = db.prepare('SELECT calling_balance, role, email FROM users WHERE id = ?').get(req.user.userId);
+    if (callingUser && callingUser.role !== 'admin' && callingUser.email !== 'john.coppola25@gmail.com' && (callingUser.calling_balance || 0) < 1) {
+      return res.status(402).json({ error: 'Insufficient balance. Please add funds to make calls.' });
+    }
+
+    // Get campaign (verify ownership)
+    const isAdmin = req.user.role === 'admin';
+    const campaign = db.prepare(`SELECT * FROM campaigns WHERE id = ?${isAdmin ? '' : ' AND user_id = ?'}`)
+      .get(...[campaign_id, ...(isAdmin ? [] : [req.user.userId])]);
+
+    if (!campaign) {
+      return res.status(404).json({ error: 'Campaign not found.' });
+    }
+
+    // Create a temporary test contact
+    const contactId = uuidv4();
+    const testName = first_name || 'Test';
+    db.prepare(`
+      INSERT INTO contacts (id, campaign_id, first_name, last_name, phone, notes, status)
+      VALUES (?, ?, ?, ?, ?, ?, 'called')
+    `).run(contactId, campaign_id, testName, 'Call', phone_number, 'Test call from Prompt tab');
+
+    // Create call record
+    const callId = uuidv4();
+    db.prepare(`
+      INSERT INTO calls (id, campaign_id, contact_id, status, created_at)
+      VALUES (?, ?, ?, 'initiating', datetime('now'))
+    `).run(callId, campaign_id, contactId);
+
+    // Initiate the call
+    try {
+      const telnyxCall = await initiateOutboundCall({
+        call_id: callId,
+        campaign_id: campaign_id,
+        contact_id: contactId,
+        to: phone_number,
+        from: campaign.caller_id,
+        assistant_id: campaign.telnyx_assistant_id,
+        contact: {
+          first_name: testName,
+          last_name: 'Call',
+          phone: phone_number,
+          email: '',
+          property_address: '',
+          notes: 'Test call'
+        },
+        campaign: {
+          ai_prompt: campaign.ai_prompt,
+          greeting: campaign.greeting,
+          voice: campaign.voice,
+          background_audio: campaign.background_audio,
+          bot_name: campaign.bot_name,
+          caller_id: campaign.caller_id
+        }
+      });
+
+      const callSid = telnyxCall.data?.call_control_id || telnyxCall.data?.call_sid || telnyxCall.call_sid || 'initiated';
+      db.prepare(`UPDATE calls SET telnyx_call_id = ?, status = 'ringing', started_at = datetime('now') WHERE id = ?`).run(callSid, callId);
+      db.prepare(`INSERT INTO call_events (call_id, event_type, event_data) VALUES (?, 'call_initiated', ?)`).run(callId, JSON.stringify({ telnyx_call_id: callSid, test_call: true }));
+    } catch (telnyxError) {
+      console.error('Test call Telnyx error:', telnyxError);
+      db.prepare(`UPDATE calls SET status = 'failed' WHERE id = ?`).run(callId);
+      db.prepare(`INSERT INTO call_events (call_id, event_type, event_data) VALUES (?, 'call_failed', ?)`).run(callId, JSON.stringify({ error: telnyxError.message }));
+    }
+
+    const call = db.prepare(`
+      SELECT cl.*, ct.first_name, ct.last_name, ct.phone
+      FROM calls cl JOIN contacts ct ON cl.contact_id = ct.id
+      WHERE cl.id = ?
+    `).get(callId);
+
+    broadcast({ type: 'call_update', call });
+    res.status(201).json(call);
+  } catch (error) {
+    console.error('Error initiating test call:', error);
+    res.status(500).json({ error: 'Failed to initiate test call.' });
+  }
+});
+
 // Start campaign (call all pending contacts)
 router.post('/start-campaign/:campaignId', async (req, res) => {
   try {

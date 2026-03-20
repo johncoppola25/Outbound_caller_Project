@@ -23,7 +23,8 @@ import {
   Send,
   Undo2,
   MessageSquare,
-  Check
+  Check,
+  PhoneCall
 } from 'lucide-react';
 import { useWebSocket } from '../context/WebSocketContext';
 import { apiFetch } from '../utils/api';
@@ -201,6 +202,13 @@ export default function CampaignDetail() {
   const [aiEditLoading, setAiEditLoading] = useState(false);
   const [aiEditPreview, setAiEditPreview] = useState(null);
   const [aiEditError, setAiEditError] = useState(null);
+
+  // Test Call
+  const [testCallOpen, setTestCallOpen] = useState(false);
+  const [testCallPhone, setTestCallPhone] = useState('');
+  const [testCallName, setTestCallName] = useState('');
+  const [testCallLoading, setTestCallLoading] = useState(false);
+  const [testCallResult, setTestCallResult] = useState(null);
 
   // Fix from Transcript
   const [transcriptFixOpen, setTranscriptFixOpen] = useState(false);
@@ -566,10 +574,40 @@ export default function CampaignDetail() {
     setAiEditError(null);
   }
 
+  // Test Call handler
+  async function handleTestCall() {
+    if (!testCallPhone.trim()) return;
+    setTestCallLoading(true);
+    setTestCallResult(null);
+    try {
+      const res = await apiFetch('/api/calls/test-call', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          campaign_id: id,
+          phone_number: testCallPhone.trim(),
+          first_name: testCallName.trim() || 'Test'
+        })
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setTestCallResult({ success: true, callId: data.id, message: `Calling ${testCallPhone}...` });
+        fetchCalls();
+      } else {
+        setTestCallResult({ success: false, message: data.error || 'Failed to initiate test call.' });
+      }
+    } catch (e) {
+      setTestCallResult({ success: false, message: 'Network error. Please try again.' });
+    } finally {
+      setTestCallLoading(false);
+    }
+  }
+
   // Fix from Transcript handlers
   function handleOpenTranscriptFix() {
     setTranscriptFixOpen(!transcriptFixOpen);
     setAiEditOpen(false);
+    setTestCallOpen(false);
     setSelectedTranscript(null);
     setTranscriptFixIssue('');
     setTranscriptFixPreview(null);
@@ -1477,7 +1515,7 @@ export default function CampaignDetail() {
                     </span>
                   )}
                   <button
-                    onClick={() => { setAiEditOpen(!aiEditOpen); setTranscriptFixOpen(false); }}
+                    onClick={() => { setAiEditOpen(!aiEditOpen); setTranscriptFixOpen(false); setTestCallOpen(false); }}
                     style={{
                       display: 'inline-flex', alignItems: 'center',
                       padding: '10px 20px',
@@ -1507,6 +1545,22 @@ export default function CampaignDetail() {
                   >
                     <MessageSquare style={{ width: '16px', height: '16px', marginRight: '8px' }} />
                     Fix from Transcript
+                  </button>
+                  <button
+                    onClick={() => { setTestCallOpen(!testCallOpen); setAiEditOpen(false); setTranscriptFixOpen(false); setTestCallResult(null); }}
+                    style={{
+                      display: 'inline-flex', alignItems: 'center',
+                      padding: '10px 20px',
+                      background: testCallOpen ? '#059669' : '#ecfdf5',
+                      color: testCallOpen ? '#ffffff' : '#059669',
+                      fontWeight: '600', borderRadius: '8px',
+                      border: '1px solid #a7f3d0',
+                      cursor: 'pointer', fontSize: '14px',
+                      minWidth: '130px', justifyContent: 'center'
+                    }}
+                  >
+                    <PhoneCall style={{ width: '16px', height: '16px', marginRight: '8px' }} />
+                    Test Call
                   </button>
                   <button
                     onClick={handleSavePrompt}
@@ -1829,6 +1883,66 @@ export default function CampaignDetail() {
                       </>
                     );
                   })()}
+                </div>
+              )}
+
+              {/* Test Call Panel */}
+              {testCallOpen && (
+                <div style={{ marginBottom: '16px', padding: '20px', background: '#ecfdf5', borderRadius: '12px', border: '1px solid #a7f3d0' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
+                    <PhoneCall style={{ width: '18px', height: '18px', color: '#059669' }} />
+                    <h4 style={{ fontSize: '15px', fontWeight: '700', color: '#065f46', margin: 0 }}>Test Call</h4>
+                  </div>
+                  <p style={{ fontSize: '13px', color: '#6b7280', marginBottom: '14px', lineHeight: '1.5' }}>
+                    Enter a phone number to test this campaign's prompt with a real call. Great for confirming your AI fixes work.
+                  </p>
+                  <div style={{ display: 'flex', gap: '8px', marginBottom: '12px', flexWrap: 'wrap' }}>
+                    <input
+                      type="text"
+                      value={testCallName}
+                      onChange={(e) => setTestCallName(e.target.value)}
+                      placeholder="First name (optional)"
+                      style={{ width: '160px', padding: '10px 14px', border: '1px solid #a7f3d0', borderRadius: '8px', fontSize: '13px', outline: 'none', background: '#fff', color: '#111827' }}
+                      disabled={testCallLoading}
+                    />
+                    <input
+                      type="tel"
+                      value={testCallPhone}
+                      onChange={(e) => setTestCallPhone(e.target.value)}
+                      onKeyDown={(e) => { if (e.key === 'Enter' && !testCallLoading) handleTestCall(); }}
+                      placeholder="Phone number (e.g. +17325551234)"
+                      style={{ flex: 1, minWidth: '200px', padding: '10px 14px', border: '1px solid #a7f3d0', borderRadius: '8px', fontSize: '13px', outline: 'none', background: '#fff', color: '#111827' }}
+                      disabled={testCallLoading}
+                    />
+                    <button onClick={handleTestCall} disabled={testCallLoading || !testCallPhone.trim()}
+                      style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '10px 20px', background: '#059669', color: '#fff', border: 'none', borderRadius: '8px', fontWeight: '600', fontSize: '13px', cursor: (testCallLoading || !testCallPhone.trim()) ? 'not-allowed' : 'pointer', opacity: (testCallLoading || !testCallPhone.trim()) ? 0.6 : 1 }}>
+                      {testCallLoading ? (
+                        <><div style={{ width: '14px', height: '14px', border: '2px solid rgba(255,255,255,0.3)', borderTopColor: '#fff', borderRadius: '50%', animation: 'spin 1s linear infinite' }}></div> Calling...</>
+                      ) : (
+                        <><PhoneCall style={{ width: '14px', height: '14px' }} /> Call Now</>
+                      )}
+                    </button>
+                  </div>
+
+                  {testCallResult && (
+                    <div style={{
+                      padding: '12px 14px',
+                      background: testCallResult.success ? '#f0fdf4' : '#fef2f2',
+                      border: `1px solid ${testCallResult.success ? '#a7f3d0' : '#fecaca'}`,
+                      borderRadius: '8px',
+                      color: testCallResult.success ? '#059669' : '#dc2626',
+                      fontSize: '13px', fontWeight: '600',
+                      display: 'flex', alignItems: 'center', gap: '8px'
+                    }}>
+                      {testCallResult.success ? <Check style={{ width: '16px', height: '16px' }} /> : <X style={{ width: '16px', height: '16px' }} />}
+                      {testCallResult.message}
+                      {testCallResult.callId && (
+                        <Link to={`/calls/${testCallResult.callId}`} style={{ marginLeft: 'auto', color: '#4f46e5', fontSize: '12px', fontWeight: '600' }}>
+                          View Call →
+                        </Link>
+                      )}
+                    </div>
+                  )}
                 </div>
               )}
 
