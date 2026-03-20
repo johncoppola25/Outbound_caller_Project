@@ -80,8 +80,11 @@ export default function CreateCampaignModal({ onClose, onCreated }) {
     finally { setSaving(false); }
   }
 
+  const [generateError, setGenerateError] = useState(null);
+
   async function handleGeneratePrompt() {
     setGenerateLoading(true);
+    setGenerateError(null);
     try {
       const res = await apiFetch('/api/campaigns/ai-generate-prompt', {
         method: 'POST',
@@ -97,9 +100,12 @@ export default function CreateCampaignModal({ onClose, onCreated }) {
       if (res.ok && data.prompt) {
         setFormData(prev => ({ ...prev, ai_prompt: data.prompt }));
         setGenerateMode(false);
+      } else {
+        setGenerateError(data.error || 'Failed to generate prompt. Please try again.');
       }
     } catch (e) {
       console.error('Generate error:', e);
+      setGenerateError('Network error. Please check your connection and try again.');
     } finally {
       setGenerateLoading(false);
     }
@@ -361,6 +367,12 @@ export default function CreateCampaignModal({ onClose, onCreated }) {
                         placeholder="e.g., Don't mention price, always ask for their email, mention we're local" />
                     </div>
                   </div>
+
+                  {generateError && (
+                    <div style={{ marginTop: '12px', padding: '10px 14px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: '8px', color: '#dc2626', fontSize: '13px', fontWeight: '600' }}>
+                      {generateError}
+                    </div>
+                  )}
 
                   <div style={{ display: 'flex', gap: '10px', marginTop: '18px' }}>
                     <button onClick={() => setGenerateMode(false)}
