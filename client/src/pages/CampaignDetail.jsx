@@ -21,7 +21,9 @@ import {
   FileText,
   Sparkles,
   Send,
-  Undo2
+  Undo2,
+  MessageSquare,
+  Check
 } from 'lucide-react';
 import { useWebSocket } from '../context/WebSocketContext';
 import { apiFetch } from '../utils/api';
@@ -199,6 +201,15 @@ export default function CampaignDetail() {
   const [aiEditLoading, setAiEditLoading] = useState(false);
   const [aiEditPreview, setAiEditPreview] = useState(null);
   const [aiEditError, setAiEditError] = useState(null);
+
+  // Fix from Transcript
+  const [transcriptFixOpen, setTranscriptFixOpen] = useState(false);
+  const [selectedTranscript, setSelectedTranscript] = useState(null);
+  const [transcriptFixIssue, setTranscriptFixIssue] = useState('');
+  const [transcriptFixLoading, setTranscriptFixLoading] = useState(false);
+  const [transcriptFixPreview, setTranscriptFixPreview] = useState(null);
+  const [transcriptFixError, setTranscriptFixError] = useState(null);
+  const [transcriptFixSuccess, setTranscriptFixSuccess] = useState(false);
 
   // Voice settings
   const [inlineVoice, setInlineVoice] = useState('astra');
@@ -553,6 +564,55 @@ export default function CampaignDetail() {
   function discardAiEdit() {
     setAiEditPreview(null);
     setAiEditError(null);
+  }
+
+  // Fix from Transcript handlers
+  function handleOpenTranscriptFix() {
+    setTranscriptFixOpen(!transcriptFixOpen);
+    setAiEditOpen(false);
+    setSelectedTranscript(null);
+    setTranscriptFixIssue('');
+    setTranscriptFixPreview(null);
+    setTranscriptFixError(null);
+    setTranscriptFixSuccess(false);
+  }
+
+  async function handleTranscriptFix() {
+    if (!transcriptFixIssue.trim() || !selectedTranscript) return;
+    setTranscriptFixLoading(true);
+    setTranscriptFixError(null);
+    setTranscriptFixPreview(null);
+    try {
+      const res = await apiFetch('/api/campaigns/ai-edit-prompt', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          currentPrompt: inlinePrompt,
+          instruction: `Here is a real call transcript showing the issue:\n\n${selectedTranscript.transcript}\n\n---\n\nThe user's issue with this call: ${transcriptFixIssue.trim()}\n\nPlease fix the prompt so this issue doesn't happen in future calls.`
+        })
+      });
+      const data = await res.json();
+      if (res.ok && data.editedPrompt) {
+        setTranscriptFixPreview(data.editedPrompt);
+      } else {
+        setTranscriptFixError(data.error || 'Failed to generate fix.');
+      }
+    } catch (e) {
+      setTranscriptFixError('Network error. Please try again.');
+    } finally {
+      setTranscriptFixLoading(false);
+    }
+  }
+
+  function applyTranscriptFix() {
+    if (transcriptFixPreview) {
+      setInlinePrompt(transcriptFixPreview);
+      setTranscriptFixSuccess(true);
+      setTranscriptFixPreview(null);
+      setTranscriptFixIssue('');
+      setSelectedTranscript(null);
+      setTimeout(() => { setTranscriptFixSuccess(false); setTranscriptFixOpen(false); }, 2000);
+    }
   }
 
   // Save Prompt Directly (from Prompt tab)
@@ -1417,7 +1477,7 @@ export default function CampaignDetail() {
                     </span>
                   )}
                   <button
-                    onClick={() => setAiEditOpen(!aiEditOpen)}
+                    onClick={() => { setAiEditOpen(!aiEditOpen); setTranscriptFixOpen(false); }}
                     style={{
                       display: 'inline-flex', alignItems: 'center',
                       padding: '10px 20px',
@@ -1431,6 +1491,22 @@ export default function CampaignDetail() {
                   >
                     <Sparkles style={{ width: '16px', height: '16px', marginRight: '8px' }} />
                     AI Edit
+                  </button>
+                  <button
+                    onClick={handleOpenTranscriptFix}
+                    style={{
+                      display: 'inline-flex', alignItems: 'center',
+                      padding: '10px 20px',
+                      background: transcriptFixOpen ? '#d97706' : '#fffbeb',
+                      color: transcriptFixOpen ? '#ffffff' : '#d97706',
+                      fontWeight: '600', borderRadius: '8px',
+                      border: '1px solid #fde68a',
+                      cursor: 'pointer', fontSize: '14px',
+                      minWidth: '160px', justifyContent: 'center'
+                    }}
+                  >
+                    <MessageSquare style={{ width: '16px', height: '16px', marginRight: '8px' }} />
+                    Fix from Transcript
                   </button>
                   <button
                     onClick={handleSavePrompt}
@@ -1629,6 +1705,130 @@ export default function CampaignDetail() {
                       </div>
                     </div>
                   )}
+                </div>
+              )}
+
+              {/* Fix from Transcript Panel */}
+              {transcriptFixOpen && (
+                <div style={{ marginBottom: '16px', padding: '20px', background: '#fffbeb', borderRadius: '12px', border: '1px solid #fde68a' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
+                    <MessageSquare style={{ width: '18px', height: '18px', color: '#d97706' }} />
+                    <h4 style={{ fontSize: '15px', fontWeight: '700', color: '#92400e', margin: 0 }}>Fix Prompt from Call Transcript</h4>
+                  </div>
+                  <p style={{ fontSize: '13px', color: '#6b7280', marginBottom: '14px', lineHeight: '1.5' }}>
+                    Pick a recent call, describe what went wrong, and AI will fix your prompt based on the real conversation.
+                  </p>
+
+                  {/* Call selector */}
+                  {(() => {
+                    const callsWithTranscripts = calls.filter(c => c.transcript);
+                    if (callsWithTranscripts.length === 0) {
+                      return (
+                        <div style={{ padding: '14px', background: '#fff', borderRadius: '8px', border: '1px solid #fde68a', textAlign: 'center', color: '#92400e', fontSize: '13px' }}>
+                          No calls with transcripts yet. Make some calls first, then come back here to fix issues.
+                        </div>
+                      );
+                    }
+                    return (
+                      <>
+                        <div style={{ marginBottom: '12px' }}>
+                          <label style={{ fontSize: '12px', fontWeight: '600', color: '#92400e', marginBottom: '6px', display: 'block' }}>Select a call:</label>
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', maxHeight: '180px', overflowY: 'auto' }}>
+                            {callsWithTranscripts.slice(0, 10).map(c => (
+                              <button key={c.id} onClick={() => setSelectedTranscript(c)}
+                                style={{
+                                  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                                  padding: '10px 14px', background: selectedTranscript?.id === c.id ? '#fef3c7' : '#fff',
+                                  border: `1px solid ${selectedTranscript?.id === c.id ? '#f59e0b' : '#e5e7eb'}`,
+                                  borderRadius: '8px', cursor: 'pointer', textAlign: 'left', width: '100%'
+                                }}>
+                                <div>
+                                  <span style={{ fontWeight: '600', fontSize: '13px', color: '#111827' }}>{c.first_name} {c.last_name}</span>
+                                  <span style={{ fontSize: '12px', color: '#6b7280', marginLeft: '8px' }}>{c.phone}</span>
+                                </div>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                  {c.outcome && <span style={{ fontSize: '11px', padding: '2px 8px', borderRadius: '12px', background: '#f3f4f6', color: '#4b5563' }}>{c.outcome.replace(/_/g, ' ')}</span>}
+                                  <span style={{ fontSize: '11px', color: '#9ca3af' }}>{c.created_at ? new Date(c.created_at).toLocaleDateString() : ''}</span>
+                                </div>
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+
+                        {selectedTranscript && (
+                          <>
+                            {/* Show transcript preview */}
+                            <div style={{ marginBottom: '12px', padding: '12px', background: '#fff', borderRadius: '8px', border: '1px solid #e5e7eb', maxHeight: '150px', overflowY: 'auto', fontSize: '12px', color: '#4b5563', whiteSpace: 'pre-wrap', lineHeight: '1.5' }}>
+                              {selectedTranscript.transcript.substring(0, 500)}{selectedTranscript.transcript.length > 500 ? '...' : ''}
+                            </div>
+
+                            {/* Issue description */}
+                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '10px' }}>
+                              {['AI sounded robotic', 'Awkward pauses', 'Said something wrong', 'Didn\'t handle objection', 'Too pushy', 'Opening too long'].map(chip => (
+                                <button key={chip} onClick={() => setTranscriptFixIssue(chip)}
+                                  style={{ padding: '4px 10px', background: transcriptFixIssue === chip ? '#d97706' : '#fff', color: transcriptFixIssue === chip ? '#fff' : '#92400e', border: '1px solid #fde68a', borderRadius: '16px', fontSize: '11px', cursor: 'pointer', fontWeight: '500' }}>
+                                  {chip}
+                                </button>
+                              ))}
+                            </div>
+
+                            <div style={{ display: 'flex', gap: '8px', marginBottom: '12px' }}>
+                              <input
+                                type="text"
+                                value={transcriptFixIssue}
+                                onChange={(e) => setTranscriptFixIssue(e.target.value)}
+                                onKeyDown={(e) => { if (e.key === 'Enter' && !transcriptFixLoading) handleTranscriptFix(); }}
+                                placeholder="Describe what went wrong in this call..."
+                                style={{ flex: 1, padding: '10px 14px', border: '1px solid #fde68a', borderRadius: '8px', fontSize: '13px', outline: 'none', background: '#fff', color: '#111827' }}
+                                disabled={transcriptFixLoading}
+                              />
+                              <button onClick={handleTranscriptFix} disabled={transcriptFixLoading || !transcriptFixIssue.trim()}
+                                style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '10px 16px', background: '#d97706', color: '#fff', border: 'none', borderRadius: '8px', fontWeight: '600', fontSize: '13px', cursor: (transcriptFixLoading || !transcriptFixIssue.trim()) ? 'not-allowed' : 'pointer', opacity: (transcriptFixLoading || !transcriptFixIssue.trim()) ? 0.6 : 1 }}>
+                                {transcriptFixLoading ? (
+                                  <><div style={{ width: '14px', height: '14px', border: '2px solid rgba(255,255,255,0.3)', borderTopColor: '#fff', borderRadius: '50%', animation: 'spin 1s linear infinite' }}></div> Fixing...</>
+                                ) : (
+                                  <><Send style={{ width: '13px', height: '13px' }} /> Fix Prompt</>
+                                )}
+                              </button>
+                            </div>
+                          </>
+                        )}
+
+                        {transcriptFixError && (
+                          <div style={{ padding: '10px 14px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: '8px', color: '#dc2626', fontSize: '12px', marginBottom: '12px' }}>
+                            {transcriptFixError}
+                          </div>
+                        )}
+
+                        {transcriptFixSuccess && (
+                          <div style={{ padding: '12px 14px', background: '#ecfdf5', border: '1px solid #a7f3d0', borderRadius: '8px', color: '#059669', fontSize: '13px', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <Check style={{ width: '16px', height: '16px' }} /> Prompt updated! Click "Save Prompt" to sync with Telnyx.
+                          </div>
+                        )}
+
+                        {transcriptFixPreview && (
+                          <div>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                              <p style={{ fontSize: '13px', fontWeight: '600', color: '#92400e', margin: 0 }}>Preview of fixed prompt:</p>
+                              <div style={{ display: 'flex', gap: '8px' }}>
+                                <button onClick={() => setTranscriptFixPreview(null)}
+                                  style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '5px 12px', background: '#fee2e2', color: '#dc2626', border: 'none', borderRadius: '8px', fontSize: '11px', fontWeight: '600', cursor: 'pointer' }}>
+                                  <X style={{ width: '12px', height: '12px' }} /> Discard
+                                </button>
+                                <button onClick={applyTranscriptFix}
+                                  style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '5px 12px', background: '#059669', color: '#fff', border: 'none', borderRadius: '8px', fontSize: '11px', fontWeight: '600', cursor: 'pointer' }}>
+                                  <Check style={{ width: '12px', height: '12px' }} /> Accept & Apply
+                                </button>
+                              </div>
+                            </div>
+                            <div style={{ maxHeight: '300px', overflowY: 'auto', padding: '14px', background: '#fff', border: '1px solid #a7f3d0', borderRadius: '8px', fontSize: '13px', fontFamily: 'monospace', whiteSpace: 'pre-wrap', color: '#374151', lineHeight: '1.6' }}>
+                              {transcriptFixPreview}
+                            </div>
+                          </div>
+                        )}
+                      </>
+                    );
+                  })()}
                 </div>
               )}
 
