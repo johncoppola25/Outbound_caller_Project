@@ -18,7 +18,10 @@ import {
   Eye,
   Mail,
   MapPin,
-  FileText
+  FileText,
+  Sparkles,
+  Send,
+  Undo2
 } from 'lucide-react';
 import { useWebSocket } from '../context/WebSocketContext';
 import { apiFetch } from '../utils/api';
@@ -189,6 +192,13 @@ export default function CampaignDetail() {
   const [inlineBotName, setInlineBotName] = useState('Julia');
   const [savingPrompt, setSavingPrompt] = useState(false);
   const [promptSaved, setPromptSaved] = useState(false);
+
+  // AI prompt editor
+  const [aiEditOpen, setAiEditOpen] = useState(false);
+  const [aiEditInstruction, setAiEditInstruction] = useState('');
+  const [aiEditLoading, setAiEditLoading] = useState(false);
+  const [aiEditPreview, setAiEditPreview] = useState(null);
+  const [aiEditError, setAiEditError] = useState(null);
 
   // Voice settings
   const [inlineVoice, setInlineVoice] = useState('astra');
@@ -502,6 +512,47 @@ export default function CampaignDetail() {
     } finally {
       setSaving(false);
     }
+  }
+
+  // AI-powered prompt editing
+  async function handleAiEdit() {
+    if (!aiEditInstruction.trim()) return;
+    setAiEditLoading(true);
+    setAiEditError(null);
+    setAiEditPreview(null);
+    try {
+      const res = await apiFetch('/api/campaigns/ai-edit-prompt', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          currentPrompt: inlinePrompt,
+          instruction: aiEditInstruction.trim()
+        })
+      });
+      const data = await res.json();
+      if (res.ok && data.editedPrompt) {
+        setAiEditPreview(data.editedPrompt);
+      } else {
+        setAiEditError(data.error || 'Failed to edit prompt.');
+      }
+    } catch {
+      setAiEditError('Failed to connect to AI service.');
+    }
+    setAiEditLoading(false);
+  }
+
+  function applyAiEdit() {
+    if (aiEditPreview) {
+      setInlinePrompt(aiEditPreview);
+      setAiEditPreview(null);
+      setAiEditInstruction('');
+      setAiEditOpen(false);
+    }
+  }
+
+  function discardAiEdit() {
+    setAiEditPreview(null);
+    setAiEditError(null);
   }
 
   // Save Prompt Directly (from Prompt tab)
@@ -1365,7 +1416,23 @@ export default function CampaignDetail() {
                       Saved!
                     </span>
                   )}
-                  <button 
+                  <button
+                    onClick={() => setAiEditOpen(!aiEditOpen)}
+                    style={{
+                      display: 'inline-flex', alignItems: 'center',
+                      padding: '10px 20px',
+                      background: aiEditOpen ? '#7c3aed' : '#f5f3ff',
+                      color: aiEditOpen ? '#ffffff' : '#7c3aed',
+                      fontWeight: '600', borderRadius: '8px',
+                      border: '1px solid #c4b5fd',
+                      cursor: 'pointer', fontSize: '14px',
+                      minWidth: '120px', justifyContent: 'center'
+                    }}
+                  >
+                    <Sparkles style={{ width: '16px', height: '16px', marginRight: '8px' }} />
+                    AI Edit
+                  </button>
+                  <button
                     onClick={handleSavePrompt}
                     disabled={savingPrompt}
                     style={{ 
@@ -1443,6 +1510,105 @@ export default function CampaignDetail() {
                   ))}
                 </div>
               </div>
+
+              {/* AI Edit Panel */}
+              {aiEditOpen && (
+                <div style={{ marginBottom: '16px', padding: '20px', background: '#faf5ff', borderRadius: '12px', border: '1px solid #c4b5fd' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
+                    <Sparkles style={{ width: '18px', height: '18px', color: '#7c3aed' }} />
+                    <h4 style={{ fontSize: '15px', fontWeight: '700', color: '#5b21b6', margin: 0 }}>AI Prompt Editor</h4>
+                  </div>
+                  <p style={{ fontSize: '13px', color: '#6b7280', marginBottom: '12px' }}>
+                    Describe what you want to change in plain English. For example: "Make the tone more friendly", "Change the agent name to Mike", "Add a section about pricing", "Make the opening shorter".
+                  </p>
+                  <div style={{ display: 'flex', gap: '8px', marginBottom: '12px' }}>
+                    <input
+                      type="text"
+                      value={aiEditInstruction}
+                      onChange={(e) => setAiEditInstruction(e.target.value)}
+                      onKeyDown={(e) => { if (e.key === 'Enter' && !aiEditLoading) handleAiEdit(); }}
+                      placeholder="Tell me what to change..."
+                      style={{
+                        flex: 1, padding: '10px 14px', border: '1px solid #c4b5fd',
+                        borderRadius: '8px', fontSize: '14px', outline: 'none',
+                        background: '#fff', color: '#111827'
+                      }}
+                      disabled={aiEditLoading}
+                    />
+                    <button
+                      onClick={handleAiEdit}
+                      disabled={aiEditLoading || !aiEditInstruction.trim()}
+                      style={{
+                        display: 'flex', alignItems: 'center', gap: '6px',
+                        padding: '10px 18px', background: '#7c3aed', color: '#fff',
+                        border: 'none', borderRadius: '8px', fontWeight: '600',
+                        fontSize: '13px', cursor: (aiEditLoading || !aiEditInstruction.trim()) ? 'not-allowed' : 'pointer',
+                        opacity: (aiEditLoading || !aiEditInstruction.trim()) ? 0.6 : 1
+                      }}
+                    >
+                      {aiEditLoading ? (
+                        <>
+                          <div style={{ width: '14px', height: '14px', border: '2px solid rgba(255,255,255,0.3)', borderTopColor: '#fff', borderRadius: '50%', animation: 'spin 1s linear infinite' }}></div>
+                          Thinking...
+                        </>
+                      ) : (
+                        <>
+                          <Send style={{ width: '14px', height: '14px' }} />
+                          Apply
+                        </>
+                      )}
+                    </button>
+                  </div>
+
+                  {aiEditError && (
+                    <div style={{ padding: '10px 14px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: '8px', color: '#dc2626', fontSize: '13px', marginBottom: '12px' }}>
+                      {aiEditError}
+                    </div>
+                  )}
+
+                  {aiEditPreview && (
+                    <div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                        <p style={{ fontSize: '13px', fontWeight: '600', color: '#5b21b6', margin: 0 }}>Preview of changes:</p>
+                        <div style={{ display: 'flex', gap: '8px' }}>
+                          <button
+                            onClick={discardAiEdit}
+                            style={{
+                              display: 'flex', alignItems: 'center', gap: '6px',
+                              padding: '6px 14px', background: '#fff', color: '#dc2626',
+                              border: '1px solid #fecaca', borderRadius: '8px',
+                              fontSize: '12px', fontWeight: '600', cursor: 'pointer'
+                            }}
+                          >
+                            <Undo2 style={{ width: '12px', height: '12px' }} />
+                            Discard
+                          </button>
+                          <button
+                            onClick={applyAiEdit}
+                            style={{
+                              display: 'flex', alignItems: 'center', gap: '6px',
+                              padding: '6px 14px', background: '#059669', color: '#fff',
+                              border: 'none', borderRadius: '8px',
+                              fontSize: '12px', fontWeight: '600', cursor: 'pointer'
+                            }}
+                          >
+                            <CheckCircle2 style={{ width: '12px', height: '12px' }} />
+                            Accept Changes
+                          </button>
+                        </div>
+                      </div>
+                      <div style={{
+                        maxHeight: '300px', overflowY: 'auto', padding: '14px',
+                        background: '#fff', border: '1px solid #a7f3d0', borderRadius: '8px',
+                        fontSize: '13px', fontFamily: 'monospace', whiteSpace: 'pre-wrap',
+                        color: '#374151', lineHeight: '1.6'
+                      }}>
+                        {aiEditPreview}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
 
               {/* Contact Preview Selector */}
               <div style={{ marginBottom: '16px', padding: '16px', backgroundColor: '#ecfdf5', borderRadius: '12px', border: '1px solid #a7f3d0' }}>

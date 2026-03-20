@@ -111,6 +111,71 @@ router.get('/:id', async (req, res) => {
   }
 });
 
+// AI-powered prompt editing
+router.post('/ai-edit-prompt', async (req, res) => {
+  try {
+    const { currentPrompt, instruction } = req.body;
+    if (!currentPrompt || !instruction) {
+      return res.status(400).json({ error: 'Current prompt and instruction are required.' });
+    }
+
+    const apiKey = process.env.OPENAI_API_KEY;
+    if (!apiKey) {
+      return res.status(500).json({ error: 'OpenAI API key not configured.' });
+    }
+
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`
+      },
+      body: JSON.stringify({
+        model: 'gpt-4o-mini',
+        messages: [
+          {
+            role: 'system',
+            content: `You are an expert AI calling script editor. The user has an existing AI caller prompt/script and wants to modify it. Apply their requested changes while keeping the overall structure, formatting, and any contact variables (like {{contact.first_name}}, {{contact.phone}}, [Owner Name], [First Name], [Bot Name], etc.) intact.
+
+Rules:
+- Only modify what the user asks to change
+- Keep all existing sections and structure unless told to remove them
+- Preserve all contact variable placeholders exactly as they are
+- Keep the markdown formatting (## headers, ### sub-headers, bullet points)
+- Return ONLY the modified prompt text, nothing else — no explanations, no code fences, no "Here's your updated prompt" preamble
+- Make the script sound natural and conversational for phone calls
+- If the user asks to change voice/tone, update the VOICE & TONE section
+- If the user asks to change the greeting or opening, update the CALL OPENING section
+- If they ask to add something, add it in the most logical place in the script`
+          },
+          {
+            role: 'user',
+            content: `Here is the current prompt:\n\n${currentPrompt}\n\n---\n\nPlease make this change: ${instruction}`
+          }
+        ],
+        temperature: 0.7,
+        max_tokens: 4000
+      })
+    });
+
+    const data = await response.json();
+    if (!response.ok) {
+      console.error('OpenAI error:', data);
+      return res.status(500).json({ error: 'Failed to process prompt edit.' });
+    }
+
+    const editedPrompt = data.choices?.[0]?.message?.content?.trim();
+    if (!editedPrompt) {
+      return res.status(500).json({ error: 'No response from AI.' });
+    }
+
+    res.json({ editedPrompt });
+  } catch (error) {
+    console.error('AI prompt edit error:', error.message);
+    res.status(500).json({ error: 'Failed to edit prompt with AI.' });
+  }
+});
+
 // Create new campaign
 router.post('/', async (req, res) => {
   try {
