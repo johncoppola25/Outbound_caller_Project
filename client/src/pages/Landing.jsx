@@ -638,7 +638,11 @@ export default function Landing() {
           </svg>
         </div>
         <p style={{ margin: '0 0 8px 0' }}>AI-Powered Outbound Calling Platform</p>
-        <p style={{ margin: 0 }}>&copy; 2026 OutReach AI. All rights reserved.</p>
+        <p style={{ margin: '0 0 16px 0' }}>&copy; 2026 OutReach AI. All rights reserved.</p>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', opacity: 0.85 }}>
+          <span style={{ fontSize: '12px', color: '#9ca3af' }}>Built by</span>
+          <img src="/coppola-digital-logo.png" alt="Coppola Digital" style={{ height: '28px', objectFit: 'contain' }} />
+        </div>
       </footer>
     </div>
   );
