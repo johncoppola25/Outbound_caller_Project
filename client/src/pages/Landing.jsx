@@ -638,10 +638,17 @@ export default function Landing() {
           </svg>
         </div>
         <p style={{ margin: '0 0 8px 0' }}>AI-Powered Outbound Calling Platform</p>
-        <p style={{ margin: '0 0 16px 0' }}>&copy; 2026 OutReach AI. All rights reserved.</p>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', opacity: 0.85 }}>
-          <span style={{ fontSize: '12px', color: '#9ca3af' }}>Built by</span>
-          <img src="/coppola-digital-logo.png" alt="Coppola Digital" style={{ height: '28px', objectFit: 'contain' }} />
+        <p style={{ margin: 0 }}>&copy; 2026 OutReach AI. All rights reserved.</p>
+        <div style={{
+          width: '60px', height: '1px', background: 'linear-gradient(90deg, transparent, #334155, transparent)',
+          margin: '20px auto'
+        }} />
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+          <span style={{ fontSize: '12px', color: '#64748b', fontWeight: 400, letterSpacing: '0.5px', textTransform: 'uppercase' }}>Built by</span>
+          <span style={{ fontSize: '14px', fontWeight: 600, letterSpacing: '1.5px', textTransform: 'uppercase' }}>
+            <span style={{ color: '#e2e8f0' }}>Coppola</span>{' '}
+            <span style={{ color: '#38bdf8' }}>Digital</span>
+          </span>
         </div>
       </footer>
     </div>
