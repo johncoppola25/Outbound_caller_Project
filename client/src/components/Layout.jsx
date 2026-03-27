@@ -261,9 +261,9 @@ export default function Layout() {
         transition: 'transform 0.25s ease'
       }}>
         {/* Logo + Bell */}
-        <div style={{ padding: '22px 18px', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '11px' }}>
-            <svg viewBox="0 0 250 50" style={{ width: '170px' }} xmlns="http://www.w3.org/2000/svg">
+        <div style={{ padding: isMobile ? '14px 14px 14px 52px' : '22px 18px', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', justifyContent: 'space-between' }}>
+            <svg viewBox="0 0 250 50" style={{ width: isMobile ? '150px' : '170px', flexShrink: 0 }} xmlns="http://www.w3.org/2000/svg">
               <text x="0" y="34" fontFamily="'Segoe UI', 'Helvetica Neue', Arial, sans-serif" fontSize="38" fontWeight="700" letterSpacing="-0.5">
                 <tspan fill="#ffffff">Out</tspan><tspan fill="#4f46e5">Reach</tspan>
               </text>
@@ -391,7 +391,7 @@ export default function Layout() {
         </div>
 
         {/* Nav */}
-        <nav style={{ flex: 1, padding: '12px 10px', overflowY: 'auto' }}>
+        <nav style={{ flex: 1, padding: '12px 10px', overflowY: 'auto', minHeight: 0 }}>
           {user?.role === 'admin' && (
             <p style={{ fontSize: '10px', fontWeight: '600', color: '#8b5cf6', letterSpacing: '0.1em', textTransform: 'uppercase', padding: '10px 10px 6px', marginBottom: '2px', display: 'flex', alignItems: 'center', gap: '4px' }}>
               <Crown size={10} /> Admin
