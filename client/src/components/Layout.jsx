@@ -256,7 +256,7 @@ export default function Layout() {
         width: isMobile ? '264px' : '240px',
         background: '#111827',
         display: 'flex', flexDirection: 'column',
-        position: 'fixed', height: '100vh', zIndex: 1000,
+        position: 'fixed', height: '100dvh', zIndex: 1000,
         transform: isMobile ? (sidebarOpen ? 'translateX(0)' : 'translateX(-100%)') : 'translateX(0)',
         transition: 'transform 0.25s ease'
       }}>
@@ -440,7 +440,7 @@ export default function Layout() {
         </nav>
 
         {/* Connection */}
-        <div style={{ padding: '10px', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+        <div style={{ padding: '10px', borderTop: '1px solid rgba(255,255,255,0.06)', flexShrink: 0 }}>
           <div style={{
             display: 'flex', alignItems: 'center', gap: '8px',
             padding: '9px 12px', borderRadius: '8px',
@@ -458,7 +458,7 @@ export default function Layout() {
         </div>
 
         {/* User & Sign Out */}
-        <div style={{ padding: '10px', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+        <div style={{ padding: '10px', borderTop: '1px solid rgba(255,255,255,0.06)', flexShrink: 0 }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '6px 10px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
               {user?.avatar_url ? (
