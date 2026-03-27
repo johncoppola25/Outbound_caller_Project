@@ -1,4 +1,5 @@
 import { createContext, useContext, useEffect, useState, useCallback } from 'react';
+import { useAuth } from './AuthContext';
 
 const WebSocketContext = createContext(null);
 
@@ -6,6 +7,7 @@ export function WebSocketProvider({ children }) {
   const [isConnected, setIsConnected] = useState(false);
   const [lastMessage, setLastMessage] = useState(null);
   const [listeners] = useState(() => new Set());
+  const { isAuthenticated } = useAuth();
 
   useEffect(() => {
     let socket = null;
@@ -87,7 +89,7 @@ export function WebSocketProvider({ children }) {
         socket.close();
       }
     };
-  }, [listeners]);
+  }, [listeners, isAuthenticated]);
 
   const subscribe = useCallback((callback) => {
     listeners.add(callback);
