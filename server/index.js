@@ -48,35 +48,38 @@ await initDatabase();
 
 // Middleware
 
-// CORS restriction
-const allowedOrigins = process.env.CORS_ORIGIN
-  ? process.env.CORS_ORIGIN.split(',')
-  : (process.env.NODE_ENV === 'production' || process.env.RENDER)
-    ? [process.env.RENDER_EXTERNAL_URL].filter(Boolean)
-    : ['http://localhost:3001', 'http://localhost:5173'];
+// Gzip/brotli compression
+app.use(compression());
 
-app.use(cors({
-  origin: (origin, callback) => {
-    if (!origin || allowedOrigins.includes(origin)) {
-      callback(null, true);
-    } else {
-      callback(new Error('Not allowed by CORS'));
+// Serve React frontend BEFORE helmet/cors so static files aren't blocked
+const clientDist = path.join(__dirname, '../client/dist');
+if (fs.existsSync(clientDist)) {
+  app.use(express.static(clientDist, {
+    maxAge: '1y',
+    setHeaders: (res, filePath) => {
+      if (filePath.endsWith('.html') || filePath.endsWith('.json')) {
+        res.setHeader('Cache-Control', 'no-cache');
+      }
     }
-  },
+  }));
+  console.log('📦 Serving React frontend from client/dist');
+}
+
+// CORS restriction (API routes only)
+app.use(cors({
+  origin: process.env.CORS_ORIGIN ? process.env.CORS_ORIGIN.split(',') : true,
   credentials: true
 }));
 
-// Security headers via helmet
-app.use(helmet({
-  contentSecurityPolicy: false, // Disabled to avoid breaking inline styles/scripts
+// Security headers via helmet (API routes only)
+app.use('/api', helmet({
+  contentSecurityPolicy: false,
   crossOriginEmbedderPolicy: false,
+  crossOriginResourcePolicy: false,
   hsts: (process.env.NODE_ENV === 'production' || process.env.RENDER)
     ? { maxAge: 31536000, includeSubDomains: true }
     : false,
 }));
-
-// Gzip/brotli compression
-app.use(compression());
 
 app.use(express.json());
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
@@ -151,26 +154,14 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
-// Serve React frontend in production
-const clientDist = path.join(__dirname, '../client/dist');
+// SPA fallback — all non-API routes serve React app
 if (fs.existsSync(clientDist)) {
-  // Cache hashed assets (js, css) for 1 year; HTML/other files no-cache
-  app.use(express.static(clientDist, {
-    maxAge: '1y',
-    setHeaders: (res, filePath) => {
-      if (filePath.endsWith('.html') || filePath.endsWith('.json')) {
-        res.setHeader('Cache-Control', 'no-cache');
-      }
-    }
-  }));
-  // All non-API routes serve the React app (SPA client-side routing)
   app.get('*', (req, res) => {
     if (!req.path.startsWith('/api/')) {
       res.setHeader('Cache-Control', 'no-cache');
       res.sendFile(path.join(clientDist, 'index.html'));
     }
   });
-  console.log('📦 Serving React frontend from client/dist');
 }
 
 const PORT = process.env.PORT || 3001;
