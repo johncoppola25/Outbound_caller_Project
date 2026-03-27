@@ -462,7 +462,7 @@ export default function Layout() {
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '6px 10px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
               {user?.avatar_url ? (
-                <img src={user.avatar_url} alt="" style={{ width: '32px', height: '32px', borderRadius: '8px', objectFit: 'cover' }} />
+                <img src={user.avatar_url} alt={`${user.name || 'User'} avatar`} style={{ width: '32px', height: '32px', borderRadius: '8px', objectFit: 'cover' }} />
               ) : (
                 <div style={{
                   width: '32px', height: '32px', background: '#4f46e5', borderRadius: '8px',

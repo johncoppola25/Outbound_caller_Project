@@ -1,5 +1,7 @@
 import express from 'express';
 import cors from 'cors';
+import helmet from 'helmet';
+import compression from 'compression';
 import { WebSocketServer } from 'ws';
 import { createServer } from 'http';
 import dotenv from 'dotenv';
@@ -47,23 +49,34 @@ await initDatabase();
 // Middleware
 
 // CORS restriction
+const allowedOrigins = process.env.CORS_ORIGIN
+  ? process.env.CORS_ORIGIN.split(',')
+  : (process.env.NODE_ENV === 'production' || process.env.RENDER)
+    ? [process.env.RENDER_EXTERNAL_URL].filter(Boolean)
+    : ['http://localhost:3001', 'http://localhost:5173'];
+
 app.use(cors({
-  origin: process.env.CORS_ORIGIN ? process.env.CORS_ORIGIN.split(',') : ['http://localhost:3001', 'http://localhost:5173'],
+  origin: (origin, callback) => {
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   credentials: true
 }));
 
-// Security headers
-app.use((req, res, next) => {
-  res.setHeader('X-Frame-Options', 'DENY');
-  res.setHeader('X-Content-Type-Options', 'nosniff');
-  res.setHeader('X-XSS-Protection', '1; mode=block');
-  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
-  res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
-  if (process.env.NODE_ENV === 'production' || process.env.RENDER) {
-    res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
-  }
-  next();
-});
+// Security headers via helmet
+app.use(helmet({
+  contentSecurityPolicy: false, // Disabled to avoid breaking inline styles/scripts
+  crossOriginEmbedderPolicy: false,
+  hsts: (process.env.NODE_ENV === 'production' || process.env.RENDER)
+    ? { maxAge: 31536000, includeSubDomains: true }
+    : false,
+}));
+
+// Gzip/brotli compression
+app.use(compression());
 
 app.use(express.json());
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
@@ -73,15 +86,21 @@ const clients = new Set();
 
 wss.on('connection', (ws, req) => {
   // Verify token from query string
-  try {
-    const url = new URL(req.url, 'http://localhost');
-    const token = url.searchParams.get('token');
-    if (token) {
-      jwt.verify(token, getJwtSecret());
-    }
-  } catch (e) {
-    // Allow connection but log warning — don't break existing clients
+  const url = new URL(req.url, 'http://localhost');
+  const token = url.searchParams.get('token');
+
+  if (!token) {
+    ws.close(1008, 'Unauthorized');
+    return;
   }
+
+  try {
+    jwt.verify(token, getJwtSecret());
+  } catch (e) {
+    ws.close(1008, 'Invalid token');
+    return;
+  }
+
   clients.add(ws);
 
   ws.on('close', () => {
@@ -135,10 +154,19 @@ app.get('/api/health', (req, res) => {
 // Serve React frontend in production
 const clientDist = path.join(__dirname, '../client/dist');
 if (fs.existsSync(clientDist)) {
-  app.use(express.static(clientDist));
+  // Cache hashed assets (js, css) for 1 year; HTML/other files no-cache
+  app.use(express.static(clientDist, {
+    maxAge: '1y',
+    setHeaders: (res, filePath) => {
+      if (filePath.endsWith('.html') || filePath.endsWith('.json')) {
+        res.setHeader('Cache-Control', 'no-cache');
+      }
+    }
+  }));
   // All non-API routes serve the React app (SPA client-side routing)
   app.get('*', (req, res) => {
     if (!req.path.startsWith('/api/')) {
+      res.setHeader('Cache-Control', 'no-cache');
       res.sendFile(path.join(clientDist, 'index.html'));
     }
   });

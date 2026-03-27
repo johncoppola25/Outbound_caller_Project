@@ -16,12 +16,14 @@ export function WebSocketProvider({ children }) {
 
     const connect = () => {
       if (unmounted) return;
+      const token = localStorage.getItem('outreach_token');
+      if (!token) return; // Don't connect without auth
       try {
         const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
         // In production (same origin), use the page's host. In dev, use port 3001.
         const isDev = window.location.port === '5173' || window.location.port === '5174';
         const wsHost = isDev ? `${window.location.hostname}:3001` : window.location.host;
-        const wsUrl = `${protocol}//${wsHost}`;
+        const wsUrl = `${protocol}//${wsHost}?token=${encodeURIComponent(token)}`;
 
         socket = new WebSocket(wsUrl);
 
