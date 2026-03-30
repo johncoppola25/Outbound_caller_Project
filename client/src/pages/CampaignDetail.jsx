@@ -24,7 +24,8 @@ import {
   Undo2,
   MessageSquare,
   Check,
-  PhoneCall
+  PhoneCall,
+  History
 } from 'lucide-react';
 import { useWebSocket } from '../context/WebSocketContext';
 import { apiFetch } from '../utils/api';
@@ -36,6 +37,36 @@ function formatCallbackPhone(phone) {
   if (digits.length === 10) return `${digits.slice(0, 3)}-${digits.slice(3, 6)}-${digits.slice(6)}`;
   if (digits.length === 11 && digits[0] === '1') return `${digits.slice(1, 4)}-${digits.slice(4, 7)}-${digits.slice(7)}`;
   return phone;
+}
+
+// Simple line-by-line diff for AI edit preview
+function computeDiff(oldText, newText) {
+  const oldLines = (oldText || '').split('\n');
+  const newLines = (newText || '').split('\n');
+  const result = [];
+  const maxLen = Math.max(oldLines.length, newLines.length);
+  let oi = 0, ni = 0;
+  while (oi < oldLines.length || ni < newLines.length) {
+    const oldLine = oi < oldLines.length ? oldLines[oi] : undefined;
+    const newLine = ni < newLines.length ? newLines[ni] : undefined;
+    if (oldLine === newLine) {
+      result.push({ type: 'same', text: newLine });
+      oi++; ni++;
+    } else if (oldLine !== undefined && !newLines.includes(oldLine, ni)) {
+      // Line was removed
+      result.push({ type: 'removed', text: oldLine });
+      oi++;
+    } else if (newLine !== undefined && !oldLines.includes(newLine, oi)) {
+      // Line was added
+      result.push({ type: 'added', text: newLine });
+      ni++;
+    } else {
+      // Line changed
+      if (oldLine !== undefined) { result.push({ type: 'removed', text: oldLine }); oi++; }
+      if (newLine !== undefined) { result.push({ type: 'added', text: newLine }); ni++; }
+    }
+  }
+  return result;
 }
 
 // Component to show prompt preview with highlighted replaced values
@@ -196,6 +227,11 @@ export default function CampaignDetail() {
   const [savingPrompt, setSavingPrompt] = useState(false);
   const [promptSaved, setPromptSaved] = useState(false);
 
+  // Prompt version history
+  const [showVersionHistory, setShowVersionHistory] = useState(false);
+  const [promptVersions, setPromptVersions] = useState([]);
+  const [loadingVersions, setLoadingVersions] = useState(false);
+
   // AI prompt editor
   const [aiEditOpen, setAiEditOpen] = useState(false);
   const [aiEditInstruction, setAiEditInstruction] = useState('');
@@ -204,6 +240,7 @@ export default function CampaignDetail() {
   const [aiEditError, setAiEditError] = useState(null);
   const [aiEditSuccess, setAiEditSuccess] = useState(false);
   const [aiEditSuccessMsg, setAiEditSuccessMsg] = useState('');
+  const [lastAiInstruction, setLastAiInstruction] = useState(null);
 
   // Test Call
   const [testCallOpen, setTestCallOpen] = useState(false);
@@ -598,6 +635,7 @@ export default function CampaignDetail() {
         }
       }
 
+      setLastAiInstruction(aiEditInstruction);
       setAiEditPreview(null);
       setAiEditInstruction('');
       setAiEditChanges(null);
@@ -614,6 +652,38 @@ export default function CampaignDetail() {
   function discardAiEdit() {
     setAiEditPreview(null);
     setAiEditError(null);
+  }
+
+  // Prompt version history
+  async function fetchPromptVersions() {
+    if (!id) return;
+    setLoadingVersions(true);
+    try {
+      const res = await apiFetch(`/api/campaigns/${id}/versions`);
+      if (res.ok) {
+        const data = await res.json();
+        setPromptVersions(data);
+      }
+    } catch (err) {
+      console.error('Error fetching prompt versions:', err);
+    }
+    setLoadingVersions(false);
+  }
+
+  async function revertToVersion(versionId) {
+    try {
+      const res = await apiFetch(`/api/campaigns/${id}/versions/${versionId}/revert`, { method: 'POST' });
+      if (res.ok) {
+        const data = await res.json();
+        setInlinePrompt(data.ai_prompt);
+        if (data.greeting) setInlineGreeting(data.greeting);
+        if (data.bot_name) setInlineBotName(data.bot_name);
+        if (data.voice) setInlineVoice(data.voice);
+        setShowVersionHistory(false);
+      }
+    } catch (err) {
+      console.error('Error reverting version:', err);
+    }
   }
 
   // Test Call handler - auto-saves unsaved prompt changes before calling
@@ -682,6 +752,7 @@ export default function CampaignDetail() {
     setTranscriptFixOpen(!transcriptFixOpen);
     setAiEditOpen(false);
     setTestCallOpen(false);
+    setShowVersionHistory(false);
     setAiEditSuccess(false);
     setSelectedTranscript(null);
     setTranscriptFixIssue('');
@@ -773,16 +844,17 @@ export default function CampaignDetail() {
       const res = await apiFetch(`/api/campaigns/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          ai_prompt: inlinePrompt, 
-          greeting: inlineGreeting, 
+        body: JSON.stringify({
+          ai_prompt: inlinePrompt,
+          greeting: inlineGreeting,
           bot_name: inlineBotName,
           voice: inlineVoice,
           voice_speed: parseFloat(inlineVoiceSpeed),
           language: inlineLanguage,
           time_limit_secs: parseInt(inlineTimeLimitSecs),
           voicemail_detection: inlineVoicemailDetection,
-          voicemail_message: inlineVoicemailMessage || null
+          voicemail_message: inlineVoicemailMessage || null,
+          _aiInstruction: lastAiInstruction || null
         })
       });
       
@@ -793,6 +865,7 @@ export default function CampaignDetail() {
         console.log('Prompt saved successfully:', updated);
         setCampaign(updated);
         setPromptSaved(true);
+        setLastAiInstruction(null);
         if (updated.telnyx_warning) {
           alert('Prompt saved locally, but Telnyx sync failed: ' + updated.telnyx_warning);
         } else {
@@ -1605,10 +1678,36 @@ export default function CampaignDetail() {
                   )}
                   <button
                     onClick={() => {
+                      const opening = !showVersionHistory;
+                      setShowVersionHistory(opening);
+                      if (opening) {
+                        fetchPromptVersions();
+                        setAiEditOpen(false);
+                        setTranscriptFixOpen(false);
+                        setTestCallOpen(false);
+                      }
+                    }}
+                    style={{
+                      display: 'inline-flex', alignItems: 'center',
+                      padding: '10px 20px',
+                      background: showVersionHistory ? '#4f46e5' : '#eef2ff',
+                      color: showVersionHistory ? '#ffffff' : '#4f46e5',
+                      fontWeight: '600', borderRadius: '8px',
+                      border: '1px solid #c7d2fe',
+                      cursor: 'pointer', fontSize: '14px',
+                      minWidth: '120px', justifyContent: 'center'
+                    }}
+                  >
+                    <History style={{ width: '16px', height: '16px', marginRight: '8px' }} />
+                    Versions
+                  </button>
+                  <button
+                    onClick={() => {
                       const opening = !aiEditOpen;
                       setAiEditOpen(opening);
                       setTranscriptFixOpen(false);
                       setTestCallOpen(false);
+                      setShowVersionHistory(false);
                       if (!opening) {
                         setAiEditPreview(null);
                         setAiEditError(null);
@@ -1646,7 +1745,7 @@ export default function CampaignDetail() {
                     Fix from Transcript
                   </button>
                   <button
-                    onClick={() => { setTestCallOpen(!testCallOpen); setAiEditOpen(false); setTranscriptFixOpen(false); setTestCallResult(null); }}
+                    onClick={() => { setTestCallOpen(!testCallOpen); setAiEditOpen(false); setTranscriptFixOpen(false); setShowVersionHistory(false); setTestCallResult(null); }}
                     style={{
                       display: 'inline-flex', alignItems: 'center',
                       padding: '10px 20px',
@@ -1739,6 +1838,80 @@ export default function CampaignDetail() {
                   ))}
                 </div>
               </div>
+
+              {/* Version History Panel */}
+              {showVersionHistory && (
+                <div style={{ marginBottom: '16px', padding: '20px', background: '#eef2ff', borderRadius: '12px', border: '1px solid #c7d2fe' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <History style={{ width: '18px', height: '18px', color: '#4f46e5' }} />
+                      <h4 style={{ fontSize: '15px', fontWeight: '700', color: '#312e81', margin: 0 }}>Prompt Version History</h4>
+                    </div>
+                    <button onClick={() => setShowVersionHistory(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#6b7280', padding: '4px' }}>
+                      <X style={{ width: '16px', height: '16px' }} />
+                    </button>
+                  </div>
+                  <p style={{ fontSize: '13px', color: '#6b7280', marginBottom: '14px' }}>
+                    Previous versions are saved automatically when you save prompt changes. Click "Revert" to restore.
+                  </p>
+                  {loadingVersions ? (
+                    <div style={{ textAlign: 'center', padding: '20px', color: '#6b7280', fontSize: '13px' }}>
+                      <div style={{ width: '20px', height: '20px', border: '2px solid #e5e7eb', borderTopColor: '#4f46e5', borderRadius: '50%', animation: 'spin 1s linear infinite', margin: '0 auto 8px' }}></div>
+                      Loading versions...
+                    </div>
+                  ) : promptVersions.length === 0 ? (
+                    <div style={{ textAlign: 'center', padding: '20px', color: '#9ca3af', fontSize: '13px', background: '#fff', borderRadius: '8px', border: '1px solid #e5e7eb' }}>
+                      No previous versions yet. Versions are created when you save prompt changes.
+                    </div>
+                  ) : (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '400px', overflowY: 'auto' }}>
+                      {promptVersions.map((v) => (
+                        <div key={v.id} style={{
+                          padding: '14px', background: '#fff', borderRadius: '10px',
+                          border: '1px solid #e5e7eb', display: 'flex', alignItems: 'center',
+                          justifyContent: 'space-between', gap: '12px'
+                        }}>
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px', flexWrap: 'wrap' }}>
+                              <span style={{
+                                padding: '2px 8px', background: '#eef2ff', color: '#4f46e5',
+                                borderRadius: '4px', fontSize: '11px', fontWeight: '700'
+                              }}>
+                                v{v.version_number}
+                              </span>
+                              <span style={{ fontSize: '12px', color: '#9ca3af' }}>
+                                {new Date(v.created_at).toLocaleString()}
+                              </span>
+                              <span style={{ fontSize: '11px', color: '#6b7280' }}>
+                                {v.ai_prompt.length} chars
+                              </span>
+                            </div>
+                            <p style={{
+                              fontSize: '12px', color: '#4b5563', margin: 0,
+                              whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis'
+                            }}>
+                              {v.instruction === 'Manual edit' ? 'Manual edit' : `AI: "${v.instruction}"`}
+                            </p>
+                          </div>
+                          <button
+                            onClick={() => revertToVersion(v.id)}
+                            style={{
+                              display: 'flex', alignItems: 'center', gap: '6px',
+                              padding: '6px 14px', background: '#fff', color: '#4f46e5',
+                              border: '1px solid #c7d2fe', borderRadius: '8px',
+                              fontSize: '12px', fontWeight: '600', cursor: 'pointer',
+                              whiteSpace: 'nowrap', flexShrink: 0
+                            }}
+                          >
+                            <RotateCcw style={{ width: '12px', height: '12px' }} />
+                            Revert
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
 
               {/* AI Edit Panel */}
               {aiEditOpen && (
@@ -1868,14 +2041,41 @@ export default function CampaignDetail() {
                           )}
                         </div>
                       )}
-                      <div style={{
-                        maxHeight: '300px', overflowY: 'auto', padding: '14px',
-                        background: '#fff', border: '1px solid #a7f3d0', borderRadius: '8px',
-                        fontSize: '13px', fontFamily: 'monospace', whiteSpace: 'pre-wrap',
-                        color: '#374151', lineHeight: '1.6'
-                      }}>
-                        {aiEditPreview}
-                      </div>
+                      {(() => {
+                        const diff = computeDiff(inlinePrompt, aiEditPreview);
+                        const added = diff.filter(d => d.type === 'added').length;
+                        const removed = diff.filter(d => d.type === 'removed').length;
+                        return (
+                          <>
+                            <div style={{ display: 'flex', gap: '12px', marginBottom: '8px', fontSize: '12px' }}>
+                              {added > 0 && <span style={{ color: '#16a34a', fontWeight: '600' }}>+{added} lines added</span>}
+                              {removed > 0 && <span style={{ color: '#dc2626', fontWeight: '600' }}>-{removed} lines removed</span>}
+                              {added === 0 && removed === 0 && <span style={{ color: '#6b7280' }}>No line changes detected</span>}
+                            </div>
+                            <div style={{
+                              maxHeight: '350px', overflowY: 'auto', padding: '4px 0',
+                              background: '#fff', border: '1px solid #e5e7eb', borderRadius: '8px',
+                              fontSize: '13px', fontFamily: 'monospace', lineHeight: '1.7'
+                            }}>
+                              {diff.map((line, i) => (
+                                <div key={i} style={{
+                                  padding: '1px 14px',
+                                  background: line.type === 'added' ? '#dcfce7' : line.type === 'removed' ? '#fee2e2' : 'transparent',
+                                  borderLeft: line.type === 'added' ? '3px solid #16a34a' : line.type === 'removed' ? '3px solid #dc2626' : '3px solid transparent',
+                                  color: line.type === 'removed' ? '#991b1b' : line.type === 'added' ? '#166534' : '#374151',
+                                  textDecoration: line.type === 'removed' ? 'line-through' : 'none',
+                                  whiteSpace: 'pre-wrap', wordBreak: 'break-word'
+                                }}>
+                                  <span style={{ userSelect: 'none', color: line.type === 'added' ? '#16a34a' : line.type === 'removed' ? '#dc2626' : '#d1d5db', marginRight: '8px', fontWeight: '700' }}>
+                                    {line.type === 'added' ? '+' : line.type === 'removed' ? '−' : ' '}
+                                  </span>
+                                  {line.text || '\u00A0'}
+                                </div>
+                              ))}
+                            </div>
+                          </>
+                        );
+                      })()}
                     </div>
                   )}
 

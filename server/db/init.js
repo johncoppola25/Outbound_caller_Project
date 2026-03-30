@@ -198,6 +198,22 @@ export async function initDatabase() {
     db.exec(`ALTER TABLE meeting_history ADD COLUMN user_id TEXT REFERENCES users(id)`);
   } catch (e) { /* column may already exist */ }
 
+  // Prompt version history - snapshots of prompt before each save
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS prompt_versions (
+      id TEXT PRIMARY KEY,
+      campaign_id TEXT NOT NULL,
+      ai_prompt TEXT NOT NULL,
+      greeting TEXT,
+      bot_name TEXT,
+      voice TEXT,
+      instruction TEXT,
+      version_number INTEGER,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (campaign_id) REFERENCES campaigns(id) ON DELETE CASCADE
+    )
+  `);
+
   // Contacts table - stores uploaded contacts per campaign
   db.exec(`
     CREATE TABLE IF NOT EXISTS contacts (

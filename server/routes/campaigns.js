@@ -406,9 +406,27 @@ router.put('/:id', async (req, res) => {
       return res.status(404).json({ error: 'Campaign not found' });
     }
     
+    // Snapshot current prompt as a version before updating (if prompt is changing)
+    if (ai_prompt && ai_prompt !== currentCampaign.ai_prompt) {
+      const versionCount = db.prepare('SELECT COUNT(*) as count FROM prompt_versions WHERE campaign_id = ?').get(req.params.id).count;
+      db.prepare(`
+        INSERT INTO prompt_versions (id, campaign_id, ai_prompt, greeting, bot_name, voice, instruction, version_number, created_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+      `).run(
+        uuidv4(),
+        req.params.id,
+        currentCampaign.ai_prompt,
+        currentCampaign.greeting || 'Hello,',
+        currentCampaign.bot_name || 'Julia',
+        currentCampaign.voice || 'astra',
+        req.body._aiInstruction || 'Manual edit',
+        versionCount + 1
+      );
+    }
+
     // Convert undefined to null for SQL compatibility
     const safeValue = (val) => val === undefined ? null : val;
-    
+
     // Update local database
     db.prepare(`
       UPDATE campaigns 
@@ -555,6 +573,41 @@ router.delete('/:id', async (req, res) => {
   } catch (error) {
     console.error('Error deleting campaign:', error);
     res.status(500).json({ error: 'Failed to delete campaign' });
+  }
+});
+
+// Get prompt version history for a campaign
+router.get('/:id/versions', async (req, res) => {
+  try {
+    const db = await getDb();
+    const versions = db.prepare(
+      'SELECT * FROM prompt_versions WHERE campaign_id = ? ORDER BY version_number DESC'
+    ).all(req.params.id);
+    res.json(versions);
+  } catch (error) {
+    console.error('Error fetching prompt versions:', error);
+    res.status(500).json({ error: 'Failed to fetch prompt versions' });
+  }
+});
+
+// Revert to a specific prompt version
+router.post('/:id/versions/:versionId/revert', async (req, res) => {
+  try {
+    const db = await getDb();
+    const version = db.prepare('SELECT * FROM prompt_versions WHERE id = ? AND campaign_id = ?')
+      .get(req.params.versionId, req.params.id);
+    if (!version) {
+      return res.status(404).json({ error: 'Version not found' });
+    }
+    res.json({
+      ai_prompt: version.ai_prompt,
+      greeting: version.greeting,
+      bot_name: version.bot_name,
+      voice: version.voice
+    });
+  } catch (error) {
+    console.error('Error reverting prompt version:', error);
+    res.status(500).json({ error: 'Failed to revert prompt version' });
   }
 });
 
